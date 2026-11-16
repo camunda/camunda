@@ -19,6 +19,7 @@ import io.camunda.gateway.mapping.http.validator.RequestValidator;
 import io.camunda.gateway.protocol.model.*;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ClusterVariableFilter;
+import io.camunda.search.filter.ElementInstanceWaitStateFilter;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
@@ -66,6 +67,7 @@ import io.camunda.zeebe.util.Either;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
@@ -1234,5 +1236,49 @@ public final class SearchQueryRequestMapper {
         sortResult,
         pageResult,
         SearchQueryBuilders::elementInstanceWaitStateSearchQuery);
+  }
+
+  /**
+   * Timers are read from the wait states of type {@code TIMER}; a wait state's key is its timer's
+   * key. The {@code state} filter is not mapped: wait states only hold {@code CREATED} timers.
+   */
+  public static Either<ProblemDetail, ElementInstanceWaitStateQuery> toTimerWaitStateQuery(
+      final io.camunda.gateway.protocol.model.@Nullable TimerSearchQuery request) {
+    final var filter = request == null ? null : request.getFilter();
+    final var builder = new ElementInstanceWaitStateFilter.Builder().waitStateTypes("TIMER");
+    final List<String> validationErrors = new ArrayList<>();
+    if (filter != null) {
+      Optional.ofNullable(filter.getProcessInstanceKey())
+          .map(key -> parseKey("processInstanceKey", key, validationErrors))
+          .ifPresent(builder::processInstanceKeys);
+      Optional.ofNullable(filter.getElementInstanceKey())
+          .map(key -> parseKey("elementInstanceKey", key, validationErrors))
+          .ifPresent(builder::elementInstanceKeys);
+      Optional.ofNullable(filter.getElementId()).ifPresent(builder::elementIds);
+    }
+    final Either<List<String>, ElementInstanceWaitStateFilter> filterResult =
+        validationErrors.isEmpty() ? Either.right(builder.build()) : Either.left(validationErrors);
+    final var sortResult =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromElementInstanceWaitStateQuerySortRequest(List.of()),
+            SortOptionBuilders::waitState,
+            SearchQuerySortRequestMapper::applyWaitStateSortField);
+    final var pageResult = toSearchQueryPage(request == null ? null : request.getPage());
+
+    return buildSearchQuery(
+        filterResult,
+        sortResult,
+        pageResult,
+        SearchQueryBuilders::elementInstanceWaitStateSearchQuery);
+  }
+
+  private static @Nullable Long parseKey(
+      final String name, final String value, final List<String> validationErrors) {
+    try {
+      return Long.parseLong(value);
+    } catch (final NumberFormatException e) {
+      validationErrors.add("The provided %s '%s' is not a valid key.".formatted(name, value));
+      return null;
+    }
   }
 }

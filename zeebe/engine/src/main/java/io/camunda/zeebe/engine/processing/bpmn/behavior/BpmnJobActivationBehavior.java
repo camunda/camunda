@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.job.JobSecretLookup;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretCheckResult;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
+import io.camunda.zeebe.engine.processing.job.JobWorkerDispatch;
 import io.camunda.zeebe.engine.processing.job.LeaseTokens;
 import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -160,6 +161,26 @@ public class BpmnJobActivationBehavior {
 
     final String jobType = wrappedJobRecord.getType();
     final JobKind jobKind = wrappedJobRecord.getJobKind();
+
+    // the job stream carries no reservation token, so a reserved job is never pushed to a stream;
+    // its owner activates it through the poll path instead. Passing no token here classifies a
+    // reserved job as withheld.
+    final var withheldReason = JobWorkerDispatch.withheldFromWorkersReason(wrappedJobRecord, null);
+    if (withheldReason != null) {
+      sideEffectWriter.appendSideEffect(
+          () -> jobMetrics.countJobEvent(withheldReason, jobKind, jobType));
+      if (withheldReason == JobAction.SKIPPED_RESERVED) {
+        // the job stays activatable and belongs to its reservation's owner; no stream is woken, but
+        // a parked long poll presenting the matching token must still be notified so it re-polls
+        // and
+        // the collector hands the job to it. A poll without the token re-polls, finds nothing and
+        // parks again.
+        notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
+      }
+      // a call-activity-stub job is woken by no one: whoever created the instance completes it
+      return true;
+    }
+
     final var leaseAwarePredicate = new LeaseAwarePredicate(wrappedJobRecord);
     final Optional<JobStream> optionalJobStream =
         jobStreamer.streamFor(

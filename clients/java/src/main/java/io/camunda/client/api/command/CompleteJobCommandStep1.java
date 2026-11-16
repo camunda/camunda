@@ -107,6 +107,29 @@ public interface CompleteJobCommandStep1
   CompleteJobCommandStep1 withJobLeaseToken(String jobLeaseToken);
 
   /**
+   * Sets the reservation token of the process instance the job belongs to, proving this command
+   * comes from the caller that reserved the instance's jobs (alpha).
+   *
+   * <p>A job of a type reserved by an instance created with {@link
+   * CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3#reserveJobs(String,
+   * String...) reserveJobs} is served to no job worker, and every command on it must carry the same
+   * token the instance was created with; a command with no token, or with a different one, is
+   * rejected. A job that is not reserved requires no token.
+   *
+   * <p>This is a separate value from the lease token: the lease token is minted by the engine per
+   * activation, while the reservation token is chosen by the caller and lives for the instance. A
+   * reserved job is never activated, so it never has both.
+   *
+   * <p>This method is only supported over REST. This is an alpha feature and may be subject to
+   * change in future releases.
+   *
+   * @param reservationToken the token the instance's jobs were reserved with
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   */
+  CompleteJobCommandStep1 withReservationToken(String reservationToken);
+
+  /**
    * Assigns the given business id to the job's root process instance as part of completing the job,
    * letting a worker derive the identifier from work it just performed.
    *

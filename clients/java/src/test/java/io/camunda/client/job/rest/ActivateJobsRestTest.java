@@ -277,6 +277,27 @@ public final class ActivateJobsRestTest extends ClientRestTest {
   }
 
   @Test
+  void shouldActivateByCalledProcessId() {
+    // given
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
+
+    // when
+    client
+        .newActivateJobsCommand()
+        .calledProcessId("ship-order")
+        .maxJobsToActivate(3)
+        .reservationToken("ts-1")
+        .send()
+        .join();
+
+    // then
+    final JobActivationRequest request = gatewayService.getLastRequest(JobActivationRequest.class);
+    assertThat(request.getCalledProcessId()).isEqualTo("ship-order");
+    assertThat(request.getType()).isNull();
+    assertThat(request.getReservationToken()).isEqualTo("ts-1");
+  }
+
+  @Test
   void shouldSetFetchVariables() {
     // given
     final List<String> fetchVariables = Arrays.asList("foo", "bar", "baz");

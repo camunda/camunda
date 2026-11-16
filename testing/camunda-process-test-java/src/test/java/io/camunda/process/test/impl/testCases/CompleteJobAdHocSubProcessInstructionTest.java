@@ -65,7 +65,7 @@ public class CompleteJobAdHocSubProcessInstructionTest {
   private CompleteAdHocSubProcessResultStep1 jobResult;
 
   private final CompleteJobAdHocSubProcessInstructionHandler instructionHandler =
-      new CompleteJobAdHocSubProcessInstructionHandler();
+      new CompleteJobAdHocSubProcessInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldCompleteJobByJobType() {

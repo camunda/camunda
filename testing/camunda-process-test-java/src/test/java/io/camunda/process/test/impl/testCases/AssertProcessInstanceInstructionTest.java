@@ -58,7 +58,7 @@ public class AssertProcessInstanceInstructionTest {
   @Captor private ArgumentCaptor<ProcessInstanceSelector> processInstanceSelectorCaptor;
 
   private final AssertProcessInstanceInstructionHandler instructionHandler =
-      new AssertProcessInstanceInstructionHandler();
+      new AssertProcessInstanceInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldSelectProcessInstanceByProcessDefinitionId() {

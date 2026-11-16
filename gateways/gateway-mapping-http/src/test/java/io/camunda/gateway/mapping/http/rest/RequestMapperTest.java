@@ -146,10 +146,11 @@ class RequestMapperTest {
       // given
       final var request =
           JobActivationRequest.Builder.create()
-              .type("test-job")
               .maxJobsToActivate(10)
               .timeout(5000L)
               .tenantIds(List.of("tenant-a", "tenant-b"))
+              .reservationToken("test-reservation")
+              .calledProcessId("called-process")
               .build();
       // when
       final var result = RequestMapper.toJobsActivationRequest(request, true);
@@ -157,11 +158,14 @@ class RequestMapperTest {
       // then
       assertThat(result.isRight()).isTrue();
       final var activateJobsRequest = result.get();
-      assertThat(activateJobsRequest.type()).isEqualTo("test-job");
+      assertThat(activateJobsRequest.type())
+          .isEqualTo(io.camunda.zeebe.protocol.Protocol.CALL_ACTIVITY_STUB_JOB_TYPE);
       assertThat(activateJobsRequest.maxJobsToActivate()).isEqualTo(10);
       assertThat(activateJobsRequest.timeout()).isEqualTo(5000L);
       assertThat(activateJobsRequest.tenantIds()).containsExactly("tenant-a", "tenant-b");
       assertThat(activateJobsRequest.tenantFilter()).isEqualTo(TenantFilter.PROVIDED);
+      assertThat(activateJobsRequest.reservationToken()).isEqualTo("test-reservation");
+      assertThat(activateJobsRequest.calledProcessId()).isEqualTo("called-process");
     }
 
     @Test
@@ -169,9 +173,9 @@ class RequestMapperTest {
       // given
       final var request =
           JobActivationRequest.Builder.create()
-              .type("test-job")
               .maxJobsToActivate(10)
               .timeout(5000L)
+              .type("test-job")
               .tenantIds(List.of("tenant-a"))
               .withLease(true)
               .build();
@@ -189,9 +193,9 @@ class RequestMapperTest {
       // given
       final var request =
           JobActivationRequest.Builder.create()
-              .type("test-job")
               .maxJobsToActivate(10)
               .timeout(5000L)
+              .type("test-job")
               .tenantIds(List.of("tenant-a"))
               .build();
 
@@ -201,6 +205,8 @@ class RequestMapperTest {
       // then
       assertThat(result.isRight()).isTrue();
       assertThat(result.get().withLease()).isFalse();
+      assertThat(result.get().reservationToken()).isEmpty();
+      assertThat(result.get().calledProcessId()).isEmpty();
     }
 
     @Test
@@ -208,9 +214,9 @@ class RequestMapperTest {
       // given
       final var request =
           JobActivationRequest.Builder.create()
-              .type("test-job")
               .maxJobsToActivate(5)
               .timeout(3000L)
+              .type("test-job")
               .tenantFilter(TenantFilterEnum.ASSIGNED)
               .build();
 
@@ -232,9 +238,9 @@ class RequestMapperTest {
       // given
       final var request =
           JobActivationRequest.Builder.create()
-              .type("test-job")
               .maxJobsToActivate(5)
               .timeout(3000L)
+              .type("test-job")
               .tenantIds(List.of("tenant-a", "tenant-b"))
               .tenantFilter(TenantFilterEnum.ASSIGNED)
               .build();
@@ -257,9 +263,9 @@ class RequestMapperTest {
       // given
       final var request =
           JobActivationRequest.Builder.create()
-              .type("test-job")
               .maxJobsToActivate(10)
               .timeout(5000L)
+              .type("test-job")
               .build();
 
       // when
@@ -278,9 +284,9 @@ class RequestMapperTest {
       // given
       final var request =
           JobActivationRequest.Builder.create()
-              .type("test-job")
               .maxJobsToActivate(10)
               .timeout(5000L)
+              .type("test-job")
               .tenantIds(List.of("tenant-a"))
               .build();
 
@@ -301,9 +307,9 @@ class RequestMapperTest {
       // given
       final var request =
           JobActivationRequest.Builder.create()
-              .type("test-job")
               .maxJobsToActivate(5)
               .timeout(3000L)
+              .type("test-job")
               .worker("test-worker")
               .build();
 
@@ -325,9 +331,9 @@ class RequestMapperTest {
       // given - tenant ID provided when multi-tenancy is disabled
       final var request =
           JobActivationRequest.Builder.create()
-              .type("test-job")
               .maxJobsToActivate(10)
               .timeout(5000L)
+              .type("test-job")
               .tenantIds(List.of("tenant-a"))
               .build();
 
@@ -346,9 +352,9 @@ class RequestMapperTest {
       // given
       final var request =
           JobActivationRequest.Builder.create()
-              .type("complex-job")
               .maxJobsToActivate(15)
               .timeout(10000L)
+              .type("complex-job")
               .worker("worker-123")
               .requestTimeout(30000L)
               .fetchVariable(List.of("var1", "var2"))
@@ -375,9 +381,9 @@ class RequestMapperTest {
       // given - request with empty type
       final var request =
           JobActivationRequest.Builder.create()
-              .type("")
               .maxJobsToActivate(10)
               .timeout(5000L)
+              .type("")
               .tenantIds(List.of("tenant-a"))
               .build();
 
@@ -396,9 +402,9 @@ class RequestMapperTest {
       // given - request with invalid maxJobsToActivate
       final var request =
           JobActivationRequest.Builder.create()
-              .type("test-job")
               .maxJobsToActivate(0)
               .timeout(5000L)
+              .type("test-job")
               .tenantIds(List.of("tenant-a"))
               .build();
 
@@ -417,9 +423,9 @@ class RequestMapperTest {
       // given - request with invalid timeout
       final var request =
           JobActivationRequest.Builder.create()
-              .type("test-job")
               .maxJobsToActivate(10)
               .timeout(0L)
+              .type("test-job")
               .tenantIds(List.of("tenant-a"))
               .build();
 
@@ -438,9 +444,9 @@ class RequestMapperTest {
       // given
       final var request =
           JobActivationRequest.Builder.create()
-              .type("test-job")
               .maxJobsToActivate(10)
               .timeout(5000L)
+              .type("test-job")
               .tenantIds(List.of("tenant-a", "tenant-b", "tenant-c"))
               .build();
 
@@ -459,9 +465,9 @@ class RequestMapperTest {
       // given
       final var request =
           JobActivationRequest.Builder.create()
-              .type("test-job")
               .maxJobsToActivate(10)
               .timeout(5000L)
+              .type("test-job")
               .tenantFilter(TenantFilterEnum.ASSIGNED)
               .build();
 
@@ -629,7 +635,7 @@ class RequestMapperTest {
       final var result = RequestMapper.toJobFailRequest(request, 1L);
 
       // then
-      assertThat(result.jobLeaseToken()).isEqualTo("lease-1");
+      assertThat(result.get().jobLeaseToken()).isEqualTo("lease-1");
     }
 
     @Test
@@ -641,7 +647,7 @@ class RequestMapperTest {
       final var result = RequestMapper.toJobFailRequest(request, 1L);
 
       // then
-      assertThat(result.jobLeaseToken()).isNull();
+      assertThat(result.get().jobLeaseToken()).isNull();
     }
 
     @Test
@@ -698,6 +704,96 @@ class RequestMapperTest {
       // then
       assertThat(result.isRight()).isTrue();
       assertThat(result.get().jobLeaseToken()).isNull();
+    }
+
+    @Test
+    void shouldMapReservationTokenOnJobCompletion() {
+      // given
+      final var request =
+          JobCompletionRequest.Builder.create().reservationToken("recorder-1").build();
+
+      // when
+      final var result = RequestMapper.toJobCompletionRequest(request, 1L);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().reservationToken()).isEqualTo("recorder-1");
+      assertThat(result.get().jobLeaseToken())
+          .describedAs("the reservation token does not leak into the lease field")
+          .isNull();
+    }
+
+    @Test
+    void shouldMapReservationTokenOnJobFail() {
+      // given
+      final var request = JobFailRequest.Builder.create().reservationToken("recorder-1").build();
+
+      // when
+      final var result = RequestMapper.toJobFailRequest(request, 1L);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().reservationToken()).isEqualTo("recorder-1");
+    }
+
+    @Test
+    void shouldMapReservationTokenOnJobError() {
+      // given
+      final var request =
+          JobErrorRequest.Builder.create()
+              .errorCode("error-1")
+              .reservationToken("recorder-1")
+              .build();
+
+      // when
+      final var result = RequestMapper.toJobErrorRequest(request, 1L);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().reservationToken()).isEqualTo("recorder-1");
+    }
+
+    @Test
+    void shouldMapReservationTokenOnJobUpdate() {
+      // given
+      final var changeset = JobChangeset.Builder.create().priority(80).build();
+      final var request =
+          JobUpdateRequest.Builder.create()
+              .changeset(changeset)
+              .reservationToken("recorder-1")
+              .build();
+
+      // when
+      final var result = RequestMapper.toJobUpdateRequest(request, 1L);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      assertThat(result.get().reservationToken()).isEqualTo("recorder-1");
+    }
+
+    @Test
+    void shouldRejectBlankReservationTokenOnJobCompletion() {
+      // given
+      final var request = JobCompletionRequest.Builder.create().reservationToken(" ").build();
+
+      // when
+      final var result = RequestMapper.toJobCompletionRequest(request, 1L);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+    }
+
+    @Test
+    void shouldRejectOverlongReservationTokenOnJobCompletion() {
+      // given
+      final var request =
+          JobCompletionRequest.Builder.create().reservationToken("t".repeat(129)).build();
+
+      // when
+      final var result = RequestMapper.toJobCompletionRequest(request, 1L);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
     }
   }
 

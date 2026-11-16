@@ -40,6 +40,7 @@ import io.camunda.process.test.api.testCases.ImmutableTestCases;
 import io.camunda.process.test.api.testCases.ImmutableUserTaskSelector;
 import io.camunda.process.test.api.testCases.ImmutableVariablesTableRow;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
+import io.camunda.process.test.api.testCases.TestCaseReservationToken;
 import io.camunda.process.test.api.testCases.TestCases;
 import io.camunda.process.test.api.testCases.instructions.ImmutableActivateElement;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertDecisionInstruction;
@@ -72,6 +73,7 @@ import io.camunda.process.test.api.testCases.instructions.ImmutableResolveIncide
 import io.camunda.process.test.api.testCases.instructions.ImmutableSemanticSimilarityAssertion;
 import io.camunda.process.test.api.testCases.instructions.ImmutableSetTimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableTriggerTimerInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableUpdateVariablesInstruction;
 import io.camunda.process.test.api.testCases.instructions.assertElementInstance.ElementInstanceState;
 import io.camunda.process.test.api.testCases.instructions.assertElementInstances.ElementInstancesState;
@@ -80,7 +82,9 @@ import io.camunda.process.test.api.testCases.instructions.assertIncident.Inciden
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstance.ProcessInstanceState;
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstanceMessageSubscription.MessageSubscriptionState;
 import io.camunda.process.test.api.testCases.instructions.assertUserTask.UserTaskState;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceStartInstruction;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceStubCallActivitiesRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceTerminateRuntimeInstruction;
 import java.io.IOException;
 import java.time.Duration;
@@ -186,6 +190,15 @@ public class PojoCompatibilityTest {
                     .addRuntimeInstructions(
                         ImmutableCreateProcessInstanceTerminateRuntimeInstruction.builder()
                             .afterElementId("task2")
+                            .build())
+                    .addRuntimeInstructions(
+                        ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction.builder()
+                            .addJobTypes("charge-card", "send-invoice")
+                            .reservationToken(TestCaseReservationToken.PLACEHOLDER)
+                            .build())
+                    .addRuntimeInstructions(
+                        ImmutableCreateProcessInstanceStubCallActivitiesRuntimeInstruction.builder()
+                            .addProcessIds("shipping", "notification")
                             .build())
                     .build())),
         // ===== ASSERT_PROCESS_INSTANCE =====
@@ -476,6 +489,81 @@ public class PojoCompatibilityTest {
                     .errorCode("invalid")
                     .errorMessage("Nope.")
                     .putVariables("x", 1)
+                    .build())),
+        // ===== COMPLETE_JOB / THROW_BPMN_ERROR_FROM_JOB: reserved job =====
+        Arguments.of(
+            "complete job: with reservation token",
+            singleTestCase(
+                ImmutableCompleteJobInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().jobType("send-invoice").build())
+                    .reservationToken(TestCaseReservationToken.PLACEHOLDER)
+                    .build())),
+        Arguments.of(
+            "throw bpmn error from job: with reservation token",
+            singleTestCase(
+                ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                    .jobSelector(ImmutableJobSelector.builder().jobType("send-invoice").build())
+                    .errorCode("invalid")
+                    .reservationToken(TestCaseReservationToken.PLACEHOLDER)
+                    .build())),
+        // ===== COMPLETE_JOB: call activity stub =====
+        Arguments.of(
+            "complete job: call activity stub minimal",
+            singleTestCase(
+                ImmutableCompleteJobInstruction.builder()
+                    .jobSelector(
+                        ImmutableJobSelector.builder()
+                            .jobKind("CALL_ACTIVITY_STUB")
+                            .elementId("ship-order")
+                            .build())
+                    .build())),
+        Arguments.of(
+            "complete job: call activity stub with variables",
+            singleTestCase(
+                ImmutableCompleteJobInstruction.builder()
+                    .jobSelector(
+                        ImmutableJobSelector.builder()
+                            .jobKind("CALL_ACTIVITY_STUB")
+                            .elementId("ship-order")
+                            .build())
+                    .putVariables("approved", true)
+                    .build())),
+        // ===== THROW_BPMN_ERROR_FROM_JOB: call activity stub =====
+        Arguments.of(
+            "throw bpmn error from job: call activity stub minimal",
+            singleTestCase(
+                ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                    .jobSelector(
+                        ImmutableJobSelector.builder()
+                            .jobKind("CALL_ACTIVITY_STUB")
+                            .elementId("collect-payment")
+                            .build())
+                    .errorCode("PAYMENT_DECLINED")
+                    .build())),
+        Arguments.of(
+            "throw bpmn error from job: call activity stub full",
+            singleTestCase(
+                ImmutableThrowBpmnErrorFromJobInstruction.builder()
+                    .jobSelector(
+                        ImmutableJobSelector.builder()
+                            .jobKind("CALL_ACTIVITY_STUB")
+                            .elementId("collect-payment")
+                            .build())
+                    .errorCode("PAYMENT_DECLINED")
+                    .errorMessage("The card was declined.")
+                    .putVariables("declineCode", 51)
+                    .build())),
+        // ===== TRIGGER_TIMER =====
+        Arguments.of(
+            "trigger timer",
+            singleTestCase(
+                ImmutableTriggerTimerInstruction.builder()
+                    .processInstanceSelector(
+                        ImmutableProcessInstanceSelector.builder()
+                            .processDefinitionId("order-process")
+                            .build())
+                    .elementSelector(
+                        ImmutableElementSelector.builder().elementId("escalation").build())
                     .build())),
         // ===== MOCK_CHILD_PROCESS =====
         Arguments.of(

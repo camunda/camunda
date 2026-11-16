@@ -447,7 +447,9 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
    * and the behavior version. Global, so a partition added by scaling starts with the current set;
    * each partition still commits independently. Not used yet.
    */
-  COMMITTED_CLUSTER_BEHAVIOR(173, GLOBAL);
+  COMMITTED_CLUSTER_BEHAVIOR(173, GLOBAL),
+
+  TIMER_ELEMENT_INSTANCE_BY_KEY(176, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

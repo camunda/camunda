@@ -29,8 +29,15 @@ import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
+import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
+import io.camunda.process.test.api.testCases.instructions.MockJobWorkerCompleteJobInstruction;
+import io.camunda.process.test.api.testCases.instructions.MockJobWorkerThrowBpmnErrorInstruction;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceReserveJobsRuntimeInstruction;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,14 +48,25 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
   private final CamundaProcessTestContext context;
   private final AssertionFacade assertionFacade;
   private final TestCaseInstructionHandlerRegistry registry;
+  private final CreatedProcessInstanceRegistry createdProcessInstances =
+      new CreatedProcessInstanceRegistry();
 
   public CamundaTestCaseRunner(final CamundaProcessTestContext context) {
     this(context, new TestCaseAssertionFacade());
   }
 
   public CamundaTestCaseRunner(
+      final CamundaProcessTestContext context, final TestRunContext runContext) {
+    this.context = context;
+    assertionFacade = new TestCaseAssertionFacade();
+    registry = new TestCaseInstructionHandlerRegistry(createdProcessInstances, runContext);
+  }
+
+  public CamundaTestCaseRunner(
       final CamundaProcessTestContext context, final AssertionFacade assertionFacade) {
-    this(context, assertionFacade, new TestCaseInstructionHandlerRegistry());
+    this.context = context;
+    this.assertionFacade = assertionFacade;
+    registry = new TestCaseInstructionHandlerRegistry(createdProcessInstances);
   }
 
   public CamundaTestCaseRunner(
@@ -64,17 +82,92 @@ public class CamundaTestCaseRunner implements TestCaseRunner {
   public void run(final TestCase testCase) {
     LOGGER.debug("Running test case: '{}'", testCase.getName());
     final Instant start = Instant.now();
+    warnIfReservedJobsAreMocked(testCase);
+    createdProcessInstances.clear();
 
     try (final CamundaClient camundaClient = context.createClient()) {
 
-      testCase
-          .getInstructions()
-          .forEach(instruction -> executeInstruction(instruction, camundaClient));
+      try {
+        testCase
+            .getInstructions()
+            .forEach(instruction -> executeInstruction(instruction, camundaClient));
+
+      } finally {
+        cancelIsolatedProcessInstances(camundaClient);
+      }
 
     } finally {
       final Duration duration = Duration.between(start, Instant.now());
       LOGGER.debug("Finished test case: '{}' (duration: {})", testCase.getName(), duration);
     }
+  }
+
+  /**
+   * A reserved job is hidden from every job worker, including the mock workers this test case
+   * opens, so such a test case waits for a job that is never mocked and fails on the await timeout
+   * instead of saying why.
+   */
+  private void warnIfReservedJobsAreMocked(final TestCase testCase) {
+    if (reservesJobsAndMocksJobWorkers(testCase)) {
+      LOGGER.warn(
+          "Test case '{}' reserves a job type and mocks a job worker for the same type. A reserved"
+              + " job is hidden from every job worker, including the mock. If the mock is meant to"
+              + " serve the reserved instance, use COMPLETE_JOB or THROW_BPMN_ERROR_FROM_JOB"
+              + " instead; otherwise the test case waits for a job nobody takes.",
+          testCase.getName());
+    }
+  }
+
+  /**
+   * Returns whether the test case mocks a job worker for a job type it also reserves. Only a mock
+   * for a reserved type is affected: the engine hands every other type to workers as usual.
+   */
+  static boolean reservesJobsAndMocksJobWorkers(final TestCase testCase) {
+    final Set<String> reservedJobTypes =
+        testCase.getInstructions().stream()
+            .filter(CreateProcessInstanceInstruction.class::isInstance)
+            .map(CreateProcessInstanceInstruction.class::cast)
+            .flatMap(instruction -> instruction.getRuntimeInstructions().stream())
+            .filter(CreateProcessInstanceReserveJobsRuntimeInstruction.class::isInstance)
+            .map(CreateProcessInstanceReserveJobsRuntimeInstruction.class::cast)
+            .flatMap(reserve -> reserve.getJobTypes().stream())
+            .collect(Collectors.toSet());
+
+    return testCase.getInstructions().stream()
+        .map(CamundaTestCaseRunner::mockedJobTypeOf)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .anyMatch(reservedJobTypes::contains);
+  }
+
+  private static Optional<String> mockedJobTypeOf(final TestCaseInstruction instruction) {
+    if (instruction instanceof MockJobWorkerCompleteJobInstruction) {
+      return ((MockJobWorkerCompleteJobInstruction) instruction).getJobType();
+    }
+    if (instruction instanceof MockJobWorkerThrowBpmnErrorInstruction) {
+      return ((MockJobWorkerThrowBpmnErrorInstruction) instruction).getJobType();
+    }
+    return Optional.empty();
+  }
+
+  /**
+   * An isolated instance waits on jobs no worker takes, so it parks forever unless the test case
+   * ended it. Cancelling is a no-op for an instance that already completed.
+   */
+  private void cancelIsolatedProcessInstances(final CamundaClient camundaClient) {
+    createdProcessInstances
+        .isolatedProcessInstanceKeys()
+        .forEach(
+            processInstanceKey -> {
+              try {
+                camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
+              } catch (final Exception e) {
+                LOGGER.debug(
+                    "Could not cancel the isolated process instance '{}'. It may have ended already.",
+                    processInstanceKey,
+                    e);
+              }
+            });
   }
 
   private void executeInstruction(

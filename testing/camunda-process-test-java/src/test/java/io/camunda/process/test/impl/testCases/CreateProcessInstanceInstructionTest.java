@@ -50,7 +50,8 @@ public class CreateProcessInstanceInstructionTest {
   @Mock private AssertionFacade assertionFacade;
 
   private final CreateProcessInstanceInstructionHandler instructionHandler =
-      new CreateProcessInstanceInstructionHandler();
+      new CreateProcessInstanceInstructionHandler(
+          new CreatedProcessInstanceRegistry(), TestRunContext.disabled());
 
   @Test
   void shouldCreateProcessInstanceByProcessDefinitionId() {

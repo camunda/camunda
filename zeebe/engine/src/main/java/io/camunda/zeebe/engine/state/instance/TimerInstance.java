@@ -44,7 +44,7 @@ public final class TimerInstance extends UnpackedObject implements DbValue, Tena
           new StringValue("elementType"), BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
   public TimerInstance() {
-    super(12);
+    super(11);
     declareProperty(handlerNodeIdProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(keyProp)

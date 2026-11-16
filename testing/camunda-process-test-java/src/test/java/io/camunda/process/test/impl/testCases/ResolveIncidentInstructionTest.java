@@ -49,7 +49,7 @@ public class ResolveIncidentInstructionTest {
   @Captor private ArgumentCaptor<IncidentSelector> selectorCaptor;
 
   private final ResolveIncidentInstructionHandler instructionHandler =
-      new ResolveIncidentInstructionHandler();
+      new ResolveIncidentInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldResolveIncidentByElementId() {

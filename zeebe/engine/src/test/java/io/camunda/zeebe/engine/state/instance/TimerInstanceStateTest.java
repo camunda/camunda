@@ -246,6 +246,26 @@ public final class TimerInstanceStateTest {
     assertThat(keys).hasSize(2).containsExactly(1L, 2L);
   }
 
+  @Test
+  public void shouldScheduleNonHeldTimerOnResume() {
+    // given a scheduled timer that was suspended
+    createTimerInstance(1L, 2L, 1000L);
+    state.suspend(1L, 2L, 1000L);
+
+    // when
+    state.resume(1L, 2L, 1000L);
+
+    // then
+    final List<Long> dueTimers = new ArrayList<>();
+    state.processTimersWithDueDateBefore(
+        2000L,
+        t -> {
+          dueTimers.add(t.getKey());
+          return true;
+        });
+    assertThat(dueTimers).containsExactly(2L);
+  }
+
   private TimerInstance createTimerInstance(
       final long elementInstanceKey, final long timerKey, final long dueDate) {
     createElementInstance(elementInstanceKey);

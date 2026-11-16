@@ -70,7 +70,10 @@ function elementJobQuery(elementInstanceKey: string) {
 		queryFn: async () =>
 			(
 				await getJson<QueryJobsResponseBody>(
-					endpoints.queryJobs({filter: {elementInstanceKey, listenerEventType: 'UNSPECIFIED'}, page: {limit: 1}}),
+					endpoints.queryJobs({
+						filter: {elementInstanceKey, listenerEventType: 'UNSPECIFIED', kind: {$neq: 'CALL_ACTIVITY_STUB'}},
+						page: {limit: 1},
+					}),
 				)
 			).items[0] ?? null,
 	});

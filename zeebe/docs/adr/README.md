@@ -29,4 +29,8 @@ process-execution data path). These are module-scoped decisions; see the
 |                           ADR                           |                                                 Decision                                                 |
 |---------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
 | [0014](0014-811-hub-managed-identity-policy-updates.md) | Hub policy updates applied as versioned identity state on partition 1, committed by a distributed switch |
+| [0016](0016-811-per-instance-recording-switches.md)     | Per-instance recording switches set at create time via runtime instructions                              |
+| [0017](0017-811-reserved-jobs.md)                       | Reserved jobs: a caller-chosen token hides the listed job types from workers                             |
+| [0018](0018-811-stubbed-call-activities.md)             | Stubbed call activities: activate without a child, wait on a stand-in job                                |
+| [0019](0019-811-timer-search-and-trigger-by-key.md)     | Timers: searchable as wait states, fired on demand by timer key                                          |
 

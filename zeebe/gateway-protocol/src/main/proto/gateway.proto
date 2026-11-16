@@ -64,6 +64,11 @@ message ActivateJobsRequest {
   // type; a homogeneous fleet per job type is recommended. Defaults to false, which activates
   // jobs without a lease.
   bool withLease = 9;
+  // the reservation token of a process instance whose jobs were reserved at creation (via the
+  // RESERVE_JOBS runtime instruction). A worker presenting the matching token activates those
+  // reserved jobs, which are withheld from every other worker; defaults to empty, which activates
+  // only unreserved jobs.
+  string reservationToken = 10;
 }
 
 message ActivateJobsResponse {
@@ -86,6 +91,7 @@ message ActivatedJob {
     EXECUTION_LISTENER = 1;
     TASK_LISTENER = 2;
     AD_HOC_SUB_PROCESS = 3;
+    CALL_ACTIVITY_STUB = 4;
   }
 
   // Describes the listener event type of the job.

@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.testCases.instructions;
 
+import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.process.test.api.assertions.DecisionSelector;
 import io.camunda.process.test.api.assertions.DecisionSelectors;
 import io.camunda.process.test.api.assertions.ElementSelector;
@@ -33,6 +34,16 @@ final class InstructionSelectorFactory {
 
   private InstructionSelectorFactory() {
     // Utility class
+  }
+
+  static String buildTimerElementId(
+      final io.camunda.process.test.api.testCases.ElementSelector dslSelector) {
+    return dslSelector
+        .getElementId()
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    "The timer catch event must be selected by elementId; a timer is keyed by its element id."));
   }
 
   /**
@@ -101,6 +112,12 @@ final class InstructionSelectorFactory {
       selector = JobSelectors.byJobType(dslSelector.getJobType().get());
     }
 
+    if (dslSelector.getJobKind().isPresent()) {
+      final JobSelector jobKindSelector =
+          JobSelectors.byJobKind(JobKind.valueOf(dslSelector.getJobKind().get()));
+      selector = selector != null ? selector.and(jobKindSelector) : jobKindSelector;
+    }
+
     if (dslSelector.getElementId().isPresent()) {
       final JobSelector elementIdSelector =
           JobSelectors.byElementId(dslSelector.getElementId().get());
@@ -115,7 +132,7 @@ final class InstructionSelectorFactory {
 
     if (selector == null) {
       throw new IllegalArgumentException(
-          "Missing required property: at least one of jobType, elementId, or processDefinitionId must be set");
+          "Missing required property: at least one of jobType, jobKind, elementId, or processDefinitionId must be set");
     }
 
     return selector;

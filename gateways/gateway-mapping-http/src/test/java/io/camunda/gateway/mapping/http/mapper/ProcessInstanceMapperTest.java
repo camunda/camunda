@@ -8,9 +8,15 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.gateway.protocol.model.AdvancedStringFilter;
 import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationReserveJobsInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationStubCallActivitiesInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
@@ -18,6 +24,8 @@ import io.camunda.gateway.protocol.model.ProcessInstanceModificationBatchOperati
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -26,6 +34,163 @@ import org.springframework.http.ProblemDetail;
 class ProcessInstanceMapperTest {
 
   private final ProcessInstanceMapper mapper = new ProcessInstanceMapper();
+
+  private static ProcessInstanceCreationReserveJobsInstruction reserveJobs(final String token) {
+    return reserveJobs(List.of("send-invoice"), token);
+  }
+
+  private static ProcessInstanceCreationReserveJobsInstruction reserveJobs(
+      final List<String> jobTypes, final String token) {
+    return ProcessInstanceCreationReserveJobsInstruction.Builder.create()
+        .jobTypes(jobTypes)
+        .reservationToken(token)
+        .type("RESERVE_JOBS")
+        .build();
+  }
+
+  @Test
+  void shouldMapReserveJobsInstructionOnCreateByProcessDefinitionId() {
+    // given
+    final var instruction =
+        ProcessInstanceCreationInstructionById.Builder.create()
+            .processDefinitionId("process")
+            .runtimeInstructions(List.of(reserveJobs("recorder-session-1")))
+            .build();
+
+    // when
+    final var result = mapper.toCreateProcessInstance(instruction, false);
+
+    // then the reserve-jobs switches are lifted onto the request, not kept as instructions
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get().reservationToken()).isEqualTo("recorder-session-1");
+    assertThat(result.get().reservedJobTypes()).containsExactly("send-invoice");
+    assertThat(result.get().runtimeInstructions()).isEmpty();
+  }
+
+  @Test
+  void shouldMapReserveJobsInstructionOnCreateByProcessDefinitionKey() {
+    // given
+    final var instruction =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123")
+            .runtimeInstructions(List.of(reserveJobs("recorder-session-1")))
+            .build();
+
+    // when
+    final var result = mapper.toCreateProcessInstance(instruction, false);
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get().reservationToken()).isEqualTo("recorder-session-1");
+    assertThat(result.get().runtimeInstructions()).isEmpty();
+  }
+
+  @Test
+  void shouldMapTerminateAndReserveJobsInstructionsTogether() {
+    // given
+    final var instruction =
+        ProcessInstanceCreationInstructionById.Builder.create()
+            .processDefinitionId("process")
+            .runtimeInstructions(
+                List.of(
+                    ProcessInstanceCreationTerminateInstruction.Builder.create()
+                        .afterElementId("Activity_1")
+                        .build(),
+                    reserveJobs("recorder-session-1")))
+            .build();
+
+    // when
+    final var result = mapper.toCreateProcessInstance(instruction, false);
+
+    // then the terminate instruction stays in the list; the reservation is lifted onto the request
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get().reservationToken()).isEqualTo("recorder-session-1");
+    assertThat(result.get().runtimeInstructions())
+        .extracting(
+            ProcessInstanceCreationRuntimeInstruction::getType,
+            ProcessInstanceCreationRuntimeInstruction::getAfterElementId)
+        .containsExactly(tuple(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE, "Activity_1"));
+  }
+
+  @Test
+  void shouldMapStubCallActivitiesOnCreateByProcessDefinitionId() {
+    // given
+    final var instruction =
+        ProcessInstanceCreationInstructionById.Builder.create()
+            .processDefinitionId("process")
+            .runtimeInstructions(
+                List.of(
+                    ProcessInstanceCreationStubCallActivitiesInstruction.Builder.create()
+                        .processIds(List.of("shipping", "notification"))
+                        .type("STUB_CALL_ACTIVITIES")
+                        .build()))
+            .build();
+
+    // when
+    final var result = mapper.toCreateProcessInstance(instruction, false);
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get().stubbedCallActivityProcessIds())
+        .containsExactly("shipping", "notification");
+  }
+
+  @Test
+  void shouldMapStubCallActivitiesOnCreateByProcessDefinitionKey() {
+    // given
+    final var instruction =
+        ProcessInstanceCreationInstructionByKey.Builder.create()
+            .processDefinitionKey("123")
+            .runtimeInstructions(
+                List.of(
+                    ProcessInstanceCreationStubCallActivitiesInstruction.Builder.create()
+                        .processIds(List.of("shipping"))
+                        .type("STUB_CALL_ACTIVITIES")
+                        .build()))
+            .build();
+
+    // when
+    final var result = mapper.toCreateProcessInstance(instruction, false);
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get().stubbedCallActivityProcessIds()).containsExactly("shipping");
+  }
+
+  @Test
+  void shouldNotStubCallActivitiesWhenNotProvided() {
+    // given
+    final var instruction =
+        ProcessInstanceCreationInstructionById.Builder.create()
+            .processDefinitionId("process")
+            .build();
+
+    // when
+    final var result = mapper.toCreateProcessInstance(instruction, false);
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get().stubbedCallActivityProcessIds())
+        .describedAs("no stub-call-activities instruction, so call activities run for real")
+        .isNull();
+  }
+
+  @Test
+  void shouldReserveNoJobsWhenNoInstructionProvided() {
+    // given
+    final var instruction =
+        ProcessInstanceCreationInstructionById.Builder.create()
+            .processDefinitionId("process")
+            .build();
+
+    // when
+    final var result = mapper.toCreateProcessInstance(instruction, false);
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get().reservationToken()).isNull();
+    assertThat(result.get().runtimeInstructions()).isEmpty();
+  }
 
   @Test
   void shouldMapToProcessInstanceMigrationBatchOperationRequest() {

@@ -27,6 +27,14 @@ public interface TimerInstanceState {
 
   TimerInstance get(long elementInstanceKey, long timerKey);
 
+  /**
+   * Returns the timer with the given key, or {@code null} if there is none. Used by the public
+   * trigger-timer command, which addresses a timer by its key alone.
+   *
+   * <p>NOTE: the returned timer is shared and will be mutated on the next state access.
+   */
+  TimerInstance getByKey(long timerKey);
+
   @FunctionalInterface
   interface TimerVisitor {
 
