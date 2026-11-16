@@ -8,7 +8,7 @@
 
 import '@camunda/design-system/styles.css';
 import './Header.css';
-import {useLayoutEffect, useMemo} from 'react';
+import {useEffect, useLayoutEffect, useMemo} from 'react';
 import {useTranslation} from 'react-i18next';
 import {observer} from 'mobx-react-lite';
 import {Link} from '@tanstack/react-router';
@@ -108,6 +108,22 @@ const VersionFooter: React.FC = () => {
 	);
 };
 
+const SkipLinkFocus: React.FC = () => {
+	useEffect(() => {
+		const focusMainContent = (event: MouseEvent) => {
+			if (event.target instanceof Element && event.target.closest(`a[href="#${SKIP_TO_CONTENT_TARGET_ID}"]`) !== null) {
+				event.preventDefault();
+				document.getElementById(SKIP_TO_CONTENT_TARGET_ID)?.focus();
+			}
+		};
+
+		document.addEventListener('click', focusMainContent);
+		return () => document.removeEventListener('click', focusMainContent);
+	}, []);
+
+	return null;
+};
+
 type Props = {
 	currentUser: AuthenticatedCurrentUser;
 	license: License;
@@ -171,6 +187,7 @@ const Header: React.FC<Props> = observer(({currentUser, license}) => {
 				<TooltipProvider>
 					<SidebarProvider>
 						<SidebarBodySync hasSidebar={hasSidebar} />
+						<SkipLinkFocus />
 						<DsAppHeader
 							skipToContentTargetId={SKIP_TO_CONTENT_TARGET_ID}
 							showSidebarTrigger={hasSidebar}
