@@ -22,8 +22,10 @@ public final class WildcardQueryTransformer
 
   @Override
   public WildcardQuery apply(final SearchWildcardQuery value) {
-    final var field = value.field();
-    final var fieldValue = value.value();
-    return QueryBuilders.wildcard().field(field).value(fieldValue).build();
+    final var builder = QueryBuilders.wildcard().field(value.field()).value(value.value());
+    if (value.caseInsensitive()) {
+      builder.caseInsensitive(true);
+    }
+    return builder.build();
   }
 }

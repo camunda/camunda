@@ -780,6 +780,12 @@ public final class SearchQueryBuilders {
     return wildcard(q -> q.field(field).value(value)).toSearchQuery();
   }
 
+  public static SearchQuery wildcardQuery(
+      final String field, final String value, final boolean caseInsensitive) {
+    return wildcard(q -> q.field(field).value(value).caseInsensitive(caseInsensitive))
+        .toSearchQuery();
+  }
+
   public static Builder hasParent() {
     return new Builder();
   }
