@@ -109,22 +109,29 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
       head.prevOrdered(null);
       head.nextOrdered(null);
 
-      if (null == next.next) {
-        final ActorTaskQueueNode tail = this.tail;
-        if (tail == next) {
-          if (beforeTailReset != null) {
-            beforeTailReset.accept(this);
-          }
-          if (casTail(tail, empty)) {
-            next = empty;
-          }
-        }
+      if (null == next.next && tryResetTail(next)) {
+        next = empty;
       }
 
       headOrdered(next);
     }
 
     return value;
+  }
+
+  /**
+   * Resets the tail to {@link #empty} if {@code last} is still the tail. Fails if a concurrent
+   * {@link #append} swapped the tail in the meantime, in which case {@code last} must stay linked.
+   */
+  private boolean tryResetTail(final ActorTaskQueueNode last) {
+    final ActorTaskQueueNode tail = this.tail;
+    if (tail != last) {
+      return false;
+    }
+    if (beforeTailReset != null) {
+      beforeTailReset.accept(this);
+    }
+    return casTail(tail, empty);
   }
 
   public ActorTaskQueueNode peek() {
