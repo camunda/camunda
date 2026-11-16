@@ -10,16 +10,15 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.ArrayValue;
-import io.camunda.zeebe.msgpack.value.IntegerValue;
-import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
@@ -29,11 +28,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.IntArrayList;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class ProcessInstanceRecord extends UnifiedRecordValue
-    implements ProcessInstanceRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class ProcessInstanceRecord extends MsgpackBufferValue<ProcessInstanceRecord>
+    implements MsgpackRecordValue, ProcessInstanceRecordValue {
 
   // Static StringValue keys for property names
   public static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
@@ -64,298 +67,241 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final StringValue RESUME_FROM_USER_TASK_KEY_KEY =
       new StringValue("resumeFromUserTaskKey");
 
-  private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
-  private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY, -1);
-  private final StringProperty tenantIdProp =
-      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
-
-  private final LongProperty processInstanceKeyProp =
-      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, "");
-
-  private final LongProperty flowScopeKeyProp = new LongProperty(FLOW_SCOPE_KEY_KEY, -1L);
-
-  private final EnumProperty<BpmnElementType> bpmnElementTypeProp =
-      new EnumProperty<>(BPMN_ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
-
-  private final EnumProperty<BpmnEventType> bpmnEventTypeProp =
-      new EnumProperty<>(BPMN_EVENT_TYPE_KEY, BpmnEventType.class, BpmnEventType.UNSPECIFIED);
-
-  private final LongProperty parentProcessInstanceKeyProp =
-      new LongProperty(PARENT_PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final LongProperty parentElementInstanceKeyProp =
-      new LongProperty(PARENT_ELEMENT_INSTANCE_KEY_KEY, -1L);
-
-  private final ArrayProperty<ArrayValue<LongValue>> elementInstancePathProp =
-      new ArrayProperty<>(ELEMENT_INSTANCE_PATH_KEY, () -> new ArrayValue<>(LongValue::new));
-  private final ArrayProperty<LongValue> processDefinitionPathProp =
-      new ArrayProperty<>(PROCESS_DEFINITION_PATH_KEY, LongValue::new);
-  private final ArrayProperty<IntegerValue> callingElementPathProp =
-      new ArrayProperty<>(CALLING_ELEMENT_PATH_KEY, IntegerValue::new);
-
-  private final ArrayProperty<StringValue> tagsProp =
-      new ArrayProperty<>(TAGS_KEY, StringValue::new);
-
-  private final LongProperty rootProcessInstanceKeyProp =
-      new LongProperty(ROOT_PROCESS_INSTANCE_KEY, -1L);
-
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
-
-  private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
-
-  private final LongProperty resumeFromJobKeyProp = new LongProperty(RESUME_FROM_JOB_KEY_KEY, -1L);
-
-  private final LongProperty resumeFromUserTaskKeyProp =
-      new LongProperty(RESUME_FROM_USER_TASK_KEY_KEY, -1L);
-
-  public ProcessInstanceRecord() {
-    super(20);
-    declareProperty(bpmnElementTypeProp)
-        .declareProperty(elementIdProp)
-        .declareProperty(bpmnProcessIdProp)
-        .declareProperty(versionProp)
-        .declareProperty(processDefinitionKeyProp)
-        .declareProperty(processInstanceKeyProp)
-        .declareProperty(flowScopeKeyProp)
-        .declareProperty(bpmnEventTypeProp)
-        .declareProperty(parentProcessInstanceKeyProp)
-        .declareProperty(parentElementInstanceKeyProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(elementInstancePathProp)
-        .declareProperty(processDefinitionPathProp)
-        .declareProperty(callingElementPathProp)
-        .declareProperty(tagsProp)
-        .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(businessIdProp)
-        .declareProperty(resumeFromJobKeyProp)
-        .declareProperty(resumeFromUserTaskKeyProp);
-  }
+  BpmnElementType bpmnElementType = BpmnElementType.UNSPECIFIED;
+  DirectBuffer elementId = Decoding.EMPTY;
+  DirectBuffer bpmnProcessId = Decoding.EMPTY;
+  int version = -1;
+  long processDefinitionKey = -1L;
+  long processInstanceKey = -1L;
+  long flowScopeKey = -1L;
+  BpmnEventType bpmnEventType = BpmnEventType.UNSPECIFIED;
+  long parentProcessInstanceKey = -1L;
+  long parentElementInstanceKey = -1L;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  final List<List<Long>> elementInstancePath = new ArrayList<>();
+  final List<Long> processDefinitionPath = new ArrayList<>();
+  final IntArrayList callingElementPath = new IntArrayList();
+  final List<DirectBuffer> tags = new ArrayList<>();
+  long rootProcessInstanceKey = -1L;
+  int storageOrdinal = 0;
+  DirectBuffer businessId = Decoding.EMPTY;
+  long resumeFromJobKey = -1L;
+  long resumeFromUserTaskKey = -1L;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public void wrap(final ProcessInstanceRecord record) {
-    elementIdProp.setValue(record.getElementIdBuffer());
-    bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
-    flowScopeKeyProp.setValue(record.getFlowScopeKey());
-    versionProp.setValue(record.getVersion());
-    processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
-    processInstanceKeyProp.setValue(record.getProcessInstanceKey());
-    bpmnElementTypeProp.setValue(record.getBpmnElementType());
-    bpmnEventTypeProp.setValue(record.getBpmnEventType());
-    parentProcessInstanceKeyProp.setValue(record.getParentProcessInstanceKey());
-    parentElementInstanceKeyProp.setValue(record.getParentElementInstanceKey());
-    tenantIdProp.setValue(record.getTenantId());
-    rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
-    storageOrdinalProp.setValue(record.getStorageOrdinal());
-    businessIdProp.setValue(record.getBusinessId());
-    resumeFromJobKeyProp.setValue(record.getResumeFromJobKey());
-    resumeFromUserTaskKeyProp.setValue(record.getResumeFromUserTaskKey());
+    elementId = record.getElementIdBuffer();
+    bpmnProcessId = record.getBpmnProcessIdBuffer();
+    flowScopeKey = record.getFlowScopeKey();
+    version = record.getVersion();
+    processDefinitionKey = record.getProcessDefinitionKey();
+    processInstanceKey = record.getProcessInstanceKey();
+    bpmnElementType = record.getBpmnElementType();
+    bpmnEventType = record.getBpmnEventType();
+    parentProcessInstanceKey = record.getParentProcessInstanceKey();
+    parentElementInstanceKey = record.getParentElementInstanceKey();
+    tenantId = record.tenantId;
+    rootProcessInstanceKey = record.getRootProcessInstanceKey();
+    storageOrdinal = record.getStorageOrdinal();
+    businessId = record.businessId;
+    resumeFromJobKey = record.getResumeFromJobKey();
+    resumeFromUserTaskKey = record.getResumeFromUserTaskKey();
   }
 
   @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProp.getValue();
+    return bpmnProcessId;
   }
 
   @JsonIgnore
   public DirectBuffer getElementIdBuffer() {
-    return elementIdProp.getValue();
+    return elementId;
   }
 
   public ProcessInstanceRecord setBpmnProcessId(
       final DirectBuffer directBuffer, final int offset, final int length) {
-    bpmnProcessIdProp.setValue(directBuffer, offset, length);
+    bpmnProcessId = new UnsafeBuffer(directBuffer, offset, length);
     return this;
   }
 
   @Override
   public String getBpmnProcessId() {
-    return bufferAsString(bpmnProcessIdProp.getValue());
+    return bufferAsString(bpmnProcessId);
   }
 
   @Override
   public int getVersion() {
-    return versionProp.getValue();
+    return version;
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey;
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey;
   }
 
   @Override
   public String getElementId() {
-    return bufferAsString(elementIdProp.getValue());
+    return bufferAsString(elementId);
   }
 
   @Override
   public long getFlowScopeKey() {
-    return flowScopeKeyProp.getValue();
+    return flowScopeKey;
   }
 
   @Override
   public BpmnElementType getBpmnElementType() {
-    return bpmnElementTypeProp.getValue();
+    return bpmnElementType;
   }
 
   @Override
   public long getParentProcessInstanceKey() {
-    return parentProcessInstanceKeyProp.getValue();
+    return parentProcessInstanceKey;
   }
 
   @Override
   public long getParentElementInstanceKey() {
-    return parentElementInstanceKeyProp.getValue();
+    return parentElementInstanceKey;
   }
 
   public ProcessInstanceRecord setParentElementInstanceKey(final long parentElementInstanceKey) {
-    parentElementInstanceKeyProp.setValue(parentElementInstanceKey);
+    this.parentElementInstanceKey = parentElementInstanceKey;
     return this;
   }
 
   @Override
   public BpmnEventType getBpmnEventType() {
-    return bpmnEventTypeProp.getValue();
+    return bpmnEventType;
   }
 
   public ProcessInstanceRecord setBpmnEventType(final BpmnEventType bpmnEventType) {
-    bpmnEventTypeProp.setValue(bpmnEventType);
+    this.bpmnEventType = bpmnEventType;
     return this;
   }
 
   @Override
   public List<List<Long>> getElementInstancePath() {
-    final var elementInstancePath = new ArrayList<List<Long>>(elementInstancePathProp.size());
-    for (final var pe : elementInstancePathProp) {
-      final var pathEntry = new ArrayList<Long>(pe.size());
-      for (final var e : pe) {
-        pathEntry.add(e.getValue());
-      }
-      elementInstancePath.add(pathEntry);
+    final var copy = new ArrayList<List<Long>>(elementInstancePath.size());
+    for (final var pathEntry : elementInstancePath) {
+      copy.add(new ArrayList<>(pathEntry));
     }
-    return elementInstancePath;
+    return copy;
   }
 
   public ProcessInstanceRecord setElementInstancePath(final List<List<Long>> elementInstancePath) {
-    elementInstancePathProp.reset();
-    elementInstancePath.forEach(
-        pathEntry -> {
-          final var entry = elementInstancePathProp.add();
-          pathEntry.forEach(element -> entry.add().setValue(element));
-        });
+    this.elementInstancePath.clear();
+    for (final var pathEntry : elementInstancePath) {
+      this.elementInstancePath.add(new ArrayList<>(pathEntry));
+    }
     return this;
   }
 
   @Override
   public List<Long> getProcessDefinitionPath() {
-    final var processDefinitionPath = new ArrayList<Long>();
-    processDefinitionPathProp.forEach(e -> processDefinitionPath.add(e.getValue()));
-    return processDefinitionPath;
+    return new ArrayList<>(processDefinitionPath);
   }
 
   public ProcessInstanceRecord setProcessDefinitionPath(final List<Long> processDefinitionPath) {
-    processDefinitionPathProp.reset();
-    processDefinitionPath.forEach(e -> processDefinitionPathProp.add().setValue(e));
+    this.processDefinitionPath.clear();
+    this.processDefinitionPath.addAll(processDefinitionPath);
     return this;
   }
 
   @Override
   public List<Integer> getCallingElementPath() {
-    final var callingElementPath = new ArrayList<Integer>();
-    callingElementPathProp.forEach(e -> callingElementPath.add(e.getValue()));
-    return callingElementPath;
+    final var path = new ArrayList<Integer>(callingElementPath.size());
+    for (int i = 0; i < callingElementPath.size(); i++) {
+      path.add(callingElementPath.getInt(i));
+    }
+    return path;
   }
 
   public ProcessInstanceRecord setCallingElementPath(final List<Integer> callingElementPath) {
-    callingElementPathProp.reset();
-    callingElementPath.forEach(e -> callingElementPathProp.add().setValue(e));
+    this.callingElementPath.clear();
+    callingElementPath.forEach(this.callingElementPath::addInt);
     return this;
   }
 
   @Override
   public Set<String> getTags() {
-    return StreamSupport.stream(tagsProp.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .collect(Collectors.toSet());
+    return tags.stream().map(BufferUtil::bufferAsString).collect(Collectors.toSet());
   }
 
   public ProcessInstanceRecord setTags(final Set<String> tags) {
-    tagsProp.reset();
+    this.tags.clear();
     if (tags != null) {
-      tags.forEach(tag -> tagsProp.add().wrap(BufferUtil.wrapString(tag)));
+      tags.forEach(tag -> this.tags.add(BufferUtil.wrapString(tag)));
     }
     return this;
   }
 
   @Override
   public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
+    return rootProcessInstanceKey;
   }
 
   public ProcessInstanceRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
   }
 
   @Override
   public String getBusinessId() {
-    return bufferAsString(businessIdProp.getValue());
+    return bufferAsString(businessId);
   }
 
   public ProcessInstanceRecord setBusinessId(final String businessId) {
-    businessIdProp.setValue(businessId);
+    this.businessId = BufferUtil.wrapString(businessId);
     return this;
   }
 
   public ProcessInstanceRecord setBusinessId(final DirectBuffer businessId) {
-    businessIdProp.setValue(businessId);
+    this.businessId = businessId;
     return this;
   }
 
   @Override
   public long getResumeFromJobKey() {
-    return resumeFromJobKeyProp.getValue();
+    return resumeFromJobKey;
   }
 
   public ProcessInstanceRecord setResumeFromJobKey(final long resumeFromJobKey) {
-    resumeFromJobKeyProp.setValue(resumeFromJobKey);
+    this.resumeFromJobKey = resumeFromJobKey;
     return this;
   }
 
   @Override
   public long getResumeFromUserTaskKey() {
-    return resumeFromUserTaskKeyProp.getValue();
+    return resumeFromUserTaskKey;
   }
 
   public ProcessInstanceRecord setResumeFromUserTaskKey(final long resumeFromUserTaskKey) {
-    resumeFromUserTaskKeyProp.setValue(resumeFromUserTaskKey);
+    this.resumeFromUserTaskKey = resumeFromUserTaskKey;
     return this;
   }
 
   public ProcessInstanceRecord setParentProcessInstanceKey(final long parentProcessInstanceKey) {
-    parentProcessInstanceKeyProp.setValue(parentProcessInstanceKey);
+    this.parentProcessInstanceKey = parentProcessInstanceKey;
     return this;
   }
 
   public ProcessInstanceRecord setBpmnElementType(final BpmnElementType bpmnType) {
-    bpmnElementTypeProp.setValue(bpmnType);
+    bpmnElementType = bpmnType;
     return this;
   }
 
   public ProcessInstanceRecord setFlowScopeKey(final long flowScopeKey) {
-    flowScopeKeyProp.setValue(flowScopeKey);
+    this.flowScopeKey = flowScopeKey;
     return this;
   }
 
   public ProcessInstanceRecord setElementId(final String elementId) {
-    elementIdProp.setValue(elementId);
+    this.elementId = BufferUtil.wrapString(elementId);
     return this;
   }
 
@@ -364,52 +310,52 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   }
 
   public ProcessInstanceRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProp.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
   public ProcessInstanceRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
   public ProcessInstanceRecord setVersion(final int version) {
-    versionProp.setValue(version);
+    this.version = version;
     return this;
   }
 
   public ProcessInstanceRecord setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = BufferUtil.wrapString(bpmnProcessId);
     return this;
   }
 
   public ProcessInstanceRecord setBpmnProcessId(final DirectBuffer directBuffer) {
-    bpmnProcessIdProp.setValue(directBuffer);
+    bpmnProcessId = directBuffer;
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public ProcessInstanceRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 
   public ProcessInstanceRecord resetElementInstancePath() {
-    elementInstancePathProp.reset();
+    elementInstancePath.clear();
     return this;
   }
 
   public ProcessInstanceRecord resetCallingElementPath() {
-    callingElementPathProp.reset();
+    callingElementPath.clear();
     return this;
   }
 
   public ProcessInstanceRecord resetProcessDefinitionPath() {
-    processDefinitionPathProp.reset();
+    processDefinitionPath.clear();
     return this;
   }
 
@@ -419,17 +365,27 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setElementId(
       final DirectBuffer elementId, final int offset, final int length) {
-    elementIdProp.setValue(elementId, offset, length);
+    this.elementId = new UnsafeBuffer(elementId, offset, length);
     return this;
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public ProcessInstanceRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ProcessInstanceRecord> codec() {
+    return ProcessInstanceRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ProcessInstanceRecord> ops() {
+    return ProcessInstanceRecordOps.INSTANCE;
   }
 }

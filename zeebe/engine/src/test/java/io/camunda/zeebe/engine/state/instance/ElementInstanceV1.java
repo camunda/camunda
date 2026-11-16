@@ -18,7 +18,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecordV1;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.Iterator;
 import java.util.List;
@@ -132,7 +132,7 @@ public final class ElementInstanceV1 extends UnpackedObject implements DbValue {
       final long key,
       final ElementInstanceV1 parent,
       final ProcessInstanceIntent state,
-      final ProcessInstanceRecord value) {
+      final ProcessInstanceRecordV1 value) {
     this();
 
     recordProp.getValue().setKey(key);
@@ -145,7 +145,7 @@ public final class ElementInstanceV1 extends UnpackedObject implements DbValue {
   }
 
   public ElementInstanceV1(
-      final long key, final ProcessInstanceIntent state, final ProcessInstanceRecord value) {
+      final long key, final ProcessInstanceIntent state, final ProcessInstanceRecordV1 value) {
     this(key, null, state, value);
   }
 
@@ -161,11 +161,11 @@ public final class ElementInstanceV1 extends UnpackedObject implements DbValue {
     recordProp.getValue().setState(state);
   }
 
-  public ProcessInstanceRecord getValue() {
+  public ProcessInstanceRecordV1 getValue() {
     return recordProp.getValue().getValue();
   }
 
-  public void setValue(final ProcessInstanceRecord value) {
+  public void setValue(final ProcessInstanceRecordV1 value) {
     recordProp.getValue().setValue(value);
   }
 

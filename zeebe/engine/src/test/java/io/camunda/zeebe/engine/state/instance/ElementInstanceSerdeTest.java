@@ -9,9 +9,11 @@ package io.camunda.zeebe.engine.state.instance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.RecordV1s;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecordV1;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
@@ -218,7 +220,7 @@ final class ElementInstanceSerdeTest {
   }
 
   private static ElementInstanceV1 populatedV1() {
-    final var record = processInstanceRecord();
+    final var record = RecordV1s.convert(processInstanceRecord(), new ProcessInstanceRecordV1());
     final var grandparent = new ElementInstanceV1(1L, ACTIVATED, record);
     final var instance = new ElementInstanceV1(2L, grandparent, ACTIVATED, record);
     // a child increments the child count of this instance

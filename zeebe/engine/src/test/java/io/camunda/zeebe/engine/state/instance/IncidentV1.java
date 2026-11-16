@@ -10,26 +10,26 @@ package io.camunda.zeebe.engine.state.instance;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecordV1;
 
 /**
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
  * codec of the current class keeps the stored format. Do not modify.
  */
 public final class IncidentV1 extends UnpackedObject implements DbValue {
-  private final ObjectProperty<IncidentRecord> recordProp =
-      new ObjectProperty<>("incidentRecord", new IncidentRecord());
+  private final ObjectProperty<IncidentRecordV1> recordProp =
+      new ObjectProperty<>("incidentRecord", new IncidentRecordV1());
 
   public IncidentV1() {
     super(1);
     declareProperty(recordProp);
   }
 
-  public IncidentRecord getRecord() {
+  public IncidentRecordV1 getRecord() {
     return recordProp.getValue();
   }
 
-  public void setRecord(final IncidentRecord record) {
+  public void setRecord(final IncidentRecordV1 record) {
     recordProp.getValue().wrap(record);
   }
 }
