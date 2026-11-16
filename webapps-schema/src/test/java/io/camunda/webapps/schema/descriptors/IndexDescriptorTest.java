@@ -9,6 +9,7 @@ package io.camunda.webapps.schema.descriptors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -66,5 +67,18 @@ public class IndexDescriptorTest {
 
     // then
     assertThat(activeNames).isEqualTo(fullQualifiedName + "," + fullQualifiedName + "ord*");
+  }
+
+  @Test
+  void shouldReturnOnlyMainIndexAsActiveNamesForPlainIndex() {
+    // given - a plain index, which never has ordinal indices
+    final var index = new AuthorizationIndex("test", true);
+
+    // when
+    final var activeIndexNames = index.getActiveIndexNames();
+
+    // then
+    assertThat(activeIndexNames).containsExactly(index.getFullQualifiedName());
+    assertThat(index.getActiveNames()).isEqualTo(index.getFullQualifiedName());
   }
 }
