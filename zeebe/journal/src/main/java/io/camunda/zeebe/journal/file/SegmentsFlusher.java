@@ -32,6 +32,10 @@ final class SegmentsFlusher {
     metaStore.storeLastFlushedIndex(lastFlushedIndex);
   }
 
+  long lastFlushedIndex() {
+    return lastFlushedIndex;
+  }
+
   long nextFlushIndex() {
     return lastFlushedIndex + 1;
   }
