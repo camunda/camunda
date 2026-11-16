@@ -289,6 +289,12 @@
             <dep>org.springframework.boot:spring-boot-actuator-autoconfigure</dep>
             <dep>org.eclipse.parsson:parsson</dep>
           </ignoredUnusedDeclaredDependencies>
+          <ignoredNonTestScopedDependencies>
+            <!-- Only FilteringSessionAttributeDeserializerTest references it directly. Declaring
+                 it test-scope would shadow the transitive compile scope and drop it from the
+                 distribution, which breaks the OIDC login at runtime. -->
+            <ignoredNonTestScopedDependency>com.nimbusds:oauth2-oidc-sdk</ignoredNonTestScopedDependency>
+          </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>
     </plugins>

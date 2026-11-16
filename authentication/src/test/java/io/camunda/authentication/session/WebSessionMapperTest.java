@@ -16,6 +16,8 @@ import io.camunda.security.auth.CamundaAuthentication;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,7 +88,7 @@ public class WebSessionMapperTest {
     // given
     final var now = Instant.now();
     final var maxInactiveInterval = Duration.ofSeconds(1800);
-    final var testAttribute = new TestAttribute("foo", "bar");
+    final var testAttribute = new ArrayList<>(List.of("foo", "bar"));
 
     final var persistentSession =
         new PersistentWebSessionEntity(
@@ -110,7 +112,7 @@ public class WebSessionMapperTest {
     assertThat(webSession.getMaxInactiveInterval()).isEqualTo(maxInactiveInterval);
     assertThat(webSession.getAttributeNames()).hasSize(2);
     assertThat((String) webSession.getAttribute("attribute1")).isEqualTo("value1");
-    assertThat((TestAttribute) webSession.getAttribute("attribute2")).isEqualTo(testAttribute);
+    assertThat((List<?>) webSession.getAttribute("attribute2")).isEqualTo(testAttribute);
   }
 
   @Test
