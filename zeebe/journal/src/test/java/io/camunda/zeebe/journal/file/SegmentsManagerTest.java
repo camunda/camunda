@@ -337,7 +337,7 @@ class SegmentsManagerTest {
   @Test
   void shouldCloseBackgroundIoExecutor() {
     // given
-    final var bgIoExecutor = Mockito.spy(Executors.newVirtualThreadPerTaskExecutor());
+    final var bgIoExecutor = Executors.newVirtualThreadPerTaskExecutor();
     segments = journalFactory.segmentsManager(directory, bgIoExecutor);
     segments.open();
 
@@ -345,7 +345,7 @@ class SegmentsManagerTest {
     segments.close();
 
     // then
-    Mockito.verify(bgIoExecutor).close();
+    assertThat(bgIoExecutor.isTerminated()).isTrue();
   }
 
   private SegmentedJournal openJournal() {
