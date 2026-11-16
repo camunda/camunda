@@ -201,8 +201,17 @@ public final class VariableMappingTransformer {
    */
   private static Map<String, Set<SecretReference>> detectSecretReferences(
       final MappingContext context) {
+    return secretsByJsonPointer(context.visit(secretCollector()));
+  }
+
+  /**
+   * Groups detected secrets by the JSON pointer of their leaf, as input mappings store them. Shared
+   * with probes, whose input is evaluated as an input mapping, so both key their secrets alike.
+   */
+  public static Map<String, Set<SecretReference>> secretsByJsonPointer(
+      final List<DetectedSecret> detectedSecrets) {
     final var secretsByPointer = new LinkedHashMap<String, Set<SecretReference>>();
-    for (final var detected : context.visit(secretCollector())) {
+    for (final var detected : detectedSecrets) {
       secretsByPointer
           .computeIfAbsent(toJsonPointer(detected.path()), key -> new LinkedHashSet<>())
           .add(detected.secret());
@@ -257,9 +266,18 @@ public final class VariableMappingTransformer {
    */
   private static Map<String, Set<ClusterVariableReference>> detectClusterVariableReferences(
       final MappingContext context) {
+    return clusterVariablesByJsonPointer(context.visit(clusterVariableCollector()));
+  }
+
+  /**
+   * Groups detected cluster-variable references by the JSON pointer of their leaf. The counterpart
+   * of {@link #secretsByJsonPointer} for cluster variables.
+   */
+  public static Map<String, Set<ClusterVariableReference>> clusterVariablesByJsonPointer(
+      final List<DetectedClusterVariable> detectedClusterVariables) {
     final var clusterVariablesByPointer =
         new LinkedHashMap<String, Set<ClusterVariableReference>>();
-    for (final var detected : context.visit(clusterVariableCollector())) {
+    for (final var detected : detectedClusterVariables) {
       clusterVariablesByPointer
           .computeIfAbsent(toJsonPointer(detected.path()), key -> new LinkedHashSet<>())
           .add(detected.clusterVariable());
@@ -320,7 +338,7 @@ public final class VariableMappingTransformer {
    * name like {@code `a/b`}) would be read as a separator and wrongly split it. {@code ~} is
    * replaced first, otherwise the {@code ~1} produced for {@code /} would be escaped again.
    */
-  public static String toJsonPointer(final List<String> segments) {
+  private static String toJsonPointer(final List<String> segments) {
     final var pointer = new StringBuilder();
     for (final String segment : segments) {
       pointer.append('/').append(segment.replace("~", "~0").replace("/", "~1"));

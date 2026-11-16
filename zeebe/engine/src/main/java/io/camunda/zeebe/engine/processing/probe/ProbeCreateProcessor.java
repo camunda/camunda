@@ -40,7 +40,6 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.time.InstantSource;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
@@ -207,23 +206,11 @@ public final class ProbeCreateProcessor implements TypedRecordProcessor<ProbeRec
    * leaf, relative to the input context, and returns their names.
    */
   private Set<String> detectSecrets(final Expression input, final ProbeRecord probe) {
-    final var secretsByPointer = new LinkedHashMap<String, Set<SecretReference>>();
-    for (final var detected : SecretReference.parse(input)) {
-      secretsByPointer
-          .computeIfAbsent(
-              VariableMappingTransformer.toJsonPointer(detected.path()),
-              pointer -> new LinkedHashSet<>())
-          .add(detected.secret());
-    }
+    final var secretsByPointer =
+        VariableMappingTransformer.secretsByJsonPointer(SecretReference.parse(input));
     final var clusterVariablesByPointer =
-        new LinkedHashMap<String, Set<ClusterVariableReference>>();
-    for (final var detected : ClusterVariableReference.parse(input)) {
-      clusterVariablesByPointer
-          .computeIfAbsent(
-              VariableMappingTransformer.toJsonPointer(detected.path()),
-              pointer -> new LinkedHashSet<>())
-          .add(detected.clusterVariable());
-    }
+        VariableMappingTransformer.clusterVariablesByJsonPointer(
+            ClusterVariableReference.parse(input));
     clusterVariableSecretResolver.resolveInto(
         clusterVariablesByPointer, probe.getTenantId(), secretsByPointer);
 
