@@ -84,6 +84,11 @@ public class JobWorkerMockImpl implements JobWorkerMock {
             ? camundaClient.newWorker().calledProcessId(calledProcessId)
             : camundaClient.newWorker().jobType(jobType);
     final JobWorkerBuilderStep3 workerBuilder = subscription.handler(safeLoggingJobHandler);
+    if (calledProcessId != null) {
+      // a reserved stub is served only over the poll path, and open() rejects a streaming
+      // called-process worker, so disable streaming even when the client enables it by default
+      workerBuilder.streamEnabled(false);
+    }
     if (jobReservationToken != null) {
       workerBuilder.jobReservationToken(jobReservationToken);
     }

@@ -746,9 +746,10 @@ public final class BpmnJobBehavior {
    *
    * <p>The root instance, not this one, because a reservation covers the jobs of the child
    * instances a call activity starts too, and only the root's record was given the list and token
-   * at creation. A stub job is reserved whenever the stub switch was given a token: the root's
-   * token reserves it, so a mock worker presenting that token can drain it, while an un-tokened
-   * stub stays hidden from every worker by its kind.
+   * at creation. A stub job is reserved by the same rule as any other: a stub switch that carries a
+   * token lists the stub job type among the reserved types (see the gateway mapper), so a tokened
+   * stub is reserved and drained by a mock worker, while an un-tokened stub — even in an instance
+   * that reserves other job types — is not reserved and stays hidden from every worker by its kind.
    */
   private String getJobReservationToken(
       final BpmnElementContext context, final String jobType, final JobKind jobKind) {
@@ -758,9 +759,6 @@ public final class BpmnJobBehavior {
       return "";
     }
     final var rootInstance = elementInstance.getValue();
-    if (jobKind == JobKind.CALL_ACTIVITY_STUB) {
-      return rootInstance.getJobReservationToken();
-    }
     return rootInstance.getReservedJobTypes().contains(jobType)
         ? rootInstance.getJobReservationToken()
         : "";

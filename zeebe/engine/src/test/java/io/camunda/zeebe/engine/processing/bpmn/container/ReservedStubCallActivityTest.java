@@ -161,6 +161,7 @@ public final class ReservedStubCallActivityTest {
             .processInstance()
             .ofBpmnProcessId(parentProcessId)
             .withStubbedCallActivities(childProcessId, otherChildId)
+            .withReservedJobTypes(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
             .withJobReservationToken(TOKEN)
             .create();
     awaitStubJob(processInstanceKey);
@@ -203,6 +204,7 @@ public final class ReservedStubCallActivityTest {
             .ofBpmnProcessId(parentProcessId)
             .withVariable("items", List.of(1, 2, 3))
             .withStubbedCallActivities(childProcessId)
+            .withReservedJobTypes(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
             .withJobReservationToken(TOKEN)
             .create();
     awaitStubJob(processInstanceKey);
@@ -275,11 +277,86 @@ public final class ReservedStubCallActivityTest {
         BufferUtil.wrapString(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE), properties);
   }
 
+  @Test
+  public void shouldNotReserveAnUntokenedStubEvenWhenOtherJobTypesAreReserved() {
+    // given an instance that reserves a real job type but stubs without listing the stub type
+    final String reservedJobType = Strings.newRandomValidBpmnId();
+    deploy(parentCalling(childProcessId));
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(parentProcessId)
+            .withStubbedCallActivities(childProcessId)
+            .withReservedJobTypes(reservedJobType)
+            .withJobReservationToken(TOKEN)
+            .create();
+    awaitStubJob(processInstanceKey);
+
+    // when / then — the stub is not among the reserved types, so it carries no token
+    assertThat(
+            jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
+                .getFirst()
+                .getValue()
+                .getJobReservationToken())
+        .describedAs("an un-reserved stub carries no token even when other job types are reserved")
+        .isEmpty();
+    assertThat(
+            ENGINE
+                .jobs()
+                .withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
+                .withJobReservationToken(TOKEN)
+                .withCalledProcessId(childProcessId)
+                .activate()
+                .getValue()
+                .getJobs())
+        .describedAs("and so it is served to no worker, token or not")
+        .isEmpty();
+  }
+
+  @Test
+  public void shouldDriveTheErrorBoundaryWhenTheReservedStubThrows() {
+    // given a call activity with an error boundary event, stubbed and reserved
+    final String errorCode = "CHILD_FAILED";
+    deploy(
+        Bpmn.createExecutableProcess(parentProcessId)
+            .startEvent()
+            .callActivity("call", c -> c.zeebeProcessId(childProcessId))
+            .boundaryEvent("err", b -> b.error(errorCode))
+            .endEvent("errorEnd")
+            .moveToActivity("call")
+            .endEvent()
+            .done());
+    final long processInstanceKey = createReservedStubbedInstance(childProcessId);
+    final long jobKey = awaitStubJob(processInstanceKey);
+
+    // when the mock worker throws from the stub
+    ENGINE
+        .job()
+        .withKey(jobKey)
+        .withJobReservationToken(TOKEN)
+        .withErrorCode(errorCode)
+        .throwError();
+
+    // then the call activity's error boundary event completes the instance
+    assertThat(
+            processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("errorEnd")
+                .exists())
+        .describedAs("throwing from the reserved stub drives the call activity's error boundary")
+        .isTrue();
+  }
+
   private long createReservedStubbedInstance(final String... processIds) {
+    // the gateway mapper lists the stub job type among the reserved types when the stub switch
+    // carries a token; an engine test bypasses the mapper, so it lists the type itself
     return ENGINE
         .processInstance()
         .ofBpmnProcessId(parentProcessId)
         .withStubbedCallActivities(processIds)
+        .withReservedJobTypes(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
         .withJobReservationToken(TOKEN)
         .create();
   }

@@ -1162,6 +1162,11 @@
           ]
         }
       ],
+      "dependencies": {
+        "calledProcessId": [
+          "jobReservationToken"
+        ]
+      },
       "additionalProperties": false
     },
     "AssertVariableInstruction": {
@@ -1333,6 +1338,11 @@
           ]
         }
       ],
+      "dependencies": {
+        "calledProcessId": [
+          "jobReservationToken"
+        ]
+      },
       "additionalProperties": false
     },
     "DecisionDefinitionSelector": {

@@ -61,6 +61,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOper
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceResumeRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceSuspendRequest;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
@@ -71,6 +72,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.util.Either;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -292,7 +294,19 @@ public class ProcessInstanceMapper {
       final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
           instructions) {
     final var reserveJobs = reserveJobsOf(instructions);
-    return reserveJobs == null ? null : reserveJobs.getJobTypes();
+    final List<String> reservedJobTypes = reserveJobs == null ? null : reserveJobs.getJobTypes();
+    // A stub switch that carries a token reserves its stub jobs, which all share one internal type;
+    // listing that type among the reserved types is what makes the engine stamp the token onto the
+    // stub jobs, so an un-tokened stub stays unreserved.
+    if (stubCallActivitiesTokenOf(instructions) == null) {
+      return reservedJobTypes;
+    }
+    final List<String> withStubType =
+        reservedJobTypes == null ? new ArrayList<>() : new ArrayList<>(reservedJobTypes);
+    if (!withStubType.contains(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)) {
+      withStubType.add(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE);
+    }
+    return withStubType;
   }
 
   public Either<ProblemDetail, ProcessInstanceSuspendRequest> toSuspendProcessInstance(

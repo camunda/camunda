@@ -514,6 +514,7 @@ public final class ReservedJobsTest {
             .processInstance()
             .ofBpmnProcessId(callerProcessId)
             .withStubbedCallActivities(calledProcessId)
+            .withReservedJobTypes(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
             .withJobReservationToken(RESERVATION_TOKEN)
             .create();
 
