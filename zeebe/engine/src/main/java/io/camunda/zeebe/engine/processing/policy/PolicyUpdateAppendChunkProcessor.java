@@ -88,13 +88,8 @@ public final class PolicyUpdateAppendChunkProcessor
       return;
     }
 
-    final boolean wasComplete = completeUpdate().isPresent();
     final long key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, PolicyUpdateIntent.CHUNK_APPENDED, chunk);
-    if (wasComplete) {
-      return;
-    }
-
     completeUpdate()
         .ifPresent(
             update ->
@@ -189,10 +184,7 @@ public final class PolicyUpdateAppendChunkProcessor
     rejectionWriter.appendRejection(command, rejectionType, reason);
   }
 
-  /**
-   * The open update, if every one of its chunks is buffered. After the checks, the chunk belongs to
-   * the open update, or opens it.
-   */
+  /** The open update, if every one of its chunks is buffered. */
   private Optional<PersistedPolicyUpdate> completeUpdate() {
     return policyUpdateState.getOpenUpdate().filter(PersistedPolicyUpdate::hasAllChunksBuffered);
   }
