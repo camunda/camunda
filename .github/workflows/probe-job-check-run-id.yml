@@ -61,3 +61,69 @@ jobs:
         uses: ./.github/actions/probe-check-run-id
         with:
           check-run-id: ${{ job.check_run_id }}
+
+  # Observer pattern: can an observed job hand its job.check_run_id to a dependent observer via job outputs,
+  # also when the observed job fails?
+  observed:
+    name: "observed (${{ matrix.outcome }})"
+    strategy:
+      fail-fast: false
+      matrix:
+        outcome: [success, failure]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      job_id: ${{ job.check_run_id }}
+    steps:
+      - name: Record own job.check_run_id
+        env:
+          CHECK_RUN_ID: ${{ job.check_run_id }}
+          OUTCOME: ${{ matrix.outcome }}
+        run: |
+          echo "::notice title=probe-observed::${OUTCOME}: job.check_run_id=${CHECK_RUN_ID}"
+          [ "${OUTCOME}" = "success" ]
+
+  observed-single:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      job_id: ${{ job.check_run_id }}
+    steps:
+      - name: Record own job.check_run_id, then fail
+        env:
+          CHECK_RUN_ID: ${{ job.check_run_id }}
+        run: |
+          echo "::notice title=probe-observed-single::job.check_run_id=${CHECK_RUN_ID}"
+          exit 1
+
+  observer:
+    needs: [observed, observed-single]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+    steps:
+      - name: Compare received job IDs with own ID and REST API
+        env:
+          OWN_ID: ${{ job.check_run_id }}
+          MATRIX_ID: ${{ needs.observed.outputs.job_id }}
+          SINGLE_ID: ${{ needs.observed-single.outputs.job_id }}
+          SINGLE_RESULT: ${{ needs.observed-single.result }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "own=${OWN_ID} matrix-output=${MATRIX_ID} single-output=${SINGLE_ID} (result ${SINGLE_RESULT})"
+          rc=0
+          for pair in "observed-single:${SINGLE_ID}" "observed-matrix:${MATRIX_ID}"; do
+            label="${pair%%:*}"; id="${pair#*:}"
+            if [ -z "${id}" ]; then
+              echo "::error title=probe-observer::${label}: output job_id is empty"; rc=1; continue
+            fi
+            if [ "${id}" = "${OWN_ID}" ]; then
+              echo "::error title=probe-observer::${label}: output equals observer's own ID"; rc=1; continue
+            fi
+            name="$(gh api "repos/${REPO}/actions/jobs/${id}" --jq '.name + " / " + .conclusion')"
+            echo "::notice title=probe-observer::${label}: job_id=${id} resolves to '${name}'"
+          done
+          exit "${rc}"
