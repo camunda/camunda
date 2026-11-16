@@ -27,6 +27,9 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.AfterAll;
@@ -130,6 +133,52 @@ final class UserTaskLookupIT {
     // then
     assertThat(task.getVariablesAsMap())
         .containsOnly(entry("outerOnly", "outer"), entry("shadowed", "inner"));
+  }
+
+  @Test
+  void shouldReturnVariablesOfEveryJsonType() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+    deploy(singleUserTaskProcess(processId));
+    final long processInstanceKey =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .variables(
+                """
+                {"nullValue": null, "bool": true, "int": 123, "long": 3000000000,
+                 "negative": -42, "decimal": 1.5, "string": "Hi there!",
+                 "emptyString": "", "unicode": "héllo \\"quoted\\" ✓",
+                 "array": [1, null, "x"], "emptyArray": [],
+                 "obj": {"foo": "bar", "none": null}, "emptyObj": {}}""")
+            .send()
+            .join()
+            .getProcessInstanceKey();
+    final long userTaskKey = awaitUserTaskKey(processInstanceKey, "task");
+
+    // when
+    final var task = client.newLookupUserTaskCommand(userTaskKey).send().join();
+
+    // then
+    final var obj = new HashMap<String, Object>();
+    obj.put("foo", "bar");
+    obj.put("none", null);
+    assertThat(task.getVariablesAsMap())
+        .containsOnly(
+            entry("nullValue", null),
+            entry("bool", true),
+            entry("int", 123),
+            entry("long", 3000000000L),
+            entry("negative", -42),
+            entry("decimal", 1.5),
+            entry("string", "Hi there!"),
+            entry("emptyString", ""),
+            entry("unicode", "héllo \"quoted\" ✓"),
+            entry("array", Arrays.asList(1, null, "x")),
+            entry("emptyArray", List.of()),
+            entry("obj", obj),
+            entry("emptyObj", Map.of()));
   }
 
   @Test
