@@ -17,9 +17,11 @@ import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationTyp
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -32,11 +34,13 @@ final class PolicyUpdateIdentityViewTest {
   @Test
   void shouldSeeEntitiesThatAnEarlierCommandCreates() {
     // given
+    final var tenantId = uid("tenant");
     final var roleId = uid("role");
     final var groupId = uid("group");
     final var ruleId = uid("rule");
 
     // when
+    view.apply(new IdentityCommand(TenantIntent.CREATE, new TenantRecord().setTenantId(tenantId)));
     view.apply(new IdentityCommand(RoleIntent.CREATE, new RoleRecord().setRoleId(roleId)));
     view.apply(new IdentityCommand(GroupIntent.CREATE, new GroupRecord().setGroupId(groupId)));
     view.apply(
@@ -44,6 +48,7 @@ final class PolicyUpdateIdentityViewTest {
             MappingRuleIntent.CREATE, new MappingRuleRecord().setMappingRuleId(ruleId)));
 
     // then
+    assertThat(view.tenantExists(tenantId)).isTrue();
     assertThat(view.roleExists(roleId)).isTrue();
     assertThat(view.groupExists(groupId)).isTrue();
     assertThat(view.mappingRuleExists(ruleId)).isTrue();

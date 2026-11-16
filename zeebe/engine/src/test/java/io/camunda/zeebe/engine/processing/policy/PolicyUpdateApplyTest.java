@@ -314,6 +314,82 @@ public final class PolicyUpdateApplyTest {
   }
 
   @Test
+  public void shouldAddARoleToATenantThatTheSameUpdateCreates() {
+    // given neither the tenant nor the role is in the state yet
+    final var tenantId = "tenant-" + uid();
+    final var roleId = "role-" + uid();
+    final var chunk =
+        chunk()
+            .setTenants(
+                List.<TenantRecordValue>of(
+                    new TenantRecord().setTenantId(tenantId).setName(tenantId)))
+            .setRoles(List.<RoleRecordValue>of(new RoleRecord().setRoleId(roleId).setName(roleId)))
+            .setMemberships(
+                List.<PolicyMembershipEntryValue>of(
+                    membership(PolicyUpdateEntityType.TENANT, tenantId, EntityType.ROLE, roleId)));
+
+    // when
+    apply(chunk);
+
+    // then
+    appliedRecord(chunk.getUpdateId());
+    assertThat(
+            RecordingExporter.tenantRecords(TenantIntent.ENTITY_ADDED)
+                .withTenantId(tenantId)
+                .withEntityId(roleId)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldApplyNothingOfAnUpdateWithAnInvalidTenantEntry() {
+    // given a valid tenant and a member of a tenant that neither the state nor the update has
+    final var validTenantId = "tenant-" + uid();
+    final var missingTenantId = "tenant-" + uid();
+    final var invalid =
+        chunk()
+            .setTenants(
+                List.<TenantRecordValue>of(
+                    new TenantRecord().setTenantId(validTenantId).setName(validTenantId)))
+            .setMemberships(
+                List.<PolicyMembershipEntryValue>of(
+                    membership(
+                        PolicyUpdateEntityType.TENANT,
+                        missingTenantId,
+                        EntityType.CLIENT,
+                        "client-" + uid())));
+
+    // when
+    apply(invalid);
+
+    // then
+    final var rejection = rejectionOf(invalid.getUpdateId());
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .contains(
+            "Expected to add entity to tenant with ID '%s', but no tenant with this ID exists."
+                .formatted(missingTenantId));
+
+    // a later update marks the end of everything the invalid one could have caused
+    final var later = chunk();
+    apply(later);
+    final var laterUpdateId = later.getUpdateId();
+    assertThat(
+            RecordingExporter.records()
+                .limit(
+                    record ->
+                        record.getIntent() == PolicyUpdateIntent.CHUNK_APPLIED
+                            && ((PolicyUpdateRecordValue) record.getValue())
+                                .getUpdateId()
+                                .equals(laterUpdateId))
+                .anyMatch(
+                    record ->
+                        record.getValue() instanceof final TenantRecordValue tenant
+                            && tenant.getTenantId().equals(validTenantId)))
+        .isFalse();
+  }
+
+  @Test
   public void shouldRejectAnAppendedChunkSentAsClientRequest() {
     assertRejectedAsClientRequest(PolicyUpdateIntent.APPEND_CHUNK);
   }

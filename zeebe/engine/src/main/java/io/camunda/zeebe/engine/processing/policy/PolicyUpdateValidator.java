@@ -11,10 +11,13 @@ import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.RoleValidator;
 import io.camunda.zeebe.engine.processing.identity.StateIdentityView;
+import io.camunda.zeebe.engine.processing.identity.TenantValidator;
 import io.camunda.zeebe.engine.processing.policy.PolicyUpdateCommandMapper.IdentityCommand;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateRecordValue;
@@ -33,8 +36,8 @@ import org.jspecify.annotations.NullMarked;
  * nothing. The chunks are mapped to identity commands, which are validated in apply order against
  * the state plus the commands before them, including those of earlier chunks.
  *
- * <p>Only role commands are validated so far; the commands of the other entities pass unchecked and
- * can still be rejected by their processors.
+ * <p>Only tenant and role commands are validated so far; the commands of the other entities pass
+ * unchecked and can still be rejected by their processors.
  */
 @NullMarked
 public final class PolicyUpdateValidator {
@@ -74,29 +77,43 @@ public final class PolicyUpdateValidator {
     }
 
     final var view = new PolicyUpdateIdentityView(new StateIdentityView(state));
-    final var roleValidator = new RoleValidator(view, securityConfig);
+    final var validators =
+        new Validators(
+            new TenantValidator(view, securityConfig), new RoleValidator(view, securityConfig));
     final var errors = new ArrayList<String>();
     for (final var command : commands) {
-      validate(command, roleValidator)
+      validate(command, validators)
           .ifRightOrLeft(valid -> view.apply(command), rejection -> errors.add(rejection.reason()));
     }
     return errors;
   }
 
   private static Either<Rejection, ?> validate(
-      final IdentityCommand command, final RoleValidator roleValidator) {
-    if (command.value() instanceof final RoleRecord role) {
-      return switch ((RoleIntent) command.intent()) {
-        case CREATE -> roleValidator.validateCreate(role);
-        case UPDATE -> roleValidator.validateUpdate(role);
-        case DELETE -> roleValidator.validateDelete(role);
-        case ADD_ENTITY -> roleValidator.validateAddEntity(role);
-        case REMOVE_ENTITY -> roleValidator.validateRemoveEntity(role);
-        default -> Either.right(role);
-      };
-    }
-    return Either.right(command);
+      final IdentityCommand command, final Validators validators) {
+    return switch (command.value()) {
+      case final TenantRecord tenant ->
+          switch ((TenantIntent) command.intent()) {
+            case CREATE -> validators.tenants().validateCreate(tenant);
+            case UPDATE -> validators.tenants().validateUpdate(tenant);
+            case DELETE -> validators.tenants().validateDelete(tenant);
+            case ADD_ENTITY -> validators.tenants().validateAddEntity(tenant);
+            case REMOVE_ENTITY -> validators.tenants().validateRemoveEntity(tenant);
+            default -> Either.right(tenant);
+          };
+      case final RoleRecord role ->
+          switch ((RoleIntent) command.intent()) {
+            case CREATE -> validators.roles().validateCreate(role);
+            case UPDATE -> validators.roles().validateUpdate(role);
+            case DELETE -> validators.roles().validateDelete(role);
+            case ADD_ENTITY -> validators.roles().validateAddEntity(role);
+            case REMOVE_ENTITY -> validators.roles().validateRemoveEntity(role);
+            default -> Either.right(role);
+          };
+      default -> Either.right(command);
+    };
   }
+
+  private record Validators(TenantValidator tenants, RoleValidator roles) {}
 
   private static List<String> findDuplicateUpserts(
       final List<? extends PolicyUpdateRecordValue> chunks) {
