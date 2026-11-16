@@ -62,7 +62,7 @@ final class SnapshotTest {
     // perform the update
     state.close();
     state.withNewBroker().start(true);
-    assertThat(state).hasSnapshotAvailable(1);
+    assertThat(state).eventuallyHasSnapshotAvailable(1);
 
     // then
     testCase.runAfter(state, processInstanceKey, key);
