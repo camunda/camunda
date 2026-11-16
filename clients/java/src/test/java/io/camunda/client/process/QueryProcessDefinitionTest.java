@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.ProcessDefinitionState;
+import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.FormResult;
@@ -82,6 +83,24 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
     assertThat(request.getUrl()).isEqualTo("/v2/process-definitions/123");
     assertThat(request.getBodyAsString()).isEmpty();
+  }
+
+  @Test
+  public void shouldGetProcessDefinitionWithSuspendedState() {
+    // given
+    final long processDefinitionKey = 123L;
+    gatewayService.onProcessDefinitionRequest(
+        processDefinitionKey,
+        Instancio.create(ProcessDefinitionResult.class)
+            .processDefinitionKey("2")
+            .state(ProcessDefinitionResult.StateEnum.SUSPENDED));
+
+    // when
+    final ProcessDefinition processDefinition =
+        client.newProcessDefinitionGetRequest(processDefinitionKey).send().join();
+
+    // then
+    assertThat(processDefinition.getState()).isEqualTo(ProcessDefinitionState.SUSPENDED);
   }
 
   @Test

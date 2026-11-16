@@ -28,6 +28,7 @@ import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ProcessDefinitionState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.enums.UserTaskState;
@@ -244,6 +245,39 @@ public class EnumUtilTest {
       if (protocolValue
           == io.camunda.client.protocol.rest.ElementInstanceStateEnum.UNKNOWN_DEFAULT_OPEN_API) {
         assertThat(value).isEqualTo(ElementInstanceState.UNKNOWN_ENUM_VALUE);
+      } else {
+        assertThat(value.name()).isEqualTo(protocolValue.name());
+      }
+    }
+  }
+
+  @Test
+  public void shouldConvertProcessDefinitionResultState() {
+
+    for (final ProcessDefinitionState value : ProcessDefinitionState.values()) {
+      final io.camunda.client.protocol.rest.ProcessDefinitionResult.StateEnum protocolValue =
+          EnumUtil.convert(
+              value, io.camunda.client.protocol.rest.ProcessDefinitionResult.StateEnum.class);
+      assertThat(protocolValue).isNotNull();
+      if (value == ProcessDefinitionState.UNKNOWN_ENUM_VALUE) {
+        assertThat(protocolValue)
+            .isEqualTo(
+                io.camunda.client.protocol.rest.ProcessDefinitionResult.StateEnum
+                    .UNKNOWN_DEFAULT_OPEN_API);
+      } else {
+        assertThat(protocolValue.name()).isEqualTo(value.name());
+      }
+    }
+
+    for (final io.camunda.client.protocol.rest.ProcessDefinitionResult.StateEnum protocolValue :
+        io.camunda.client.protocol.rest.ProcessDefinitionResult.StateEnum.values()) {
+      final ProcessDefinitionState value =
+          EnumUtil.convert(protocolValue, ProcessDefinitionState.class);
+      assertThat(value).isNotNull();
+      if (protocolValue
+          == io.camunda.client.protocol.rest.ProcessDefinitionResult.StateEnum
+              .UNKNOWN_DEFAULT_OPEN_API) {
+        assertThat(value).isEqualTo(ProcessDefinitionState.UNKNOWN_ENUM_VALUE);
       } else {
         assertThat(value.name()).isEqualTo(protocolValue.name());
       }
