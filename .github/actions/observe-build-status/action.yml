@@ -24,6 +24,9 @@ inputs:
   job_name:
     description: 'Optional string, the job whose status is being observed; defaults to $GITHUB_JOB when omitted'
     required: false
+  job_id:
+    description: 'Optional numeric GHA job ID of the observed job, for observer jobs reporting another job; that job exposes it as a job output from job.check_run_id. Defaults to the running job when omitted'
+    required: false
   detailed_junit_tests:
     description: 'Optional boolean, if true search for TEST-*.xml files and submit their details to dedicated analytics endpoint'
     required: false
@@ -93,6 +96,7 @@ runs:
       with:
         test_results_file_path: "${{ steps.get-detailed-junit-tests.outputs.test_results_file }}"
         job_name_override: "${{ inputs.job_name }}"
+        job_id_override: "${{ inputs.job_id }}"
         gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
     ############ Resolve code owner of the failing tests (attribution) ############
     # Only for failed jobs, only when no explicit owner was passed, and only when we
@@ -123,6 +127,7 @@ runs:
       if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
       with:
         job_name_override: "${{ inputs.job_name }}"
+        job_id_override: "${{ inputs.job_id }}"
         build_status: "${{ inputs.build_status }}"
         build_duration_millis: "${{ steps.get-build-duration-millis.outputs.result }}"
         user_reason: "${{ inputs.user_reason }}"

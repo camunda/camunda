@@ -95,6 +95,7 @@ jobs:
       stale_data: ${{ steps.collect.outputs.stale_data }}
       has_stale: ${{ steps.collect.outputs.has_stale }}
       total_stale: ${{ steps.collect.outputs.total_stale }}
+      job_id: ${{ job.check_run_id }}
     steps:
       - name: Generate GitHub token
         id: github-token
@@ -174,6 +175,7 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           job_name: collect-stale-backports
+          job_id: ${{ needs.collect-stale-backports.outputs.job_id }}
           build_status: ${{ needs.collect-stale-backports.result }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
