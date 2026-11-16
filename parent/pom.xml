@@ -205,7 +205,7 @@
          zeebe-test-util-testcontainers.properties and client-java-testcontainers.properties.
          The tag is mutable, hence the digest. Not tracked by Renovate on this branch: bump by hand. -->
     <version.keycloak.container>quay-26.7.3@sha256:6f5ee173117a894ad6a8dbc40cc609ae24929b51cb4fde5eb843d10a03a014ae</version.keycloak.container>
-    <version.keycloak-client>26.0.12</version.keycloak-client>
+    <version.keycloak-client>26.0.13</version.keycloak-client>
     <version.jna>5.17.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
     <version.mybatis-spring>3.0.6</version.mybatis-spring>
