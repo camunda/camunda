@@ -15,12 +15,13 @@ import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
 import io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.Result;
 import io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.Source;
 import java.util.List;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-/** A list nested to any depth with {@code Long}s as leaves is stored as arrays of integers. */
-final class GeneratedLongListListTest {
+/** Lists nested to any depth are stored as arrays of arrays, whatever the innermost elements. */
+final class GeneratedNestedListsTest {
 
   // {"path": [[1, 300], [], [70000]]}
   private static final byte[] MESSAGE = {
@@ -82,6 +83,7 @@ final class GeneratedLongListListTest {
                 package sample;
                 import io.camunda.zeebe.msgpack.pojo.*;
                 import java.util.*;
+                import org.agrona.DirectBuffer;
                 @MsgpackPojo
                 public final class Deep extends MsgpackBufferValue<Deep> {
                   @Override
@@ -95,7 +97,32 @@ final class GeneratedLongListListTest {
                   }
 
                   final List<List<List<Long>>> deep = new ArrayList<>();
+                  final List<List<DirectBuffer>> names = new ArrayList<>();
+                  final List<List<Item>> items = new ArrayList<>();
                   @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
+                }
+                """),
+            new Source(
+                "sample.Item",
+                """
+                package sample;
+                import io.camunda.zeebe.msgpack.pojo.*;
+                @MsgpackPojo
+                public final class Item extends MsgpackBufferValue<Item> {
+                  @Override
+                  protected MsgpackCodec<Item> codec() {
+                    return ItemCodec.INSTANCE;
+                  }
+
+                  @Override
+                  protected MsgpackOps<Item> ops() {
+                    return ItemOps.INSTANCE;
+                  }
+
+                  long id;
+                  @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
+                  public Item() {}
+                  public Item(final long id) { this.id = id; }
                 }
                 """));
     assertThat(compiled.errors()).isEmpty();
@@ -146,6 +173,14 @@ final class GeneratedLongListListTest {
     @SuppressWarnings("unchecked")
     final var deep = (List<List<List<Long>>>) get(source, "deep");
     deep.addAll(expected);
+    @SuppressWarnings("unchecked")
+    final var names = (List<List<DirectBuffer>>) get(source, "names");
+    names.add(List.of(new UnsafeBuffer("a".getBytes()), new UnsafeBuffer("bc".getBytes())));
+    names.add(List.of());
+    final var item = compiled.load("sample.Item").getConstructor(long.class);
+    @SuppressWarnings("unchecked")
+    final var items = (List<List<Object>>) get(source, "items");
+    items.add(List.of(item.newInstance(7L), item.newInstance(8L)));
 
     // when
     final var written = new UnsafeBuffer(new byte[source.getLength()]);
@@ -159,7 +194,10 @@ final class GeneratedLongListListTest {
     assertThat(get(read, "deep")).isEqualTo(expected);
     assertThat(get(copy, "deep")).isEqualTo(expected);
     assertThat(copy).isEqualTo(source).hasSameHashCodeAs(source);
-    assertThat(copy.toString()).contains("[[[1,2],[]],[[70000]]]");
+    assertThat(read).isEqualTo(source).hasSameHashCodeAs(source);
+    assertThat(copy.toString())
+        .contains("[[[1,2],[]],[[70000]]]", "\"deep\"", "[[\"a\",\"bc\"],[]]", "[[{\"id\":7");
+    assertThat(((List<?>) get(copy, "items")).get(0)).isNotSameAs(items.get(0));
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
