@@ -15,6 +15,7 @@ import {Link} from '@tanstack/react-router';
 import {
 	preview_C3ToolsArea as C3ToolsArea,
 	preview_useCamundaTools as useCamundaTools,
+	useC3Profile,
 	type UseCamundaToolsOptions,
 } from '@camunda/camunda-composite-components';
 import {
@@ -50,9 +51,9 @@ const CURRENT_YEAR = new Date().getFullYear();
 const LOGOUT_DELAY = 1000;
 
 const THEME_OPTIONS = [
-	{value: 'light', labelKey: 'tasklist.headerThemeLight'},
-	{value: 'system', labelKey: 'tasklist.headerThemeSystem'},
-	{value: 'dark', labelKey: 'tasklist.headerThemeDark'},
+	{value: 'light', labelKey: 'headerThemeLight'},
+	{value: 'system', labelKey: 'headerThemeSystem'},
+	{value: 'dark', labelKey: 'headerThemeDark'},
 ] as const;
 
 const SidebarBodySync: React.FC<{hasSidebar: boolean}> = ({hasSidebar}) => {
@@ -72,17 +73,20 @@ const SidebarBodySync: React.FC<{hasSidebar: boolean}> = ({hasSidebar}) => {
 const ThemeSelector: React.FC = observer(() => {
 	const {t} = useTranslation();
 	const {selectedTheme, changeTheme} = themeStore;
+	const {onThemeChange} = useC3Profile();
 
 	return (
 		<div className="px-2 py-1.5">
 			<Text as="span" variant="label-sm" className="text-neutral-foreground-subtle">
-				{t('tasklist.headerThemeLabel')}
+				{t('headerThemeLabel')}
 			</Text>
 			<RadioGroup
-				aria-label={t('tasklist.headerThemeLabel')}
+				aria-label={t('headerThemeLabel')}
 				value={selectedTheme}
 				onValueChange={(value) => {
-					changeTheme(value as typeof selectedTheme);
+					const theme = value as typeof selectedTheme;
+					changeTheme(theme);
+					onThemeChange?.(theme);
 				}}
 				className="mt-2 gap-2"
 			>
