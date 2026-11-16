@@ -19,7 +19,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-/** A {@code List<List<Long>>} is stored as an array of arrays of integers. */
+/** A list nested to any depth with {@code Long}s as leaves is stored as arrays of integers. */
 final class GeneratedLongListListTest {
 
   // {"path": [[1, 300], [], [70000]]}
@@ -75,6 +75,28 @@ final class GeneratedLongListListTest {
                   final List<List<Long>> path = new ArrayList<>();
                   @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
                 }
+                """),
+            new Source(
+                "sample.Deep",
+                """
+                package sample;
+                import io.camunda.zeebe.msgpack.pojo.*;
+                import java.util.*;
+                @MsgpackPojo
+                public final class Deep extends MsgpackBufferValue<Deep> {
+                  @Override
+                  protected MsgpackCodec<Deep> codec() {
+                    return DeepCodec.INSTANCE;
+                  }
+
+                  @Override
+                  protected MsgpackOps<Deep> ops() {
+                    return DeepOps.INSTANCE;
+                  }
+
+                  final List<List<List<Long>>> deep = new ArrayList<>();
+                  @MsgpackUnknownProperties final UnknownProperties unknown = new UnknownProperties();
+                }
                 """));
     assertThat(compiled.errors()).isEmpty();
   }
@@ -115,6 +137,31 @@ final class GeneratedLongListListTest {
     assertThat(target).isNotEqualTo(source).hasSameHashCodeAs(instanceOf(message));
   }
 
+  @Test
+  void shouldRoundTripAndCopyDeeperNesting() throws Exception {
+    // given
+    final var expected =
+        List.of(List.of(List.of(1L, 2L), List.<Long>of()), List.of(List.of(70000L)));
+    final var source = instance("sample.Deep");
+    @SuppressWarnings("unchecked")
+    final var deep = (List<List<List<Long>>>) get(source, "deep");
+    deep.addAll(expected);
+
+    // when
+    final var written = new UnsafeBuffer(new byte[source.getLength()]);
+    source.write(written, 0);
+    final var read = instance("sample.Deep");
+    read.wrap(written, 0, written.capacity());
+    final var copy = instance("sample.Deep");
+    copy(copy, read);
+
+    // then
+    assertThat(get(read, "deep")).isEqualTo(expected);
+    assertThat(get(copy, "deep")).isEqualTo(expected);
+    assertThat(copy).isEqualTo(source).hasSameHashCodeAs(source);
+    assertThat(copy.toString()).contains("[[[1,2],[]],[[70000]]]");
+  }
+
   @SuppressWarnings({"unchecked", "rawtypes"})
   private static void copy(final MsgpackBufferValue target, final MsgpackBufferValue source) {
     target.copyFrom(source);
@@ -127,6 +174,11 @@ final class GeneratedLongListListTest {
   }
 
   private static MsgpackBufferValue<?> instance() throws ReflectiveOperationException {
-    return (MsgpackBufferValue<?>) compiled.load("sample.Paths").getConstructor().newInstance();
+    return instance("sample.Paths");
+  }
+
+  private static MsgpackBufferValue<?> instance(final String name)
+      throws ReflectiveOperationException {
+    return (MsgpackBufferValue<?>) compiled.load(name).getConstructor().newInstance();
   }
 }
