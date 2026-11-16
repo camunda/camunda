@@ -33,6 +33,12 @@ internal fun VersionCatalogBuilder.catalogCoreLibraries() {
     )
     .withoutVersion()
   library(
+      "com-fasterxml-jackson-dataformat-jackson-dataformat-toml",
+      "com.fasterxml.jackson.dataformat",
+      "jackson-dataformat-toml",
+    )
+    .withoutVersion()
+  library(
       "com-fasterxml-jackson-datatype-jackson-datatype-jdk8",
       "com.fasterxml.jackson.datatype",
       "jackson-datatype-jdk8",

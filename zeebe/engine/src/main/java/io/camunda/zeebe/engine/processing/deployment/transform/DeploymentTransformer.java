@@ -83,6 +83,10 @@ public final class DeploymentTransformer {
         new RpaTransformer(
             keyGenerator, stateWriter, checksumGenerator, processingState.getResourceState());
 
+    final var scriptTransformer =
+        new ScriptTransformer(
+            keyGenerator, stateWriter, checksumGenerator, processingState.getResourceState());
+
     final var defaultResourceTransformer =
         new DefaultResourceTransformer(
             keyGenerator, stateWriter, checksumGenerator, processingState.getResourceState());
@@ -95,6 +99,7 @@ public final class DeploymentTransformer {
             dmnResourceTransformer,
             formResourceTransformer,
             rpaTransformer,
+            scriptTransformer,
             defaultResourceTransformer);
   }
 
