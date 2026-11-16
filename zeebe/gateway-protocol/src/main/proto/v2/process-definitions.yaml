@@ -525,7 +525,6 @@ components:
             ```
             This matches process definitions whose <code>processDefinitionId</code> or <code>name</code> contains <em>invoice</em>.
           type: array
-          nullable: true
           items:
             $ref: '#/components/schemas/ProcessDefinitionOrFilterFields'
       x-properties-added-in-version:
