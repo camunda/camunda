@@ -226,4 +226,19 @@ describe("Client.deploy", () => {
     });
     assert.equal(params.headers.Authorization, "Bearer token-1");
   });
+
+  it("should add the tenant ID to the multipart request if given", () => {
+    // given
+    const client = new Client();
+
+    // when
+    client.deploy("my.bpmn", "<bpmn/>", "<default>");
+
+    // then
+    const [, , body] = http.request.mock.calls[0].arguments;
+    assert.deepEqual(body, {
+      resources: { content: "<bpmn/>", name: "my.bpmn" },
+      tenantId: "<default>",
+    });
+  });
 });

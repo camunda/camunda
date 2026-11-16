@@ -20,13 +20,17 @@ spec:
     # Always expose the current namespace as a dedicated tag/label.
     - --tag
     - namespace={{ $root.Release.Namespace }}
+    {{- if $root.Values.k6.profiling }}
+    # pprof endpoints under /debug/pprof/ on the k6 REST API (port 6565 of the runner pod).
+    - --profiling-enabled
+    {{- end }}
 
   starter:
-    image: europe-west1-docker.pkg.dev/camunda-benchmark/ghcrio/grafana/k6-operator:starter-v1.7.0
+    image: "{{ $root.Values.k6.images.starter }}"
     imagePullPolicy: IfNotPresent
 
   runner:
-    image: europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/grafana/k6:2.3.0
+    image: "{{ $root.Values.k6.images.runner }}"
     imagePullPolicy: IfNotPresent
 
     env:
@@ -57,6 +61,11 @@ spec:
         value: disabled
       - name: K6_FEATURES
         value: native-histograms
+
+      # The Camunda address is a headless service, so DNS returns pod IPs. k6 caches DNS
+      # answers for 5m by default: after a broker restart, requests go to old pod IPs.
+      - name: K6_DNS
+        value: "{{ $root.Values.k6.dns }}"
 
       - name: DATA_DIR
         value: /data
@@ -92,9 +101,13 @@ spec:
           secretKeyRef:
             key: zeebeGrpcAddress
             name: load-test-credentials
+      {{- range $name, $value := $test.env }}
+      - name: {{ $name }}
+        value: {{ $value | quote }}
+      {{- end }}
 
     resources:
-      {{- toYaml $root.Values.k6.resources | nindent 6 }}
+      {{- toYaml ($test.resources | default $root.Values.k6.resources) | nindent 6 }}
 
     nodeSelector:
       {{- if $root.Values.topologyZone }}

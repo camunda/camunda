@@ -7,6 +7,265 @@ metadata:
   labels:
     app.kubernetes.io/component: k6
 data:
+  benchmark-process.bpmn: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="07123c4" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+      <bpmn:process id="benchmark-process" name="benchmark-process" isExecutable="true">
+        <bpmn:startEvent id="StartEvent_1">
+          <bpmn:outgoing>Flow_0n36np5</bpmn:outgoing>
+        </bpmn:startEvent>
+        <bpmn:sequenceFlow id="Flow_0n36np5" sourceRef="StartEvent_1" targetRef="Gateway_0gj8f40" />
+        <bpmn:sequenceFlow id="Flow_046gvqo" sourceRef="Gateway_0gj8f40" targetRef="logProcInfo1" />
+        <bpmn:parallelGateway id="Gateway_0gj8f40">
+          <bpmn:incoming>Flow_0n36np5</bpmn:incoming>
+          <bpmn:outgoing>Flow_046gvqo</bpmn:outgoing>
+          <bpmn:outgoing>Flow_0ucmlhy</bpmn:outgoing>
+        </bpmn:parallelGateway>
+        <bpmn:sequenceFlow id="Flow_0ucmlhy" sourceRef="Gateway_0gj8f40" targetRef="logProcInfo2" />
+        <bpmn:serviceTask id="logProcInfo1" name="logProcInfo1">
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="logProcessInfo" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>Flow_046gvqo</bpmn:incoming>
+          <bpmn:outgoing>Flow_1qnxql2</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:serviceTask id="logProcInfo3" name="logProcInfo3">
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="logProcessInfo" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>Flow_1qnxql2</bpmn:incoming>
+          <bpmn:outgoing>Flow_11amf9k</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:serviceTask id="logProcInfo5" name="logProcInfo5">
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="logProcessInfo" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>Flow_11amf9k</bpmn:incoming>
+          <bpmn:outgoing>Flow_0nwb68s</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="Flow_1qnxql2" sourceRef="logProcInfo1" targetRef="logProcInfo3" />
+        <bpmn:sequenceFlow id="Flow_11amf9k" sourceRef="logProcInfo3" targetRef="logProcInfo5" />
+        <bpmn:serviceTask id="logProcInfo4" name="logProcInfo4">
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="logProcessInfo" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>Flow_0w7c63n</bpmn:incoming>
+          <bpmn:outgoing>Flow_1h0gkao</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:serviceTask id="logProcInfo6" name="logProcInfo6">
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="logProcessInfo" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>Flow_1h0gkao</bpmn:incoming>
+          <bpmn:outgoing>Flow_0damxlo</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:serviceTask id="logProcInfo2" name="logProcInfo2">
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="logProcessInfo" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>Flow_0ucmlhy</bpmn:incoming>
+          <bpmn:outgoing>Flow_0w7c63n</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="Flow_0w7c63n" sourceRef="logProcInfo2" targetRef="logProcInfo4" />
+        <bpmn:sequenceFlow id="Flow_1h0gkao" sourceRef="logProcInfo4" targetRef="logProcInfo6" />
+        <bpmn:parallelGateway id="Gateway_10pcu1r">
+          <bpmn:incoming>Flow_0nwb68s</bpmn:incoming>
+          <bpmn:incoming>Flow_0damxlo</bpmn:incoming>
+          <bpmn:outgoing>Flow_0pv1cs5</bpmn:outgoing>
+        </bpmn:parallelGateway>
+        <bpmn:sequenceFlow id="Flow_0nwb68s" sourceRef="logProcInfo5" targetRef="Gateway_10pcu1r" />
+        <bpmn:sequenceFlow id="Flow_0damxlo" sourceRef="logProcInfo6" targetRef="Gateway_10pcu1r" />
+        <bpmn:sequenceFlow id="Flow_0pv1cs5" sourceRef="Gateway_10pcu1r" targetRef="benchmarkUserTask" />
+        <bpmn:userTask id="benchmarkUserTask" name="benchmarkUserTask">
+          <bpmn:extensionElements>
+            <zeebe:userTask />
+          </bpmn:extensionElements>
+          <bpmn:incoming>Flow_0pv1cs5</bpmn:incoming>
+          <bpmn:outgoing>Flow_095jyoq</bpmn:outgoing>
+        </bpmn:userTask>
+        <bpmn:serviceTask id="logProcInfo7" name="logProcInfo7">
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="logProcessInfo" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>Flow_0uldb11</bpmn:incoming>
+          <bpmn:outgoing>Flow_1upw3rt</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="Flow_095jyoq" sourceRef="benchmarkUserTask" targetRef="Gateway_023266x" />
+        <bpmn:sequenceFlow id="Flow_0uldb11" sourceRef="Gateway_023266x" targetRef="logProcInfo7" />
+        <bpmn:parallelGateway id="Gateway_023266x">
+          <bpmn:incoming>Flow_095jyoq</bpmn:incoming>
+          <bpmn:outgoing>Flow_0uldb11</bpmn:outgoing>
+          <bpmn:outgoing>Flow_0wpeot1</bpmn:outgoing>
+        </bpmn:parallelGateway>
+        <bpmn:serviceTask id="logProcInfo10" name="logProcInfo10">
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="logProcessInfo" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>Flow_1lfxrks</bpmn:incoming>
+          <bpmn:outgoing>Flow_0xb1yux</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:serviceTask id="logProcInfo9" name="logProcInfo9">
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="logProcessInfo" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>Flow_1upw3rt</bpmn:incoming>
+          <bpmn:outgoing>Flow_1s0rr5o</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:serviceTask id="logProcInfo8" name="logProcInfo8">
+          <bpmn:extensionElements>
+            <zeebe:taskDefinition type="logProcessInfo" />
+          </bpmn:extensionElements>
+          <bpmn:incoming>Flow_0wpeot1</bpmn:incoming>
+          <bpmn:outgoing>Flow_1lfxrks</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="Flow_0wpeot1" sourceRef="Gateway_023266x" targetRef="logProcInfo8" />
+        <bpmn:sequenceFlow id="Flow_1lfxrks" sourceRef="logProcInfo8" targetRef="logProcInfo10" />
+        <bpmn:sequenceFlow id="Flow_1upw3rt" sourceRef="logProcInfo7" targetRef="logProcInfo9" />
+        <bpmn:endEvent id="Event_0s7zfm4">
+          <bpmn:incoming>Flow_1s0rr5o</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_1s0rr5o" sourceRef="logProcInfo9" targetRef="Event_0s7zfm4" />
+        <bpmn:endEvent id="Event_1ukgamq">
+          <bpmn:incoming>Flow_0xb1yux</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="Flow_0xb1yux" sourceRef="logProcInfo10" targetRef="Event_1ukgamq" />
+      </bpmn:process>
+      <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+        <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="benchmark-process">
+          <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+            <dc:Bounds x="182" y="102" width="36" height="36" />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="Gateway_1xs2l12_di" bpmnElement="Gateway_0gj8f40">
+            <dc:Bounds x="265" y="95" width="50" height="50" />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="Activity_08c36f8_di" bpmnElement="logProcInfo1">
+            <dc:Bounds x="380" y="80" width="100" height="80" />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="BPMNShape_0ivx40d" bpmnElement="logProcInfo3">
+            <dc:Bounds x="530" y="80" width="100" height="80" />
+            <bpmndi:BPMNLabel />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="BPMNShape_12g4clm" bpmnElement="logProcInfo5">
+            <dc:Bounds x="680" y="80" width="100" height="80" />
+            <bpmndi:BPMNLabel />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="Activity_1szxqa1_di" bpmnElement="logProcInfo2">
+            <dc:Bounds x="380" y="210" width="100" height="80" />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="BPMNShape_1gcydkn" bpmnElement="logProcInfo4">
+            <dc:Bounds x="530" y="210" width="100" height="80" />
+            <bpmndi:BPMNLabel />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="BPMNShape_0i6bv8h" bpmnElement="logProcInfo6">
+            <dc:Bounds x="680" y="210" width="100" height="80" />
+            <bpmndi:BPMNLabel />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="BPMNShape_09usbzo" bpmnElement="Gateway_10pcu1r">
+            <dc:Bounds x="825" y="95" width="50" height="50" />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="Activity_1gqzj7h_di" bpmnElement="benchmarkUserTask">
+            <dc:Bounds x="920" y="80" width="100" height="80" />
+            <bpmndi:BPMNLabel />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="BPMNShape_1w9ivi5" bpmnElement="logProcInfo7">
+            <dc:Bounds x="1150" y="80" width="100" height="80" />
+            <bpmndi:BPMNLabel />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="Gateway_1mwwhg2_di" bpmnElement="Gateway_023266x">
+            <dc:Bounds x="1045" y="95" width="50" height="50" />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="BPMNShape_0d6w3on" bpmnElement="logProcInfo8">
+            <dc:Bounds x="1150" y="210" width="100" height="80" />
+            <bpmndi:BPMNLabel />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="BPMNShape_1rsg9gl" bpmnElement="logProcInfo10">
+            <dc:Bounds x="1310" y="210" width="100" height="80" />
+            <bpmndi:BPMNLabel />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="BPMNShape_188rtro" bpmnElement="logProcInfo9">
+            <dc:Bounds x="1300" y="80" width="100" height="80" />
+            <bpmndi:BPMNLabel />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="Event_0s7zfm4_di" bpmnElement="Event_0s7zfm4">
+            <dc:Bounds x="1452" y="102" width="36" height="36" />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNShape id="Event_1ukgamq_di" bpmnElement="Event_1ukgamq">
+            <dc:Bounds x="1472" y="232" width="36" height="36" />
+          </bpmndi:BPMNShape>
+          <bpmndi:BPMNEdge id="Flow_0n36np5_di" bpmnElement="Flow_0n36np5">
+            <di:waypoint x="218" y="120" />
+            <di:waypoint x="265" y="120" />
+          </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="Flow_046gvqo_di" bpmnElement="Flow_046gvqo">
+            <di:waypoint x="315" y="120" />
+            <di:waypoint x="380" y="120" />
+          </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="Flow_0ucmlhy_di" bpmnElement="Flow_0ucmlhy">
+            <di:waypoint x="290" y="145" />
+            <di:waypoint x="290" y="250" />
+            <di:waypoint x="380" y="250" />
+          </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="Flow_1qnxql2_di" bpmnElement="Flow_1qnxql2">
+            <di:waypoint x="480" y="120" />
+            <di:waypoint x="530" y="120" />
+          </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="Flow_11amf9k_di" bpmnElement="Flow_11amf9k">
+            <di:waypoint x="630" y="120" />
+            <di:waypoint x="680" y="120" />
+          </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="Flow_0nwb68s_di" bpmnElement="Flow_0nwb68s">
+            <di:waypoint x="780" y="120" />
+            <di:waypoint x="825" y="120" />
+          </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="Flow_0w7c63n_di" bpmnElement="Flow_0w7c63n">
+            <di:waypoint x="480" y="250" />
+            <di:waypoint x="530" y="250" />
+          </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="Flow_1h0gkao_di" bpmnElement="Flow_1h0gkao">
+            <di:waypoint x="630" y="250" />
+            <di:waypoint x="680" y="250" />
+          </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="Flow_0damxlo_di" bpmnElement="Flow_0damxlo">
+            <di:waypoint x="780" y="250" />
+            <di:waypoint x="850" y="250" />
+            <di:waypoint x="850" y="145" />
+          </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="Flow_0pv1cs5_di" bpmnElement="Flow_0pv1cs5">
+            <di:waypoint x="875" y="120" />
+            <di:waypoint x="920" y="120" />
+          </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="Flow_095jyoq_di" bpmnElement="Flow_095jyoq">
+            <di:waypoint x="1020" y="120" />
+            <di:waypoint x="1045" y="120" />
+          </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="Flow_0uldb11_di" bpmnElement="Flow_0uldb11">
+            <di:waypoint x="1095" y="120" />
+            <di:waypoint x="1150" y="120" />
+          </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="Flow_1upw3rt_di" bpmnElement="Flow_1upw3rt">
+            <di:waypoint x="1250" y="120" />
+            <di:waypoint x="1300" y="120" />
+          </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="Flow_0wpeot1_di" bpmnElement="Flow_0wpeot1">
+            <di:waypoint x="1070" y="145" />
+            <di:waypoint x="1070" y="250" />
+            <di:waypoint x="1150" y="250" />
+          </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="Flow_1lfxrks_di" bpmnElement="Flow_1lfxrks">
+            <di:waypoint x="1250" y="250" />
+            <di:waypoint x="1310" y="250" />
+          </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="Flow_0xb1yux_di" bpmnElement="Flow_0xb1yux">
+            <di:waypoint x="1410" y="250" />
+            <di:waypoint x="1472" y="250" />
+          </bpmndi:BPMNEdge>
+          <bpmndi:BPMNEdge id="Flow_1s0rr5o_di" bpmnElement="Flow_1s0rr5o">
+            <di:waypoint x="1400" y="120" />
+            <di:waypoint x="1452" y="120" />
+          </bpmndi:BPMNEdge>
+        </bpmndi:BPMNPlane>
+      </bpmndi:BPMNDiagram>
+    </bpmn:definitions>
   micro.bpmn: |
     <?xml version="1.0" encoding="UTF-8"?>
     <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.47.0">

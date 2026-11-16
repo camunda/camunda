@@ -66,12 +66,13 @@ export class Client {
   }
 
   // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/create-deployment/
-  deploy(name, resourceContent) {
-    return this.post(
-      "/v2/deployments",
-      { resources: http.file(resourceContent, name) },
-      { multipart: true },
-    );
+  // `tenantId` is required when multi-tenancy checks are enabled.
+  deploy(name, resourceContent, tenantId) {
+    const payload = { resources: http.file(resourceContent, name) };
+    if (tenantId) {
+      payload.tenantId = tenantId;
+    }
+    return this.post("/v2/deployments", payload, { multipart: true });
   }
 
   // https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/specifications/search-process-definitions/
