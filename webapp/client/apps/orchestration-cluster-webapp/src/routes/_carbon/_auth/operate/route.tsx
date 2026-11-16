@@ -22,25 +22,25 @@ export const Route = createFileRoute('/_carbon/_auth/operate')({
 	errorComponent: ({error}) => {
 		if (error instanceof ComponentAccessDeniedError) {
 			return (
-				<main id="main-content" className="cds--content">
+				<div className="cds--content">
 					<ComponentAccessDeniedPage />
-				</main>
+				</div>
 			);
 		}
 
 		if (error instanceof ComponentNotAvailableError || error instanceof ForbiddenError) {
 			return (
-				<main id="main-content" className="cds--content">
+				<div className="cds--content">
 					<ForbiddenPage />
-				</main>
+				</div>
 			);
 		}
 		throw error;
 	},
 	notFoundComponent: () => (
-		<main id="main-content" className="cds--content">
+		<div className="cds--content">
 			<NotFoundPage />
-		</main>
+		</div>
 	),
 	head: () => ({
 		meta: [

@@ -78,15 +78,17 @@ const Route = createFileRoute('/_carbon/_auth')({
 				<SessionWatcher />
 				<C3Provider currentApp={currentApp} initialSaasToken={initialSaasToken}>
 					<Header currentUser={currentUser} license={license} />
-					<Outlet />
+					<main id="main-content" tabIndex={-1} className="operate-page-content">
+						<Outlet />
+					</main>
 				</C3Provider>
 			</>
 		);
 	},
 	notFoundComponent: () => (
-		<main className="cds--content">
+		<div className="cds--content">
 			<NotFoundPage />
-		</main>
+		</div>
 	),
 });
 

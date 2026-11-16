@@ -11,7 +11,7 @@ import {styles} from '@carbon/type';
 import {Tile as BaseTile} from '@carbon/react';
 import {Link} from '@tanstack/react-router';
 
-const Container = styled.main`
+const Container = styled.div`
 	height: 100%;
 	padding-top: var(--cds-spacing-09);
 	box-sizing: border-box;
