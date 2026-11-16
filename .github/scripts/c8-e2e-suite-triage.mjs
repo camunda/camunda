@@ -468,6 +468,7 @@ export function runSummary(report, title) {
     '',
   );
   const code = (text) => `\`${String(text).replace(/`/g, "'")}\``;
+  const errors = reportErrors(report);
   const failures = tests.filter((t) => !['expected', 'flaky', 'skipped'].includes(t.status));
   if (failures.length) {
     lines.push(`### ❌ ${failures.length} failing test${failures.length === 1 ? '' : 's'}`, '');
@@ -479,10 +480,13 @@ export function runSummary(report, title) {
       lines.push('', `_…and ${failures.length - SUMMARY_MAX_FAILURES} more: see the job's reports._`);
     }
     lines.push('');
-  } else if (counts.total) {
+  } else if (counts.passed + counts.flaky === 0) {
+    // Nothing failed, but nothing passed either: no test ran (all skipped,
+    // or none collected). Not a success to celebrate.
+    lines.push('No test passed: every test was skipped or none ran.', '');
+  } else if (!errors.length) {
     lines.push('All tests passed. 🎉', '');
   }
-  const errors = reportErrors(report);
   if (errors.length) {
     lines.push('### Run errors', '', ...errors.slice(0, SUMMARY_MAX_FAILURES).map((e) => `- ${code(e)}`), '');
   }

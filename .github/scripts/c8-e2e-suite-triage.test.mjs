@@ -555,6 +555,16 @@ test('runSummary: all passed, no report, and a capped failure list', () => {
   const spec = (title, status) => ({title, file: 'tests/a.spec.ts', tests: [{status}]});
   const one = (...specs) => ({suites: [{title: 'tests/a.spec.ts', file: 'tests/a.spec.ts', specs}]});
   assert.match(runSummary(one(spec('a', 'expected')), 'T'), /All tests passed/);
+  // Passed on retry counts as passed.
+  assert.match(runSummary(one(spec('a', 'flaky')), 'T'), /All tests passed/);
+  // Only skipped tests: nothing passed, so no success message.
+  const skipped = runSummary(one(spec('a', 'skipped')), 'T');
+  assert.doesNotMatch(skipped, /All tests passed/);
+  assert.match(skipped, /No test passed: every test was skipped or none ran\./);
+  // Passing tests but a run error (e.g. global teardown): no success message.
+  const withError = runSummary({...one(spec('a', 'expected')), errors: [{message: 'Error: teardown failed'}]}, 'T');
+  assert.doesNotMatch(withError, /All tests passed/);
+  assert.match(withError, /### Run errors\n\n- `Error: teardown failed`/);
   assert.match(runSummary(null, 'T'), /No Playwright report/);
   const many = one(...Array.from({length: SUMMARY_MAX_FAILURES + 3}, (_, i) => spec(`t${i}`, 'unexpected')));
   const md = runSummary(many, 'T');
