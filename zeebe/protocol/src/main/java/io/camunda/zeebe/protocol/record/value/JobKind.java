@@ -46,8 +46,11 @@ public enum JobKind {
 
   /**
    * Represents the stand-in job a stubbed call activity waits on instead of starting the process it
-   * calls. Such a job is served to no job worker: it is hidden from job activation and completed by
-   * whoever created the process instance. See the {@code STUB_CALL_ACTIVITIES} recording switch.
+   * calls. When the stub switch carries no reservation token, such a job is served to no job
+   * worker: it is hidden from job activation and completed by whoever created the process instance.
+   * When the switch carries a token, the job is reserved by it and served only to an activation
+   * that presents the matching token and the stub's called process id — a mock worker standing in
+   * for the called process. See the {@code STUB_CALL_ACTIVITIES} recording switch.
    */
   CALL_ACTIVITY_STUB
 }

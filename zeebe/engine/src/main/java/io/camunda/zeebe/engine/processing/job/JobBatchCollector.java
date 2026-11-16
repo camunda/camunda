@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -104,6 +105,7 @@ final class JobBatchCollector {
 
     // compute per-job authorization predicate once before the loop
     final Predicate<JobRecord> isAuthorizedForJob = buildAuthzPredicate(record);
+    final String calledProcessIdFilter = value.getCalledProcessId();
 
     jobSecretInjector.reset();
     jobState.forEachActivatableJobs(
@@ -120,6 +122,17 @@ final class JobBatchCollector {
                   jobRecord, value.getJobReservationToken());
           if (withheldReason != null) {
             jobMetrics.countJobEvent(withheldReason, jobRecord.getJobKind(), value.getType());
+            return true;
+          }
+
+          if (!calledProcessIdFilter.isEmpty()
+              && jobRecord.isCallActivityStub()
+              && !calledProcessIdFilter.equals(
+                  jobRecord.getCustomHeaders().get(Protocol.CALLED_PROCESS_ID_HEADER_NAME))) {
+            // a stub activation filtered by called process leaves the stubs of the other stubbed
+            // processes for their own mock workers
+            jobMetrics.countJobEvent(
+                JobAction.SKIPPED_CALL_ACTIVITY_STUB, jobRecord.getJobKind(), value.getType());
             return true;
           }
 

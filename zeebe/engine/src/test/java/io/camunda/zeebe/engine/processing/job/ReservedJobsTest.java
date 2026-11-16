@@ -494,8 +494,8 @@ public final class ReservedJobsTest {
   }
 
   @Test
-  public void shouldNotReserveStubJobOfStubbedCallActivity() {
-    // given a stubbed call activity, with even the stub job's type listed
+  public void shouldReserveStubJobWhenTheStubSwitchCarriesAToken() {
+    // given a stubbed call activity whose switch carries a reservation token
     final String calledProcessId = Strings.newRandomValidBpmnId();
     final String callerProcessId = Strings.newRandomValidBpmnId();
     ENGINE
@@ -514,19 +514,23 @@ public final class ReservedJobsTest {
             .processInstance()
             .ofBpmnProcessId(callerProcessId)
             .withStubbedCallActivities(calledProcessId)
-            .withReservedJobTypes(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
             .withJobReservationToken(RESERVATION_TOKEN)
             .create();
 
-    // then the stub job is withheld from workers by its kind, so it needs no reservation token
+    // then the stub job carries the token, so a mock worker presenting it can drain the stub
     final var stubJob =
         jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
             .withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
             .getFirst();
-    assertThat(stubJob.getValue().getJobReservationToken()).isEmpty();
-    Assertions.assertThat(ENGINE.job().withKey(stubJob.getKey()).complete())
-        .describedAs("the stub job is completed without a token")
+    assertThat(stubJob.getValue().getJobReservationToken()).isEqualTo(RESERVATION_TOKEN);
+    Assertions.assertThat(
+            ENGINE
+                .job()
+                .withKey(stubJob.getKey())
+                .withJobReservationToken(RESERVATION_TOKEN)
+                .complete())
+        .describedAs("the reserved stub job is completed with its token")
         .hasIntent(JobIntent.COMPLETED);
   }
 

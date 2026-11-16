@@ -464,6 +464,8 @@ public class ProcessInstanceRequestValidator {
     }
     var reserveJobsCount = 0;
     var stubCallActivitiesCount = 0;
+    String reserveToken = null;
+    String stubToken = null;
     for (final var instruction : instructions) {
       if (instruction instanceof final ProcessInstanceCreationReserveJobsInstruction reserve) {
         reserveJobsCount++;
@@ -478,6 +480,7 @@ public class ProcessInstanceRequestValidator {
           violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobReservationToken"));
         } else {
           validateJobReservationToken(token, violations);
+          reserveToken = token;
         }
       } else if (instruction
           instanceof final ProcessInstanceCreationStubCallActivitiesInstruction stub) {
@@ -488,7 +491,18 @@ public class ProcessInstanceRequestValidator {
         } else if (processIds.stream().anyMatch(id -> id == null || id.isBlank())) {
           violations.add("processIds must not contain blank values");
         }
+        final var token = stub.getJobReservationToken();
+        if (token != null) {
+          validateJobReservationToken(token, violations);
+          stubToken = token;
+        }
       }
+    }
+    if (reserveToken != null && stubToken != null && !reserveToken.equals(stubToken)) {
+      // RESERVE_JOBS and STUB_CALL_ACTIVITIES share the one root reservation token, so a run that
+      // gives both cannot name two different tokens.
+      violations.add(
+          "jobReservationToken must be the same on RESERVE_JOBS and STUB_CALL_ACTIVITIES");
     }
     if (reserveJobsCount > 1) {
       violations.add(

@@ -266,7 +266,26 @@ public class ProcessInstanceMapper {
       final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
           instructions) {
     final var reserveJobs = reserveJobsOf(instructions);
-    return reserveJobs == null ? null : reserveJobs.getJobReservationToken();
+    final String reserveToken = reserveJobs == null ? null : reserveJobs.getJobReservationToken();
+    final String stubToken = stubCallActivitiesTokenOf(instructions);
+    // The two instructions share the one root reservation token; when both carry one they must
+    // agree. The validator rejects a mismatch, so by here either is the single token to use.
+    return reserveToken != null ? reserveToken : stubToken;
+  }
+
+  private static @Nullable String stubCallActivitiesTokenOf(
+      final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
+          instructions) {
+    if (instructions == null) {
+      return null;
+    }
+    return instructions.stream()
+        .filter(ProcessInstanceCreationStubCallActivitiesInstruction.class::isInstance)
+        .map(ProcessInstanceCreationStubCallActivitiesInstruction.class::cast)
+        .map(ProcessInstanceCreationStubCallActivitiesInstruction::getJobReservationToken)
+        .filter(token -> token != null)
+        .findFirst()
+        .orElse(null);
   }
 
   private static @Nullable List<String> reservedJobTypesOf(

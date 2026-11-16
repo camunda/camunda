@@ -62,10 +62,30 @@ final class JobWorkerDispatchTest {
   }
 
   @Test
-  void shouldWithholdCallActivityStubEvenFromATokenHolder() {
+  void shouldServeReservedCallActivityStubToItsTokenHolder() {
     // given
     final JobRecord stub =
         job().setJobKind(JobKind.CALL_ACTIVITY_STUB).setJobReservationToken(TOKEN);
+
+    // when / then
+    assertThat(JobWorkerDispatch.withheldFromWorkersReason(stub, TOKEN)).isNull();
+  }
+
+  @Test
+  void shouldWithholdReservedCallActivityStubFromAWorkerWithoutTheToken() {
+    // given
+    final JobRecord stub =
+        job().setJobKind(JobKind.CALL_ACTIVITY_STUB).setJobReservationToken(TOKEN);
+
+    // when / then
+    assertThat(JobWorkerDispatch.withheldFromWorkersReason(stub, null))
+        .isEqualTo(JobAction.SKIPPED_RESERVED);
+  }
+
+  @Test
+  void shouldWithholdUntokenedCallActivityStubFromEveryWorker() {
+    // given
+    final JobRecord stub = job().setJobKind(JobKind.CALL_ACTIVITY_STUB);
 
     // when / then
     assertThat(JobWorkerDispatch.withheldFromWorkersReason(stub, TOKEN))

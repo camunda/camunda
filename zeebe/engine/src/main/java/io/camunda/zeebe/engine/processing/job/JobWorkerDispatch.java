@@ -23,11 +23,13 @@ public final class JobWorkerDispatch {
    * take it. Every path that hands jobs out — the poll that collects a batch and the push that
    * wakes a stream — asks this, so a job withheld from workers is withheld from all of them.
    *
-   * <p>A job stands in for the process a stubbed call activity calls: no worker could run it, and
-   * whoever created the process instance completes it. A job carrying a reservation token belongs
-   * to an instance whose creator claimed that job type: that creator drives it — but a worker that
+   * <p>A job stands in for the process a stubbed call activity calls: no ordinary worker runs it.
+   * An un-reserved stub is completed by whoever created the process instance and is served to no
+   * worker. A job carrying a reservation token — a stub whose switch was given a token included —
+   * belongs to an instance whose creator claimed it: that creator drives it, but a worker that
    * presents the matching {@code requesterReservationToken} is that creator (for example CPT's mock
-   * worker, which replays the reserved jobs), so the job is served to it and to no one else.
+   * worker, which replays the reserved jobs), so the job is served to it and to no one else. The
+   * stub's called-process filter is applied by the collector, not here.
    *
    * <p>Returns a {@link JobAction} rather than a boolean because both callers count the reason, and
    * {@code null} rather than an {@link java.util.Optional} because the poll asks this once per
@@ -39,7 +41,7 @@ public final class JobWorkerDispatch {
    */
   public static @Nullable JobAction withheldFromWorkersReason(
       final JobRecord job, final @Nullable String requesterReservationToken) {
-    if (job.isCallActivityStub()) {
+    if (job.isCallActivityStub() && !job.hasJobReservationToken()) {
       return JobAction.SKIPPED_CALL_ACTIVITY_STUB;
     }
     if (job.hasJobReservationToken()) {

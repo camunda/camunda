@@ -977,6 +977,8 @@ final class JsonSerializableToJsonTest {
                     }
                   ],
                   "timeout": 2,
+                  "jobReservationToken": "",
+                  "calledProcessId": "",
                   "tenantIds": [],
                   "tenantFilter": "PROVIDED"
                 }
@@ -1004,6 +1006,8 @@ final class JsonSerializableToJsonTest {
                   "jobKeys": [],
                   "jobs": [],
                   "timeout": -1,
+                  "jobReservationToken": "",
+                  "calledProcessId": "",
                   "tenantIds": [],
                   "tenantFilter": "PROVIDED"
                 }
