@@ -741,7 +741,10 @@ public class AgentRunDto implements OptimizeDto {
     }
   }
 
-  /** Tokens a run spent while a given provider/model was in effect. */
+  /**
+   * Why a run failed: a limit it reached, or an incident on the agent element or one of its tools
+   * with the first message seen for that element and error type and how many incidents share them.
+   */
   public static class FailureReasonDto {
 
     private String kind;
