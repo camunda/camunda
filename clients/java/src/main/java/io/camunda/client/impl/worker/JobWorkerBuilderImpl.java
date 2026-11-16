@@ -60,6 +60,7 @@ public final class JobWorkerBuilderImpl
   private final ExecutorService jobHandlingExecutor;
   private final List<Closeable> closeables;
   private String jobType;
+  private String calledProcessId;
   private JobHandler handler;
   private Duration timeout;
   private String workerName;
@@ -110,6 +111,12 @@ public final class JobWorkerBuilderImpl
   @Override
   public JobWorkerBuilderStep2 jobType(final String type) {
     jobType = type;
+    return this;
+  }
+
+  @Override
+  public JobWorkerBuilderStep2 calledProcessId(final String calledProcessId) {
+    this.calledProcessId = calledProcessId;
     return this;
   }
 
@@ -228,7 +235,21 @@ public final class JobWorkerBuilderImpl
 
   @Override
   public JobWorker open() {
-    ensureNotNullNorEmpty("jobType", jobType);
+    final boolean byCalledProcessId = calledProcessId != null && !calledProcessId.isEmpty();
+    if (byCalledProcessId) {
+      ensureNotNullNorEmpty("jobReservationToken", jobReservationToken);
+      if (jobType != null && !jobType.isEmpty()) {
+        throw new IllegalArgumentException(
+            "A job worker sets either a jobType or a calledProcessId, not both.");
+      }
+      if (enableStreaming) {
+        throw new IllegalArgumentException(
+            "A calledProcessId job worker drains reserved stub jobs, which are served only over the"
+                + " polling path; it cannot stream.");
+      }
+    } else {
+      ensureNotNullNorEmpty("jobType", jobType);
+    }
     ensureNotNull("jobHandler", handler);
     ensurePositive("timeout", timeout);
     ensureNotNullNorEmpty("workerName", workerName);
@@ -249,7 +270,8 @@ public final class JobWorkerBuilderImpl
             tenantFilter,
             maxJobsActive,
             withLease,
-            jobReservationToken);
+            jobReservationToken,
+            calledProcessId);
 
     final JobExecutor jobExecutor;
     if (enableStreaming) {

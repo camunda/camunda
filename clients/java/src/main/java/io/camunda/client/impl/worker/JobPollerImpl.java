@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.worker;
 
+import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivatedJob;
@@ -43,6 +44,7 @@ public final class JobPollerImpl implements JobPoller {
   private final TenantFilter tenantFilter;
   private final boolean withLease;
   private final String jobReservationToken;
+  private final String calledProcessId;
 
   private int maxJobsToActivate;
 
@@ -63,10 +65,12 @@ public final class JobPollerImpl implements JobPoller {
       final TenantFilter tenantFilter,
       final int maxJobsToActivate,
       final boolean withLease,
-      final String jobReservationToken) {
+      final String jobReservationToken,
+      final String calledProcessId) {
     this.requestTimeout = requestTimeout;
     this.jobClient = jobClient;
     this.jobType = jobType;
+    this.calledProcessId = calledProcessId;
     this.workerName = workerName;
     this.timeout = timeout;
     this.fetchVariables = fetchVariables;
@@ -75,6 +79,10 @@ public final class JobPollerImpl implements JobPoller {
     this.maxJobsToActivate = maxJobsToActivate;
     this.withLease = withLease;
     this.jobReservationToken = jobReservationToken;
+  }
+
+  private boolean activatesByCalledProcessId() {
+    return calledProcessId != null && !calledProcessId.isEmpty();
   }
 
   private void reset() {
@@ -114,10 +122,11 @@ public final class JobPollerImpl implements JobPoller {
         maxJobsToActivate,
         workerName,
         jobType);
+    final ActivateJobsCommandStep1 newCommand = jobClient.newActivateJobsCommand();
     final ActivateJobsCommandStep3 activateCommand =
-        jobClient
-            .newActivateJobsCommand()
-            .jobType(jobType)
+        (activatesByCalledProcessId()
+                ? newCommand.calledProcessId(calledProcessId)
+                : newCommand.jobType(jobType))
             .maxJobsToActivate(maxJobsToActivate)
             .timeout(timeout)
             .workerName(workerName)

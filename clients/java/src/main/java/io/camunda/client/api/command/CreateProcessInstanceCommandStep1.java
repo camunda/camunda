@@ -240,6 +240,24 @@ public interface CreateProcessInstanceCommandStep1
     CreateProcessInstanceCommandStep3 stubCallActivities(final String... processIds);
 
     /**
+     * Stubs the call activities of the given BPMN process ids (see {@link
+     * #stubCallActivities(String...)}) and reserves the stub jobs with {@code jobReservationToken},
+     * so a single mock worker presenting that token drains them — a multi-instance call activity
+     * included — instead of the instance's creator completing each stub directly.
+     *
+     * <p>The token is the instance's one reservation token: if {@link #reserveJobs(String,
+     * String...) reserveJobs} is also given, both must name the same token. This method is only
+     * supported over REST. Alpha feature, subject to change.
+     *
+     * @param jobReservationToken the token that reserves the stub jobs for a mock worker
+     * @param processIds the BPMN process ids whose call activities are stubbed
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker
+     */
+    CreateProcessInstanceCommandStep3 stubCallActivities(
+        final String jobReservationToken, final List<String> processIds);
+
+    /**
      * When this method is called, the response to the command will be received after the process is
      * completed. The response consists of a set of variables.
      *

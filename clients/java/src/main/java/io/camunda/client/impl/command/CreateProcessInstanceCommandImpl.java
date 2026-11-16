@@ -50,6 +50,7 @@ import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -148,6 +149,20 @@ public final class CreateProcessInstanceCommandImpl
     httpRequestObject.addRuntimeInstructionsItem(
         new ProcessInstanceCreationStubCallActivitiesInstruction()
             .processIds(Arrays.asList(processIds))
+            .type(STUB_CALL_ACTIVITIES.name()));
+    return this;
+  }
+
+  @Override
+  public CreateProcessInstanceCommandStep3 stubCallActivities(
+      final String jobReservationToken, final List<String> processIds) {
+    ArgumentUtil.ensureNotNullNorEmpty("jobReservationToken", jobReservationToken);
+    ArgumentUtil.ensureNotNull("processIds", processIds);
+    restOnlyProperty = "stubCallActivities";
+    httpRequestObject.addRuntimeInstructionsItem(
+        new ProcessInstanceCreationStubCallActivitiesInstruction()
+            .processIds(processIds)
+            .jobReservationToken(jobReservationToken)
             .type(STUB_CALL_ACTIVITIES.name()));
     return this;
   }
