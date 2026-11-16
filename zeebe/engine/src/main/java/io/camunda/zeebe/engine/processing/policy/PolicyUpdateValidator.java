@@ -9,13 +9,16 @@ package io.camunda.zeebe.engine.processing.policy;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.identity.GroupValidator;
 import io.camunda.zeebe.engine.processing.identity.RoleValidator;
 import io.camunda.zeebe.engine.processing.identity.StateIdentityView;
 import io.camunda.zeebe.engine.processing.identity.TenantValidator;
 import io.camunda.zeebe.engine.processing.policy.PolicyUpdateCommandMapper.IdentityCommand;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
@@ -36,8 +39,8 @@ import org.jspecify.annotations.NullMarked;
  * nothing. The chunks are mapped to identity commands, which are validated in apply order against
  * the state plus the commands before them, including those of earlier chunks.
  *
- * <p>Only tenant and role commands are validated so far; the commands of the other entities pass
- * unchecked and can still be rejected by their processors.
+ * <p>Only tenant, role and group commands are validated so far; the commands of the other entities
+ * pass unchecked and can still be rejected by their processors.
  */
 @NullMarked
 public final class PolicyUpdateValidator {
@@ -79,7 +82,9 @@ public final class PolicyUpdateValidator {
     final var view = new PolicyUpdateIdentityView(new StateIdentityView(state));
     final var validators =
         new Validators(
-            new TenantValidator(view, securityConfig), new RoleValidator(view, securityConfig));
+            new TenantValidator(view, securityConfig),
+            new RoleValidator(view, securityConfig),
+            new GroupValidator(view, securityConfig));
     final var errors = new ArrayList<String>();
     for (final var command : commands) {
       validate(command, validators)
@@ -109,11 +114,20 @@ public final class PolicyUpdateValidator {
             case REMOVE_ENTITY -> validators.roles().validateRemoveEntity(role);
             default -> Either.right(role);
           };
+      case final GroupRecord group ->
+          switch ((GroupIntent) command.intent()) {
+            case CREATE -> validators.groups().validateCreate(group);
+            case UPDATE -> validators.groups().validateUpdate(group);
+            case DELETE -> validators.groups().validateDelete(group);
+            case ADD_ENTITY -> validators.groups().validateAddEntity(group);
+            case REMOVE_ENTITY -> validators.groups().validateRemoveEntity(group);
+            default -> Either.right(group);
+          };
       default -> Either.right(command);
     };
   }
 
-  private record Validators(TenantValidator tenants, RoleValidator roles) {}
+  private record Validators(TenantValidator tenants, RoleValidator roles, GroupValidator groups) {}
 
   private static List<String> findDuplicateUpserts(
       final List<? extends PolicyUpdateRecordValue> chunks) {
