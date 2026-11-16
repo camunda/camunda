@@ -2,7 +2,8 @@
 
 **DRI**: <TBD>
 
-**Status**: Proposed (8.11)
+**Status**: Proposed (8.11) — revised by the v2 token-worker decision below (D6), which supersedes D4
+and D5.
 
 **Purpose**: Defines the stubbed-call-activity switch — how a call activity named by the switch waits
 instead of starting its child, while un-named call activities run their real child.
@@ -48,20 +49,48 @@ variables to its parent only under its model's output-mapping conditions; stub c
 condition, so it never propagates variables the model says to drop and cannot drift from real
 completion.
 
-**D4. A stub job is never reserved and nothing hands it back.** No worker can run it, so handing it
-back would park the call activity forever; it is withheld from workers by its kind, independently of
-[reservation](0016-811-reserved-jobs.md), so it carries no reservation token even when its instance
-reserves other job types. To run a call activity's real child, omit its process id from the stub list
-rather than stub-then-override.
+**D4. A stub job is never reserved and nothing hands it back.** _(Superseded by D6.)_ No worker can run
+it, so handing it back would park the call activity forever; it is withheld from workers by its kind,
+independently of [reservation](0016-811-reserved-jobs.md), so it carries no reservation token even when
+its instance reserves other job types. To run a call activity's real child, omit its process id from
+the stub list rather than stub-then-override.
 
 **D5. CPT drives the stub entirely through the generic job instructions, with no stub-specific
-instruction.** Standing in for the called process is a `COMPLETE_JOB`, and failing it a
+instruction.** _(Superseded by D6: completion still reuses the generic job instructions, but selection
+is by called-process id, and the stub is activated by a token-holding worker rather than found through
+job search.)_ Standing in for the called process is a `COMPLETE_JOB`, and failing it a
 `THROW_BPMN_ERROR_FROM_JOB`, each selecting the stand-in job by `{ jobKind: CALL_ACTIVITY_STUB,
 elementId }`. The dedicated job kind from D2 — not a per-called-process job type — is what lets an
 element-scoped selector pick exactly the stub, since a call activity's execution-listener jobs share its
 element id. An earlier design added a `RUN_CALLED_PROCESS` instruction to run the real child of a
 stubbed occurrence; it was dropped — running real is expressed by not listing the process, keeping
 mocking explicit rather than mock-all-then-override.
+
+**D6 (v2). A stub switch may carry a reservation token; a token-holding mock worker drains the stubs,
+filtered by called-process id.** This supersedes D4 ("a stub is never reserved") and reshapes D5's
+selection. A single `COMPLETE_JOB` by job search cannot drive a multi-instance call activity, whose
+stub count is fixed only at runtime, and it leaves the stub outside the ordinary worker path a recorder
+already uses for [reserved jobs](0016-811-reserved-jobs.md). So:
+
+- **The stub job is reservable.** When `STUB_CALL_ACTIVITIES` carries a `jobReservationToken`, each
+  stub job is stamped with it, re-enters the activatable-by-priority poll index, and is served only to
+  an activation presenting the matching token. A stub whose switch carries no token keeps the D4
+  behavior — hidden from every worker, out of the index, completed by the instance's creator — so the
+  reversal is opt-in and the token-less path is unchanged. Job streams carry no token, so a reserved
+  stub is never pushed.
+- **One run, one token.** The engine holds a single root reservation token, so a `RESERVE_JOBS` and a
+  `STUB_CALL_ACTIVITIES` instruction on the same instance must name the same token (rejected at
+  creation otherwise). The API keeps them as separate fields — a test can stub without reserving any
+  job type — which is why the earlier "key the stub on the reservation token" alternative (coupling the
+  two switches) stays rejected while the engine still shares one token.
+- **Activation filters by called-process id.** A job activation gains a `calledProcessId`: it implies
+  the internal stub job type (so `type` and `calledProcessId` are mutually exclusive — both is a `400`)
+  and the collector serves only stubs whose resolved called-process header matches. This lets one mock
+  worker drain exactly one stubbed process, multi-instance included, where D5's element-id selector
+  could not address an unknown-at-model-time iteration count. Completion still reuses the generic job
+  instructions and the matching token.
+- **Scope.** The `calledProcessId` activation field is REST-only (the CPT worker polls REST); the gRPC
+  activation path is unchanged. Alpha 8.11.
 
 ## Alternatives considered
 
