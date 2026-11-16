@@ -40,6 +40,7 @@ import {
 	isValidSecretResourceId,
 } from './authorizationValidation';
 import {GUIDE_URLS} from '#/admin/modules/shared/guideUrls';
+import {getResourceTypeLabel} from './resourceTypes';
 
 const OIDC_OWNER_TYPES: OwnerType[] = ['USER', 'GROUP', 'ROLE', 'MAPPING_RULE', 'CLIENT'];
 const INTERNAL_OWNER_TYPES: OwnerType[] = ['USER', 'GROUP', 'ROLE'];
@@ -225,7 +226,12 @@ const AddAuthorizationModal: React.FC<Props> = ({
 											<Label htmlFor="authorization-resource-type">
 												{t('admin.authorizations.resourceTypeFieldLabel')}
 											</Label>
-											<Input id="authorization-resource-type" value={resourceType} disabled readOnly />
+											<Input
+												id="authorization-resource-type"
+												value={getResourceTypeLabel(resourceType, t)}
+												disabled
+												readOnly
+											/>
 										</div>
 
 										{resourceType === 'USER_TASK' ? (
