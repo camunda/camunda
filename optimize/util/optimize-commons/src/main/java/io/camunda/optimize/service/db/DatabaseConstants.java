@@ -54,6 +54,8 @@ public final class DatabaseConstants {
   public static final String BUSINESS_VALUE_TARGET_INDEX_NAME = "business-value-target";
   public static final String BUSINESS_VALUE_OVERVIEW_INDEX_NAME = "business-value-overview";
   public static final String INSTANT_DASHBOARD_INDEX_NAME = "instant-dashboard";
+  public static final String AGENT_INSTANCE_INDEX_NAME = "agent-instance";
+  public static final String AGENT_DEFINITION_INDEX_NAME = "agent-definition";
   public static final String ZEEBE_PROCESS_DEFINITION_INDEX_NAME = "process";
   public static final String ZEEBE_PROCESS_INSTANCE_INDEX_NAME = "process-instance";
   public static final String ZEEBE_VARIABLE_INDEX_NAME = "variable";

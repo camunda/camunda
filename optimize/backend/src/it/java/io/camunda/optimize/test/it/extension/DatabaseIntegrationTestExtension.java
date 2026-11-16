@@ -238,6 +238,10 @@ public class DatabaseIntegrationTestExtension implements BeforeEachCallback, Aft
     return databaseTestService.getMappingFields(indexName);
   }
 
+  public int getNumberOfShards(final String indexAliasName) throws IOException {
+    return databaseTestService.getNumberOfShards(indexAliasName);
+  }
+
   public boolean indexExists(final String versionedIndexName, final Boolean addMappingFeatures) {
     return databaseTestService.indexExists(versionedIndexName, addMappingFeatures);
   }

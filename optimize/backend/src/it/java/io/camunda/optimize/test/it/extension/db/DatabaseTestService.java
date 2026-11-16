@@ -321,4 +321,7 @@ public abstract class DatabaseTestService {
   public abstract List<String> getAllIndicesWithReadOnlyAlias(String aliasNameWithPrefix);
 
   public abstract String[] getIndexNames() throws IOException;
+
+  /** Number of primary shards of the index behind the given Optimize alias (without prefix). */
+  public abstract int getNumberOfShards(String indexAliasName) throws IOException;
 }

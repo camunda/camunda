@@ -124,6 +124,8 @@ public final class ConfigurationServiceConstants {
       OPENSEARCH + ".settings.index.number_of_replicas";
   public static final String OPENSEARCH_NUMBER_OF_SHARDS =
       OPENSEARCH + ".settings.index.number_of_shards";
+  public static final String OPENSEARCH_AGENT_INSTANCE_NUMBER_OF_SHARDS =
+      OPENSEARCH + ".settings.index.agent_instance_number_of_shards";
   public static final String OPENSEARCH_INDEX_NESTED_DOCUMENTS_LIMIT =
       OPENSEARCH + ".settings.index.nested_documents_limit";
   public static final String OPENSEARCH_INDEX_PREFIX = OPENSEARCH + ".settings.index.prefix";
@@ -137,6 +139,8 @@ public final class ConfigurationServiceConstants {
   public static final String ES_REFRESH_INTERVAL = "$.es.settings.index.refresh_interval";
   public static final String ES_NUMBER_OF_REPLICAS = "$.es.settings.index.number_of_replicas";
   public static final String ES_NUMBER_OF_SHARDS = "$.es.settings.index.number_of_shards";
+  public static final String ES_AGENT_INSTANCE_NUMBER_OF_SHARDS =
+      "$.es.settings.index.agent_instance_number_of_shards";
   public static final String ES_INDEX_PREFIX = "$.es.settings.index.prefix";
   public static final String ES_INDEX_NESTED_DOCUMENTS_LIMIT =
       "$.es.settings.index.nested_documents_limit";

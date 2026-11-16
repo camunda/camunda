@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.db.schema;
 
+import io.camunda.optimize.service.db.es.schema.index.AgentDefinitionIndexES;
+import io.camunda.optimize.service.db.es.schema.index.AgentRunIndexES;
 import io.camunda.optimize.service.db.es.schema.index.AlertIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessKeyIndexES;
 import io.camunda.optimize.service.db.es.schema.index.BusinessValueOverviewIndexES;
@@ -34,6 +36,8 @@ import io.camunda.optimize.service.db.es.schema.index.index.TimestampBasedImport
 import io.camunda.optimize.service.db.es.schema.index.report.CombinedReportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.SingleDecisionReportIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
+import io.camunda.optimize.service.db.os.schema.index.AgentDefinitionIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.AgentRunIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.AlertIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessKeyIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessValueOverviewIndexOS;
@@ -114,6 +118,9 @@ public class IndexLookupUtil {
   private static Map<String, Function<String, IndexMappingCreator>>
       createOpensearchIndexFunctionLookupMap() {
     final Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
+    lookupMap.put(
+        AgentDefinitionIndexES.class.getSimpleName(), index -> new AgentDefinitionIndexOS());
+    lookupMap.put(AgentRunIndexES.class.getSimpleName(), index -> new AgentRunIndexOS());
     lookupMap.put(AlertIndexES.class.getSimpleName(), index -> new AlertIndexOS());
     lookupMap.put(BusinessKeyIndexES.class.getSimpleName(), index -> new BusinessKeyIndexOS());
     lookupMap.put(
@@ -171,6 +178,9 @@ public class IndexLookupUtil {
       createElasticsearchIndexFunctionLookupMap() {
     final Map<String, Function<String, IndexMappingCreator>> lookupMap = new HashMap<>();
     // OpenSearch -> ElasticSearch Index lookup functions
+    lookupMap.put(
+        AgentDefinitionIndexOS.class.getSimpleName(), index -> new AgentDefinitionIndexES());
+    lookupMap.put(AgentRunIndexOS.class.getSimpleName(), index -> new AgentRunIndexES());
     lookupMap.put(AlertIndexOS.class.getSimpleName(), index -> new AlertIndexES());
     lookupMap.put(BusinessKeyIndexOS.class.getSimpleName(), index -> new BusinessKeyIndexES());
     lookupMap.put(

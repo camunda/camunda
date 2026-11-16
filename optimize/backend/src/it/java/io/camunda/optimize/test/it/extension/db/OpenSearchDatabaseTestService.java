@@ -833,6 +833,26 @@ public class OpenSearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
+  public int getNumberOfShards(final String indexAliasName) throws IOException {
+    final String index = getOptimizeOpenSearchClient().applyIndexPrefixes(indexAliasName).get(0);
+    final IndexSettings settings =
+        getOptimizeOpenSearchClient()
+            .getOpenSearchClient()
+            .indices()
+            .getSettings(r -> r.index(index))
+            .result()
+            .values()
+            .iterator()
+            .next()
+            .settings();
+    final Object shards =
+        settings.numberOfShards() != null
+            ? settings.numberOfShards()
+            : settings.index().numberOfShards();
+    return Integer.parseInt(String.valueOf(shards));
+  }
+
+  @Override
   public boolean templateExists(final String optimizeIndexTemplateNameWithVersion)
       throws IOException {
     final ExistsTemplateRequest.Builder request =

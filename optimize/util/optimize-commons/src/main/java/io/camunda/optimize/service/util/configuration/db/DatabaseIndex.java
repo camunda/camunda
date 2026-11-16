@@ -18,6 +18,9 @@ public class DatabaseIndex {
   @JsonProperty("number_of_shards")
   private Integer numberOfShards;
 
+  @JsonProperty("agent_instance_number_of_shards")
+  private Integer agentInstanceNumberOfShards;
+
   @JsonProperty("refresh_interval")
   private String refreshInterval;
 
@@ -44,6 +47,15 @@ public class DatabaseIndex {
   @JsonProperty("number_of_shards")
   public void setNumberOfShards(final Integer numberOfShards) {
     this.numberOfShards = numberOfShards;
+  }
+
+  public Integer getAgentInstanceNumberOfShards() {
+    return agentInstanceNumberOfShards;
+  }
+
+  @JsonProperty("agent_instance_number_of_shards")
+  public void setAgentInstanceNumberOfShards(final Integer agentInstanceNumberOfShards) {
+    this.agentInstanceNumberOfShards = agentInstanceNumberOfShards;
   }
 
   public String getRefreshInterval() {
@@ -79,7 +91,12 @@ public class DatabaseIndex {
   @Override
   public int hashCode() {
     return Objects.hash(
-        prefix, numberOfShards, numberOfReplicas, refreshInterval, nestedDocumentsLimit);
+        prefix,
+        numberOfShards,
+        agentInstanceNumberOfShards,
+        numberOfReplicas,
+        refreshInterval,
+        nestedDocumentsLimit);
   }
 
   @Override
@@ -92,6 +109,7 @@ public class DatabaseIndex {
     }
     final DatabaseIndex that = (DatabaseIndex) o;
     return Objects.equals(numberOfShards, that.numberOfShards)
+        && Objects.equals(agentInstanceNumberOfShards, that.agentInstanceNumberOfShards)
         && Objects.equals(numberOfReplicas, that.numberOfReplicas)
         && Objects.equals(nestedDocumentsLimit, that.nestedDocumentsLimit)
         && Objects.equals(prefix, that.prefix)
@@ -104,6 +122,8 @@ public class DatabaseIndex {
         + getNumberOfReplicas()
         + ", numberOfShards="
         + getNumberOfShards()
+        + ", agentInstanceNumberOfShards="
+        + getAgentInstanceNumberOfShards()
         + ", refreshInterval="
         + getRefreshInterval()
         + ", nestedDocumentsLimit="

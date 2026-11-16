@@ -20,6 +20,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
 import io.camunda.optimize.service.db.os.MappingMetadataUtilOS;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
+import io.camunda.optimize.service.db.os.schema.index.AgentDefinitionIndexOS;
+import io.camunda.optimize.service.db.os.schema.index.AgentRunIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.AlertIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessKeyIndexOS;
 import io.camunda.optimize.service.db.os.schema.index.BusinessValueOverviewIndexOS;
@@ -551,6 +553,8 @@ public class OpenSearchSchemaManager
 
   public static List<IndexMappingCreator<IndexSettings.Builder>> getAllNonDynamicMappings() {
     return Arrays.asList(
+        new AgentDefinitionIndexOS(),
+        new AgentRunIndexOS(),
         new AlertIndexOS(),
         new BusinessKeyIndexOS(),
         new BusinessValueOverviewIndexOS(),
