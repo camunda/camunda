@@ -8,82 +8,82 @@
 package io.camunda.zeebe.engine.state.batchoperation;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.IntegerValue;
-import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import org.agrona.collections.IntArrayList;
+import org.agrona.collections.LongArrayList;
+import org.jspecify.annotations.NullMarked;
 
 /** Represents a chunk of itemKeys of a batch operation that is persisted in the database. */
-public class PersistedBatchOperationChunk extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class PersistedBatchOperationChunk
+    extends MsgpackBufferValue<PersistedBatchOperationChunk> implements DbValue {
 
   /** The key of the chunk. This key os unique just for the batch operation it belongs to. */
-  private final LongProperty keyProp = new LongProperty("key");
+  final RequiredLong key = new RequiredLong();
 
   /** The key of the batch operation this chunk belongs to. */
-  private final LongProperty batchOperationKeyProp = new LongProperty("batchOperationKey");
+  final RequiredLong batchOperationKey = new RequiredLong();
 
   /**
    * The itemKeys of the batch operation chunk. This is an array of itemKeys that are part of the
    * batch operation.
    */
-  private final ArrayProperty<LongValue> itemKeysProp =
-      new ArrayProperty<>("itemKeys", LongValue::new);
+  final LongArrayList itemKeys = new LongArrayList();
 
   /**
-   * The storage ordinal of the item at the same position in {@link #itemKeysProp}. Chunks persisted
+   * The storage ordinal of the item at the same position in {@link #itemKeys}. Chunks persisted
    * before ordinals were tracked have no entries here, their items read as ordinal 0.
    */
-  private final ArrayProperty<IntegerValue> itemStorageOrdinalsProp =
-      new ArrayProperty<>("itemStorageOrdinals", IntegerValue::new);
+  final IntArrayList itemStorageOrdinals = new IntArrayList();
 
-  public PersistedBatchOperationChunk() {
-    super(4);
-    declareProperty(keyProp)
-        .declareProperty(batchOperationKeyProp)
-        .declareProperty(itemKeysProp)
-        .declareProperty(itemStorageOrdinalsProp);
-  }
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public long getKey() {
-    return keyProp.getValue();
+    return key.get();
   }
 
   public PersistedBatchOperationChunk setKey(final long key) {
-    keyProp.setValue(key);
+    this.key.set(key);
     return this;
   }
 
   public long getBatchOperationKey() {
-    return batchOperationKeyProp.getValue();
+    return batchOperationKey.get();
   }
 
   public PersistedBatchOperationChunk setBatchOperationKey(final long batchOperationKey) {
-    batchOperationKeyProp.setValue(batchOperationKey);
+    this.batchOperationKey.set(batchOperationKey);
     return this;
   }
 
   public List<Long> getItemKeys() {
-    return itemKeysProp.stream().map(LongValue::getValue).toList();
+    return itemKeys.stream().toList();
   }
 
   /** Replaces the items of the chunk with bare keys, their storage ordinal reads as 0. */
   public PersistedBatchOperationChunk setItemKeys(final Collection<Long> itemKeys) {
-    itemKeysProp.reset();
-    itemStorageOrdinalsProp.reset();
-    itemKeys.forEach(key -> itemKeysProp.add().setValue(key));
+    this.itemKeys.clear();
+    itemStorageOrdinals.clear();
+    itemKeys.forEach(key -> this.itemKeys.addLong(key));
     return this;
   }
 
   /** Returns the items of the chunk with their storage ordinals, in chunk order. */
   public List<ChunkItem> getItems() {
     final var itemKeys = getItemKeys();
-    final var ordinals = itemStorageOrdinalsProp.stream().map(IntegerValue::getValue).toList();
+    final var ordinals = itemStorageOrdinals.stream().toList();
     final var items = new ArrayList<ChunkItem>(itemKeys.size());
     for (int i = 0; i < itemKeys.size(); i++) {
       final int ordinal = i < ordinals.size() ? ordinals.get(i) : StorageOrdinalRelated.MAIN_INDEX;
@@ -94,17 +94,17 @@ public class PersistedBatchOperationChunk extends UnpackedObject implements DbVa
 
   /** Replaces the items of the chunk, keys and storage ordinals alike. */
   public PersistedBatchOperationChunk setItems(final Collection<ChunkItem> items) {
-    itemKeysProp.reset();
-    itemStorageOrdinalsProp.reset();
+    itemKeys.clear();
+    itemStorageOrdinals.clear();
     for (final var item : items) {
-      itemKeysProp.add().setValue(item.itemKey());
-      itemStorageOrdinalsProp.add().setValue(item.storageOrdinal());
+      itemKeys.addLong(item.itemKey());
+      itemStorageOrdinals.addInt(item.storageOrdinal());
     }
     return this;
   }
 
   public PersistedBatchOperationChunk appendItemKey(final Long itemKey) {
-    itemKeysProp.add().setValue(itemKey);
+    itemKeys.addLong(itemKey);
     return this;
   }
 
@@ -119,4 +119,14 @@ public class PersistedBatchOperationChunk extends UnpackedObject implements DbVa
 
   /** One item of the chunk: its key and the storage ordinal its entity lives under. */
   public record ChunkItem(long itemKey, int storageOrdinal) {}
+
+  @Override
+  protected MsgpackCodec<PersistedBatchOperationChunk> codec() {
+    return PersistedBatchOperationChunkCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PersistedBatchOperationChunk> ops() {
+    return PersistedBatchOperationChunkOps.INSTANCE;
+  }
 }

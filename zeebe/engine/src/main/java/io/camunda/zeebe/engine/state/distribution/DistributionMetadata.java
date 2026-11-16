@@ -8,27 +8,38 @@
 package io.camunda.zeebe.engine.state.distribution;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import org.jspecify.annotations.NullMarked;
 
-public class DistributionMetadata extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class DistributionMetadata extends MsgpackBufferValue<DistributionMetadata>
+    implements DbValue {
 
-  private static final StringValue START_TIME = new StringValue("startTime");
-
-  private final LongProperty startTimeProp = new LongProperty(START_TIME, -1L);
-
-  public DistributionMetadata() {
-    super(1);
-    declareProperty(startTimeProp);
-  }
+  long startTime = -1L;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public long getStartTime() {
-    return startTimeProp.getValue();
+    return startTime;
   }
 
   public DistributionMetadata setStartTime(final long startTime) {
-    startTimeProp.setValue(startTime);
+    this.startTime = startTime;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<DistributionMetadata> codec() {
+    return DistributionMetadataCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<DistributionMetadata> ops() {
+    return DistributionMetadataOps.INSTANCE;
   }
 }

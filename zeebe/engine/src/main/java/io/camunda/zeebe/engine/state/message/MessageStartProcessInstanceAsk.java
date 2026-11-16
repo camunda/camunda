@@ -8,14 +8,21 @@
 package io.camunda.zeebe.engine.state.message;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartProcessInstanceRequestRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Value stored in the pending cross-partition message-start ask CF on {@code P_K}. Contains all
@@ -41,41 +48,28 @@ import org.agrona.concurrent.UnsafeBuffer;
  * long-blocked ask from resetting to base-interval storming on every leader change. It defaults to
  * {@code 0} so values persisted before this field existed decode unchanged.
  */
-public final class MessageStartProcessInstanceAsk extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class MessageStartProcessInstanceAsk
+    extends MsgpackBufferValue<MessageStartProcessInstanceAsk> implements DbValue {
 
-  private final LongProperty messageKeyProp = new LongProperty("messageKey", -1L);
-  private final StringProperty messageNameProp = new StringProperty("messageName", "");
-  private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
-  private final StringProperty businessIdProp = new StringProperty("businessId", "");
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty("processDefinitionKey", -1L);
-  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
-  private final StringProperty startEventIdProp = new StringProperty("startEventId", "");
-  private final LongProperty messageStartEventSubscriptionKeyProp =
-      new LongProperty("messageStartEventSubscriptionKey", -1L);
-  private final DocumentProperty variablesProp = new DocumentProperty("variables");
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty messageDeadlineProp = new LongProperty("messageDeadline", -1L);
-  private final LongProperty messageTtlProp = new LongProperty("messageTtl", 0L);
-  private final LongProperty rejectionCountProp = new LongProperty("rejectionCount", 0L);
+  long messageKey = -1L;
+  DirectBuffer messageName = Decoding.EMPTY;
+  DirectBuffer correlationKey = Decoding.EMPTY;
+  DirectBuffer businessId = Decoding.EMPTY;
+  long processDefinitionKey = -1L;
+  DirectBuffer bpmnProcessId = Decoding.EMPTY;
+  DirectBuffer startEventId = Decoding.EMPTY;
+  long messageStartEventSubscriptionKey = -1L;
 
-  public MessageStartProcessInstanceAsk() {
-    super(13);
-    declareProperty(messageKeyProp)
-        .declareProperty(messageNameProp)
-        .declareProperty(correlationKeyProp)
-        .declareProperty(businessIdProp)
-        .declareProperty(processDefinitionKeyProp)
-        .declareProperty(bpmnProcessIdProp)
-        .declareProperty(startEventIdProp)
-        .declareProperty(messageStartEventSubscriptionKeyProp)
-        .declareProperty(variablesProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(messageDeadlineProp)
-        .declareProperty(messageTtlProp)
-        .declareProperty(rejectionCountProp);
-  }
+  @MsgpackProperty(document = true)
+  DirectBuffer variables = DocumentValue.EMPTY_DOCUMENT;
+
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long messageDeadline = -1L;
+  long messageTtl = 0L;
+  long rejectionCount = 0L;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   /**
    * Copy values from a request record into this value object.
@@ -121,132 +115,132 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
   }
 
   public long getMessageKey() {
-    return messageKeyProp.getValue();
+    return messageKey;
   }
 
   public MessageStartProcessInstanceAsk setMessageKey(final long messageKey) {
-    messageKeyProp.setValue(messageKey);
+    this.messageKey = messageKey;
     return this;
   }
 
   public DirectBuffer getMessageNameBuffer() {
-    return messageNameProp.getValue();
+    return messageName;
   }
 
   public MessageStartProcessInstanceAsk setMessageName(final String messageName) {
-    messageNameProp.setValue(messageName);
+    this.messageName = BufferUtil.wrapString(messageName);
     return this;
   }
 
   public MessageStartProcessInstanceAsk setMessageName(final DirectBuffer messageName) {
-    messageNameProp.setValue(messageName);
+    this.messageName = messageName;
     return this;
   }
 
   public DirectBuffer getCorrelationKeyBuffer() {
-    return correlationKeyProp.getValue();
+    return correlationKey;
   }
 
   public MessageStartProcessInstanceAsk setCorrelationKey(final String correlationKey) {
-    correlationKeyProp.setValue(correlationKey);
+    this.correlationKey = BufferUtil.wrapString(correlationKey);
     return this;
   }
 
   public MessageStartProcessInstanceAsk setCorrelationKey(final DirectBuffer correlationKey) {
-    correlationKeyProp.setValue(correlationKey);
+    this.correlationKey = correlationKey;
     return this;
   }
 
   public DirectBuffer getBusinessIdBuffer() {
-    return businessIdProp.getValue();
+    return businessId;
   }
 
   public MessageStartProcessInstanceAsk setBusinessId(final String businessId) {
-    businessIdProp.setValue(businessId);
+    this.businessId = BufferUtil.wrapString(businessId);
     return this;
   }
 
   public MessageStartProcessInstanceAsk setBusinessId(final DirectBuffer businessId) {
-    businessIdProp.setValue(businessId);
+    this.businessId = businessId;
     return this;
   }
 
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey;
   }
 
   public MessageStartProcessInstanceAsk setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProp.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
   public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProp.getValue();
+    return bpmnProcessId;
   }
 
   public MessageStartProcessInstanceAsk setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = BufferUtil.wrapString(bpmnProcessId);
     return this;
   }
 
   public MessageStartProcessInstanceAsk setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
   public DirectBuffer getStartEventIdBuffer() {
-    return startEventIdProp.getValue();
+    return startEventId;
   }
 
   public MessageStartProcessInstanceAsk setStartEventId(final String startEventId) {
-    startEventIdProp.setValue(startEventId);
+    this.startEventId = BufferUtil.wrapString(startEventId);
     return this;
   }
 
   public MessageStartProcessInstanceAsk setStartEventId(final DirectBuffer startEventId) {
-    startEventIdProp.setValue(startEventId);
+    this.startEventId = startEventId;
     return this;
   }
 
   public long getMessageStartEventSubscriptionKey() {
-    return messageStartEventSubscriptionKeyProp.getValue();
+    return messageStartEventSubscriptionKey;
   }
 
   public MessageStartProcessInstanceAsk setMessageStartEventSubscriptionKey(
       final long messageStartEventSubscriptionKey) {
-    messageStartEventSubscriptionKeyProp.setValue(messageStartEventSubscriptionKey);
+    this.messageStartEventSubscriptionKey = messageStartEventSubscriptionKey;
     return this;
   }
 
   public DirectBuffer getVariablesBuffer() {
-    return variablesProp.getValue();
+    return variables;
   }
 
   public MessageStartProcessInstanceAsk setVariables(final DirectBuffer variables) {
-    variablesProp.setValue(variables);
+    this.variables = Decoding.document(variables);
     return this;
   }
 
   public DirectBuffer getTenantIdBuffer() {
-    return tenantIdProp.getValue();
+    return tenantId;
   }
 
   public MessageStartProcessInstanceAsk setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   public MessageStartProcessInstanceAsk setTenantId(final DirectBuffer tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = tenantId;
     return this;
   }
 
   public long getMessageDeadline() {
-    return messageDeadlineProp.getValue();
+    return messageDeadline;
   }
 
   public MessageStartProcessInstanceAsk setMessageDeadline(final long messageDeadline) {
-    messageDeadlineProp.setValue(messageDeadline);
+    this.messageDeadline = messageDeadline;
     return this;
   }
 
@@ -256,11 +250,11 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
    * (fire-and-forget), matching {@code MessageRecord.timeToLive}.
    */
   public long getMessageTtl() {
-    return messageTtlProp.getValue();
+    return messageTtl;
   }
 
   public MessageStartProcessInstanceAsk setMessageTtl(final long messageTtl) {
-    messageTtlProp.setValue(messageTtl);
+    this.messageTtl = messageTtl;
     return this;
   }
 
@@ -270,11 +264,11 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
    * {@code min(baseInterval * 2^rejectionCount, cap)}.
    */
   public long getRejectionCount() {
-    return rejectionCountProp.getValue();
+    return rejectionCount;
   }
 
   public MessageStartProcessInstanceAsk setRejectionCount(final long rejectionCount) {
-    rejectionCountProp.setValue(rejectionCount);
+    this.rejectionCount = rejectionCount;
     return this;
   }
 
@@ -286,5 +280,15 @@ public final class MessageStartProcessInstanceAsk extends UnpackedObject impleme
     write(buffer, 0);
     copy.wrap(buffer, 0, length);
     return copy;
+  }
+
+  @Override
+  protected MsgpackCodec<MessageStartProcessInstanceAsk> codec() {
+    return MessageStartProcessInstanceAskCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<MessageStartProcessInstanceAsk> ops() {
+    return MessageStartProcessInstanceAskOps.INSTANCE;
   }
 }

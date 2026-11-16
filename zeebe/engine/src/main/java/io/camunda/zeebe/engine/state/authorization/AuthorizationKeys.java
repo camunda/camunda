@@ -8,40 +8,51 @@
 package io.camunda.zeebe.engine.state.authorization;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import org.agrona.collections.LongArrayList;
+import org.jspecify.annotations.NullMarked;
 
-public class AuthorizationKeys extends UnpackedObject implements DbValue {
-  private final ArrayProperty<LongValue> authorizationKeys =
-      new ArrayProperty<>("authorizationKeys", LongValue::new);
+@MsgpackPojo
+@NullMarked
+public final class AuthorizationKeys extends MsgpackBufferValue<AuthorizationKeys>
+    implements DbValue {
 
-  public AuthorizationKeys() {
-    super(1);
-    declareProperty(authorizationKeys);
-  }
+  final LongArrayList authorizationKeys = new LongArrayList();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public Set<Long> getAuthorizationKeys() {
-    return StreamSupport.stream(authorizationKeys.spliterator(), false)
-        .map(LongValue::getValue)
-        .collect(Collectors.toSet());
+    return authorizationKeys.stream().collect(Collectors.toSet());
   }
 
   public void setAuthorizationKeys(final Set<Long> keys) {
-    authorizationKeys.reset();
-    keys.forEach(key -> authorizationKeys.add().setValue(key));
+    authorizationKeys.clear();
+    keys.forEach(key -> authorizationKeys.addLong(key));
   }
 
   public void addAuthorizationKey(final long authorizationKey) {
-    authorizationKeys.add().setValue(authorizationKey);
+    authorizationKeys.addLong(authorizationKey);
   }
 
   public void removeAuthorizationKey(final long authorizationKey) {
     final var keys = getAuthorizationKeys();
     keys.remove(authorizationKey);
     setAuthorizationKeys(keys);
+  }
+
+  @Override
+  protected MsgpackCodec<AuthorizationKeys> codec() {
+    return AuthorizationKeysCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<AuthorizationKeys> ops() {
+    return AuthorizationKeysOps.INSTANCE;
   }
 }

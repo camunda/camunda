@@ -9,11 +9,17 @@ package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * This class holds the necessary user task data (including variables) to finalize commands such as
@@ -36,32 +42,39 @@ import java.util.Objects;
  * intermediate state tracks the new assignee, which can be applied after the task listener
  * completes.
  */
-public class UserTaskIntermediateStateValue extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class UserTaskIntermediateStateValue
+    extends MsgpackBufferValue<UserTaskIntermediateStateValue> implements DbValue {
 
-  private final ObjectProperty<UserTaskRecord> recordProp =
-      new ObjectProperty<>("userTaskRecord", new UserTaskRecord());
-
-  private final EnumProperty<LifecycleState> lifecycleStateProp =
-      new EnumProperty<>("lifecycleState", LifecycleState.class);
-
-  public UserTaskIntermediateStateValue() {
-    super(2);
-    declareProperty(recordProp).declareProperty(lifecycleStateProp);
-  }
+  final UserTaskRecord userTaskRecord = new UserTaskRecord();
+  @Nullable LifecycleState lifecycleState;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public UserTaskRecord getRecord() {
-    return recordProp.getValue();
+    return userTaskRecord;
   }
 
   public void setRecord(final UserTaskRecord record) {
-    recordProp.getValue().wrap(record);
+    userTaskRecord.wrap(record);
   }
 
   public LifecycleState getLifecycleState() {
-    return Objects.requireNonNullElse(lifecycleStateProp.getValue(), LifecycleState.NOT_FOUND);
+    return Objects.requireNonNullElse(
+        Decoding.required(lifecycleState, "lifecycleState"), LifecycleState.NOT_FOUND);
   }
 
   public void setLifecycleState(final LifecycleState lifecycleState) {
-    lifecycleStateProp.setValue(lifecycleState);
+    this.lifecycleState = lifecycleState;
+  }
+
+  @Override
+  protected MsgpackCodec<UserTaskIntermediateStateValue> codec() {
+    return UserTaskIntermediateStateValueCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<UserTaskIntermediateStateValue> ops() {
+    return UserTaskIntermediateStateValueOps.INSTANCE;
   }
 }

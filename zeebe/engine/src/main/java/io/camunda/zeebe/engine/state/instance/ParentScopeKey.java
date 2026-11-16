@@ -8,22 +8,36 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import org.jspecify.annotations.NullMarked;
 
-public class ParentScopeKey extends UnpackedObject implements DbValue {
-  private final LongProperty keyProp = new LongProperty("parentScopeKey", -1L);
+@MsgpackPojo
+@NullMarked
+public final class ParentScopeKey extends MsgpackBufferValue<ParentScopeKey> implements DbValue {
+  long parentScopeKey = -1L;
 
-  public ParentScopeKey() {
-    super(1);
-    declareProperty(keyProp);
-  }
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public void set(final long key) {
-    keyProp.setValue(key);
+    parentScopeKey = key;
   }
 
   public long get() {
-    return keyProp.getValue();
+    return parentScopeKey;
+  }
+
+  @Override
+  protected MsgpackCodec<ParentScopeKey> codec() {
+    return ParentScopeKeyCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ParentScopeKey> ops() {
+    return ParentScopeKeyOps.INSTANCE;
   }
 }

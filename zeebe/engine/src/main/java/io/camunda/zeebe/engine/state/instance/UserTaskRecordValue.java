@@ -8,29 +8,42 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import org.jspecify.annotations.NullMarked;
 
-public class UserTaskRecordValue extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class UserTaskRecordValue extends MsgpackBufferValue<UserTaskRecordValue>
+    implements DbValue {
 
-  private final ObjectProperty<UserTaskRecord> recordProp =
-      new ObjectProperty<>("userTaskRecord", new UserTaskRecord());
-
-  public UserTaskRecordValue() {
-    super(1);
-    declareProperty(recordProp);
-  }
+  final UserTaskRecord userTaskRecord = new UserTaskRecord();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public UserTaskRecord getRecord() {
-    return recordProp.getValue();
+    return userTaskRecord;
   }
 
   public void setRecordWithoutVariables(final UserTaskRecord record) {
-    recordProp.getValue().wrapWithoutVariables(record);
+    userTaskRecord.wrapWithoutVariables(record);
   }
 
   public void setRecord(final UserTaskRecord record) {
-    recordProp.getValue().wrap(record);
+    userTaskRecord.wrap(record);
+  }
+
+  @Override
+  protected MsgpackCodec<UserTaskRecordValue> codec() {
+    return UserTaskRecordValueCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<UserTaskRecordValue> ops() {
+    return UserTaskRecordValueOps.INSTANCE;
   }
 }

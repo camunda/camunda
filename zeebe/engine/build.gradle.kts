@@ -26,6 +26,8 @@ dependencies {
   implementation(project(":zeebe-feel-tagged-parameters"))
   implementation(project(":zeebe-dmn"))
   implementation(project(":zeebe-msgpack-value"))
+  implementation(project(":zeebe-msgpack-codegen"))
+  annotationProcessor(project(":zeebe-msgpack-codegen"))
   implementation(libs.org.msgpack.jackson.dataformat.msgpack)
   implementation(project(":zeebe-bpmn-model"))
   implementation(project(":zeebe-auth"))

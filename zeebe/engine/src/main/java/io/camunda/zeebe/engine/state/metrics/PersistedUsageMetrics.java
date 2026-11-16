@@ -8,91 +8,101 @@
 package io.camunda.zeebe.engine.state.metrics;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class PersistedUsageMetrics extends MsgpackBufferValue<PersistedUsageMetrics>
+    implements DbValue {
 
   public static final int TIME_NOT_SET = -1;
 
-  private final LongProperty fromTimeProp = new LongProperty("fromTime", TIME_NOT_SET);
-  private final LongProperty toTimeProp = new LongProperty("toTime", TIME_NOT_SET);
-  private final DocumentProperty tenantRPIMapProp = new DocumentProperty("tenantRPI");
-  private final DocumentProperty tenantEDIMapProp = new DocumentProperty("tenantEDI");
-  private final DocumentProperty tenantTUMapProp = new DocumentProperty("tenantTU");
+  long fromTime = TIME_NOT_SET;
+  long toTime = TIME_NOT_SET;
 
-  public PersistedUsageMetrics() {
-    super(5);
-    declareProperty(fromTimeProp)
-        .declareProperty(toTimeProp)
-        .declareProperty(tenantRPIMapProp)
-        .declareProperty(tenantEDIMapProp)
-        .declareProperty(tenantTUMapProp);
-  }
+  @MsgpackProperty(document = true)
+  DirectBuffer tenantRPI = DocumentValue.EMPTY_DOCUMENT;
+
+  @MsgpackProperty(document = true)
+  DirectBuffer tenantEDI = DocumentValue.EMPTY_DOCUMENT;
+
+  @MsgpackProperty(document = true)
+  DirectBuffer tenantTU = DocumentValue.EMPTY_DOCUMENT;
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public long getFromTime() {
-    return fromTimeProp.getValue();
+    return fromTime;
   }
 
   public PersistedUsageMetrics setFromTime(final long fromTime) {
-    fromTimeProp.setValue(fromTime);
+    this.fromTime = fromTime;
     return this;
   }
 
   public long getToTime() {
-    return toTimeProp.getValue();
+    return toTime;
   }
 
   public PersistedUsageMetrics setToTime(final long toTime) {
-    toTimeProp.setValue(toTime);
+    this.toTime = toTime;
     return this;
   }
 
   public DirectBuffer getTenantRPIMapValue() {
-    return tenantRPIMapProp.getValue();
+    return tenantRPI;
   }
 
   public Map<String, Long> getTenantRPIMap() {
-    return MsgPackConverter.convertToLongMap(tenantRPIMapProp.getValue());
+    return MsgPackConverter.convertToLongMap(getTenantRPIMapValue());
   }
 
   public PersistedUsageMetrics setTenantRPIMap(final Map<String, Long> tenantRPIMap) {
-    tenantRPIMapProp.setValue(
-        BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(tenantRPIMap)));
+    tenantRPI =
+        Decoding.document(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(tenantRPIMap)));
     return this;
   }
 
   public DirectBuffer getTenantEDIMapValue() {
-    return tenantEDIMapProp.getValue();
+    return tenantEDI;
   }
 
   public Map<String, Long> getTenantEDIMap() {
-    return MsgPackConverter.convertToLongMap(tenantEDIMapProp.getValue());
+    return MsgPackConverter.convertToLongMap(getTenantEDIMapValue());
   }
 
   public PersistedUsageMetrics setTenantEDIMap(final Map<String, Long> tenantEDIMap) {
-    tenantEDIMapProp.setValue(
-        BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(tenantEDIMap)));
+    tenantEDI =
+        Decoding.document(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(tenantEDIMap)));
     return this;
   }
 
   public DirectBuffer getTenantTUMapValue() {
-    return tenantTUMapProp.getValue();
+    return tenantTU;
   }
 
   public Map<String, Set<Long>> getTenantTUMap() {
-    return MsgPackConverter.convertToSetLongMap(tenantTUMapProp.getValue());
+    return MsgPackConverter.convertToSetLongMap(getTenantTUMapValue());
   }
 
   public PersistedUsageMetrics setTenantTUMap(final Map<String, Set<Long>> tenantTUMap) {
-    tenantTUMapProp.setValue(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(tenantTUMap)));
+    tenantTU =
+        Decoding.document(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(tenantTUMap)));
     return this;
   }
 
@@ -129,5 +139,15 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
     }
     bucket.setToTime(time);
     return bucket;
+  }
+
+  @Override
+  protected MsgpackCodec<PersistedUsageMetrics> codec() {
+    return PersistedUsageMetricsCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PersistedUsageMetrics> ops() {
+    return PersistedUsageMetricsOps.INSTANCE;
   }
 }

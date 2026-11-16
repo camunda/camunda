@@ -8,25 +8,27 @@
 package io.camunda.zeebe.engine.state.deployment;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
 
 /** DeplyomentRecord wrapper to store the record in the State. */
-public class DeploymentRaw extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class DeploymentRaw extends MsgpackBufferValue<DeploymentRaw> implements DbValue {
 
-  private final ObjectProperty<DeploymentRecord> deploymentRecordProperty =
-      new ObjectProperty<>("deploymentRecord", new DeploymentRecord());
-
-  public DeploymentRaw() {
-    super(1);
-    declareProperty(deploymentRecordProperty);
-  }
+  final DeploymentRecord deploymentRecord = new DeploymentRecord();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public DeploymentRecord getDeploymentRecord() {
-    return deploymentRecordProperty.getValue();
+    return deploymentRecord;
   }
 
   public void setDeploymentRecord(final DeploymentRecord deploymentRecord) {
@@ -35,6 +37,16 @@ public class DeploymentRaw extends UnpackedObject implements DbValue {
     valueBuffer.wrap(new byte[encodedLength]);
 
     deploymentRecord.write(valueBuffer, 0);
-    deploymentRecordProperty.getValue().wrap(valueBuffer, 0, encodedLength);
+    this.deploymentRecord.wrap(valueBuffer, 0, encodedLength);
+  }
+
+  @Override
+  protected MsgpackCodec<DeploymentRaw> codec() {
+    return DeploymentRawCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<DeploymentRaw> ops() {
+    return DeploymentRawOps.INSTANCE;
   }
 }

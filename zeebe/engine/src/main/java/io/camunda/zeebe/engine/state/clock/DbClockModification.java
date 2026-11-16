@@ -8,44 +8,56 @@
 package io.camunda.zeebe.engine.state.clock;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 import java.time.Duration;
 import java.time.Instant;
+import org.jspecify.annotations.NullMarked;
 
-final class DbClockModification extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+final class DbClockModification extends MsgpackBufferValue<DbClockModification> implements DbValue {
+  ModificationType type = ModificationType.NONE;
   // depending on the intent, the value may be a timestamp (epoch milliseconds) or an offset (in
   // milliseconds)
-  private final LongProperty timeProperty = new LongProperty("time", 0);
-  private final EnumProperty<ModificationType> typeProperty =
-      new EnumProperty<>("type", ModificationType.class, ModificationType.NONE);
+  long time = 0;
 
-  DbClockModification() {
-    super(2);
-    declareProperty(typeProperty).declareProperty(timeProperty);
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
+
+  @Override
+  protected MsgpackCodec<DbClockModification> codec() {
+    return DbClockModificationCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<DbClockModification> ops() {
+    return DbClockModificationOps.INSTANCE;
   }
 
   DbClockModification pinAt(final long pinnedEpoch) {
     reset();
-    typeProperty.setValue(ModificationType.PIN);
-    timeProperty.setValue(pinnedEpoch);
+    type = ModificationType.PIN;
+    time = pinnedEpoch;
     return this;
   }
 
   DbClockModification offsetBy(final long offsetMillis) {
     reset();
-    typeProperty.setValue(ModificationType.OFFSET);
-    timeProperty.setValue(offsetMillis);
+    type = ModificationType.OFFSET;
+    time = offsetMillis;
     return this;
   }
 
   Modification modification() {
-    return switch (typeProperty.getValue()) {
+    return switch (type) {
       case NONE -> Modification.none();
-      case PIN -> Modification.pinAt(Instant.ofEpochMilli(timeProperty.getValue()));
-      case OFFSET -> Modification.offsetBy(Duration.ofMillis(timeProperty.getValue()));
+      case PIN -> Modification.pinAt(Instant.ofEpochMilli(time));
+      case OFFSET -> Modification.offsetBy(Duration.ofMillis(time));
     };
   }
 

@@ -8,13 +8,18 @@
 package io.camunda.zeebe.engine.state.message;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Value of the cross-partition message-start holder-origin column family, written on {@code P_B}
@@ -42,65 +47,57 @@ import org.agrona.DirectBuffer;
  * <p>The buffers returned by the getters are backed by the shared column-family read buffer; copy
  * them before appending events or performing further state reads.
  */
-public final class CrossPartitionMessageStartHolderOrigin extends UnpackedObject
-    implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class CrossPartitionMessageStartHolderOrigin
+    extends MsgpackBufferValue<CrossPartitionMessageStartHolderOrigin> implements DbValue {
 
-  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
-  private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty messageKeyProp = new LongProperty("messageKey", -1L);
-  private final IntegerProperty storageOrdinalProp =
-      new IntegerProperty("storageOrdinal", StorageOrdinalRelated.MAIN_INDEX);
-
-  public CrossPartitionMessageStartHolderOrigin() {
-    super(5);
-    declareProperty(bpmnProcessIdProp)
-        .declareProperty(correlationKeyProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(messageKeyProp)
-        .declareProperty(storageOrdinalProp);
-  }
+  DirectBuffer bpmnProcessId = Decoding.EMPTY;
+  DirectBuffer correlationKey = Decoding.EMPTY;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long messageKey = -1L;
+  int storageOrdinal = StorageOrdinalRelated.MAIN_INDEX;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProp.getValue();
+    return bpmnProcessId;
   }
 
   public CrossPartitionMessageStartHolderOrigin setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
   public DirectBuffer getCorrelationKeyBuffer() {
-    return correlationKeyProp.getValue();
+    return correlationKey;
   }
 
   public CrossPartitionMessageStartHolderOrigin setCorrelationKey(
       final DirectBuffer correlationKey) {
-    correlationKeyProp.setValue(correlationKey);
+    this.correlationKey = correlationKey;
     return this;
   }
 
   public DirectBuffer getTenantIdBuffer() {
-    return tenantIdProp.getValue();
+    return tenantId;
   }
 
   public CrossPartitionMessageStartHolderOrigin setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   public CrossPartitionMessageStartHolderOrigin setTenantId(final DirectBuffer tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = tenantId;
     return this;
   }
 
   public long getMessageKey() {
-    return messageKeyProp.getValue();
+    return messageKey;
   }
 
   public CrossPartitionMessageStartHolderOrigin setMessageKey(final long messageKey) {
-    messageKeyProp.setValue(messageKey);
+    this.messageKey = messageKey;
     return this;
   }
 
@@ -109,11 +106,21 @@ public final class CrossPartitionMessageStartHolderOrigin extends UnpackedObject
    *     was persisted (released V1 STARTED applier), which is the main index
    */
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public CrossPartitionMessageStartHolderOrigin setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<CrossPartitionMessageStartHolderOrigin> codec() {
+    return CrossPartitionMessageStartHolderOriginCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<CrossPartitionMessageStartHolderOrigin> ops() {
+    return CrossPartitionMessageStartHolderOriginOps.INSTANCE;
   }
 }

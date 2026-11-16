@@ -11,18 +11,16 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.IntegerValue;
-import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.NestedRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
@@ -36,138 +34,117 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationProcessInstanceModificationPlanValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.util.ProjectionOf;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.IntArrayList;
+import org.agrona.collections.LongArrayList;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /** The persisted record for a batch operation in the rocksDb state. */
-public class PersistedBatchOperation extends UnpackedObject
+@MsgpackPojo
+@NullMarked
+public final class PersistedBatchOperation extends MsgpackBufferValue<PersistedBatchOperation>
     implements DbValue, ProjectionOf<BatchOperationCreationRecord, PersistedBatchOperation> {
 
   /** The key of the batch operation. This is a unique identifier for the batch operation. */
-  private final LongProperty keyProp = new LongProperty("key");
+  final RequiredLong key = new RequiredLong();
 
   /**
    * The type of the batch operation. This indicates what kind of operation is being performed in
    * the executor.
    */
-  private final EnumProperty<BatchOperationType> batchOperationTypeProp =
-      new EnumProperty<>("batchOperationType", BatchOperationType.class);
+  @Nullable BatchOperationType batchOperationType;
 
   /** The storage ordinal the batch operation inherited from the active ordinal at creation. */
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
+  int storageOrdinal = 0;
 
   /** The status of the batch operation. */
-  private final EnumProperty<BatchOperationStatus> statusProp =
-      new EnumProperty<>("status", BatchOperationStatus.class);
+  @Nullable BatchOperationStatus status;
 
   /**
    * The entity filter for the batch operation. This is a binary property that contains the
    * serialized form of the filter. It needs to be deserialized before it can be used.
    */
-  private final BinaryProperty entityFilterProp = new BinaryProperty("entityFilter");
+  @MsgpackProperty(binary = true)
+  @Nullable DirectBuffer entityFilter;
 
   /**
    * An optional migration plan for the batch operation. Usually only filled for the batch operation
    * type <code>MIGRATE_PROCESS_INSTANCE</code>.
    */
-  private final ObjectProperty<BatchOperationProcessInstanceMigrationPlan> migrationPlanProp =
-      new ObjectProperty<>("migrationPlan", new BatchOperationProcessInstanceMigrationPlan());
+  final BatchOperationProcessInstanceMigrationPlan migrationPlan =
+      new BatchOperationProcessInstanceMigrationPlan();
 
   /**
    * An optional modification plan for the batch operation. Usually only filled for the batch
    * operation type <code>MODIFY_PROCESS_INSTANCE</code>.
    */
-  private final ObjectProperty<BatchOperationProcessInstanceModificationPlan> modificationPlanProp =
-      new ObjectProperty<>("modificationPlan", new BatchOperationProcessInstanceModificationPlan());
+  final BatchOperationProcessInstanceModificationPlan modificationPlan =
+      new BatchOperationProcessInstanceModificationPlan();
 
   /**
    * An optional job update plan for the batch operation. Usually only filled for the batch
    * operation type <code>UPDATE_JOB</code>.
    */
-  private final ObjectProperty<BatchOperationJobUpdatePlan> jobUpdatePlanProp =
-      new ObjectProperty<>("jobUpdatePlan", new BatchOperationJobUpdatePlan());
-
-  /**
-   * A flag indicating whether the batch operation has been initialized. This flag should be true
-   * when the batch operation has been set to the status STARTED at least once. This is used on
-   * resumption to mark a batch operation as pending or not pending.
-   */
-  private final BooleanProperty initializedProp = new BooleanProperty("initialized", false);
-
-  /** The number of total items that are part of the batch operation. */
-  private final IntegerProperty numTotalItemsProp = new IntegerProperty("numTotalItems", 0);
-
-  /**
-   * The number of items that have been executed so far in the batch operation. This is used for a
-   * heartbeat logging in the BatchOperationExecuteProcessor.
-   */
-  private final IntegerProperty numExecutedItemsProp = new IntegerProperty("numExecutedItems", 0);
+  final BatchOperationJobUpdatePlan jobUpdatePlan = new BatchOperationJobUpdatePlan();
 
   /**
    * The keys of the chunks that are part of the batch operation. A chunk key is a local id
    * (starting from 0) for the chunks related to the batch operation. The combination of
    * batchOperationKey and chunkKey is unique.
    */
-  private final ArrayProperty<LongValue> chunkKeysProp =
-      new ArrayProperty<>("chunkKeys", LongValue::new);
+  final LongArrayList chunkKeys = new LongArrayList();
+
+  /**
+   * A flag indicating whether the batch operation has been initialized. This flag should be true
+   * when the batch operation has been set to the status STARTED at least once. This is used on
+   * resumption to mark a batch operation as pending or not pending.
+   */
+  boolean initialized = false;
+
+  DirectBuffer initializationSearchCursor = Decoding.EMPTY;
+
+  int initializationSearchQueryPageSize = -1;
 
   /**
    * The authentication claims for the batch operation. This is used to track the original
    * authentication claims of the user which has created the batch operation. This authentication is
    * used for querying the relevant itemKeys.
    */
-  private final DocumentProperty authenticationProp = new DocumentProperty("authentication");
-
-  private final StringProperty initializationSearchCursorProp =
-      new StringProperty("initializationSearchCursor", "");
-
-  private final IntegerProperty initializationSearchQueryPageSizeProp =
-      new IntegerProperty("initializationSearchQueryPageSize", -1);
+  @MsgpackProperty(document = true)
+  DirectBuffer authentication = DocumentValue.EMPTY_DOCUMENT;
 
   /**
    * The partition ids that are part of the batch operation. This is used to track which partitions
    * existed when the batch operation was created and on which partitions the batch operation runs.
    */
-  private final ArrayProperty<IntegerValue> partitionsProp =
-      new ArrayProperty<>("partitions", IntegerValue::new);
+  final IntArrayList partitions = new IntArrayList();
 
   /**
    * The partition ids that have been finished (completed or failed). This is used to track the
    * distributed progress sof the whole batch operations.
    */
-  private final ArrayProperty<IntegerValue> finishedPartitionsProp =
-      new ArrayProperty<>("finishedPartitions", IntegerValue::new);
+  final IntArrayList finishedPartitions = new IntArrayList();
 
-  private final ArrayProperty<BatchOperationError> errorsProp =
-      new ArrayProperty<>("errors", BatchOperationError::new);
+  /** The number of total items that are part of the batch operation. */
+  int numTotalItems = 0;
 
-  private final ObjectProperty<NestedRecord> followUpCommandProp =
-      new ObjectProperty<>("followUpCommand", new NestedRecord());
+  /**
+   * The number of items that have been executed so far in the batch operation. This is used for a
+   * heartbeat logging in the BatchOperationExecuteProcessor.
+   */
+  int numExecutedItems = 0;
 
-  public PersistedBatchOperation() {
-    super(19);
-    declareProperty(keyProp)
-        .declareProperty(batchOperationTypeProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(statusProp)
-        .declareProperty(entityFilterProp)
-        .declareProperty(migrationPlanProp)
-        .declareProperty(modificationPlanProp)
-        .declareProperty(jobUpdatePlanProp)
-        .declareProperty(chunkKeysProp)
-        .declareProperty(initializedProp)
-        .declareProperty(initializationSearchCursorProp)
-        .declareProperty(initializationSearchQueryPageSizeProp)
-        .declareProperty(authenticationProp)
-        .declareProperty(partitionsProp)
-        .declareProperty(finishedPartitionsProp)
-        .declareProperty(numTotalItemsProp)
-        .declareProperty(numExecutedItemsProp)
-        .declareProperty(errorsProp)
-        .declareProperty(followUpCommandProp);
-  }
+  final List<BatchOperationError> errors = new ArrayList<>();
+
+  final NestedRecord followUpCommand = new NestedRecord();
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public PersistedBatchOperation wrap(final BatchOperationCreationRecord record) {
@@ -186,7 +163,7 @@ public class PersistedBatchOperation extends UnpackedObject
 
   /** Marks this batch operation as initialized. */
   public void markAsInitialized() {
-    initializedProp.setValue(true);
+    initialized = true;
   }
 
   /**
@@ -196,7 +173,7 @@ public class PersistedBatchOperation extends UnpackedObject
    * @return true if the batch operation is initialized, false otherwise
    */
   public boolean isInitialized() {
-    return initializedProp.getValue();
+    return initialized;
   }
 
   public boolean canCancel() {
@@ -236,183 +213,182 @@ public class PersistedBatchOperation extends UnpackedObject
   }
 
   public long getKey() {
-    return keyProp.getValue();
+    return key.get();
   }
 
   public PersistedBatchOperation setKey(final long key) {
-    keyProp.setValue(key);
+    this.key.set(key);
     return this;
   }
 
   public BatchOperationType getBatchOperationType() {
-    return batchOperationTypeProp.getValue();
+    return Decoding.required(batchOperationType, "batchOperationType");
   }
 
   public PersistedBatchOperation setBatchOperationType(
       final BatchOperationType batchOperationType) {
-    batchOperationTypeProp.setValue(batchOperationType);
+    this.batchOperationType = batchOperationType;
     return this;
   }
 
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public PersistedBatchOperation setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 
   public BatchOperationStatus getStatus() {
-    return statusProp.getValue();
+    return Decoding.required(status, "status");
   }
 
   public PersistedBatchOperation setStatus(final BatchOperationStatus status) {
-    statusProp.setValue(status);
+    this.status = status;
     return this;
   }
 
   public BatchOperationProcessInstanceModificationPlan getModificationPlan() {
-    return modificationPlanProp.getValue();
+    return modificationPlan;
   }
 
   public PersistedBatchOperation setModificationPlan(
       final BatchOperationProcessInstanceModificationPlanValue modificationPlan) {
-    modificationPlanProp.getValue().wrap(modificationPlan);
+    this.modificationPlan.wrap(modificationPlan);
     return this;
   }
 
   public String getEntityFilter() {
-    return MsgPackConverter.convertToJson(entityFilterProp.getValue());
+    return MsgPackConverter.convertToJson(Decoding.required(entityFilter, "entityFilter"));
   }
 
   public PersistedBatchOperation setEntityFilter(final DirectBuffer filter) {
-    entityFilterProp.setValue(new UnsafeBuffer(filter));
+    this.entityFilter = new UnsafeBuffer(filter);
     return this;
   }
 
   public CamundaAuthentication getAuthentication() {
-    if (authenticationProp.getValue() != null) {
-      return MsgPackConverter.convertToObject(
-          authenticationProp.getValue(), CamundaAuthentication.class);
+    if (authentication != null) {
+      return MsgPackConverter.convertToObject(authentication, CamundaAuthentication.class);
     } else {
       return CamundaAuthentication.none();
     }
   }
 
   public PersistedBatchOperation setAuthentication(final DirectBuffer authentication) {
-    authenticationProp.setValue(authentication);
+    this.authentication = Decoding.document(authentication);
     return this;
   }
 
   public String getInitializationSearchCursor() {
-    return bufferAsString(initializationSearchCursorProp.getValue());
+    return bufferAsString(initializationSearchCursor);
   }
 
   public PersistedBatchOperation setInitializationSearchCursor(final String cursor) {
-    initializationSearchCursorProp.setValue(cursor);
+    this.initializationSearchCursor = BufferUtil.wrapString(cursor);
     return this;
   }
 
   public int getInitializationSearchQueryPageSize() {
-    return initializationSearchQueryPageSizeProp.getValue();
+    return initializationSearchQueryPageSize;
   }
 
   public PersistedBatchOperation setInitializationSearchQueryPageSize(final int pageSize) {
-    initializationSearchQueryPageSizeProp.setValue(pageSize);
+    this.initializationSearchQueryPageSize = pageSize;
     return this;
   }
 
   public int getInitializationSearchQueryPageSize(final int defaultValue) {
-    if (initializationSearchQueryPageSizeProp.getValue() == -1) {
+    if (initializationSearchQueryPageSize == -1) {
       return defaultValue;
     }
 
-    return initializationSearchQueryPageSizeProp.getValue();
+    return initializationSearchQueryPageSize;
   }
 
   public <T> T getEntityFilter(final Class<T> clazz) {
-    return MsgPackConverter.convertToObject(entityFilterProp.getValue(), clazz);
+    return MsgPackConverter.convertToObject(Decoding.required(entityFilter, "entityFilter"), clazz);
   }
 
   public BatchOperationProcessInstanceMigrationPlan getMigrationPlan() {
-    return migrationPlanProp.getValue();
+    return migrationPlan;
   }
 
   public PersistedBatchOperation setMigrationPlan(
       final BatchOperationProcessInstanceMigrationPlanValue migrationPlan) {
-    migrationPlanProp.getValue().wrap(migrationPlan);
+    this.migrationPlan.wrap(migrationPlan);
     return this;
   }
 
   public BatchOperationJobUpdatePlan getJobUpdatePlan() {
-    return jobUpdatePlanProp.getValue();
+    return jobUpdatePlan;
   }
 
   public PersistedBatchOperation setJobUpdatePlan(
       final BatchOperationJobUpdatePlanValue jobUpdatePlan) {
-    jobUpdatePlanProp.getValue().wrap(jobUpdatePlan);
+    this.jobUpdatePlan.wrap(jobUpdatePlan);
     return this;
   }
 
   public List<Integer> getPartitions() {
-    return partitionsProp.stream().map(IntegerValue::getValue).toList();
+    return partitions.stream().toList();
   }
 
   public PersistedBatchOperation setPartitions(final List<Integer> partitions) {
-    partitionsProp.reset();
+    this.partitions.clear();
     for (final var partition : partitions) {
-      partitionsProp.add().setValue(partition);
+      this.partitions.addInt(partition);
     }
     return this;
   }
 
   public NestedRecord getFollowUpCommand() {
-    return followUpCommandProp.getValue();
+    return followUpCommand;
   }
 
   public PersistedBatchOperation setFollowUpCommand(final NestedRecord command) {
-    followUpCommandProp.getValue().wrap(command);
+    followUpCommand.wrap(command);
     return this;
   }
 
   public boolean hasFollowUpCommand() {
-    return !followUpCommandProp.getValue().getValueType().equals(ValueType.NULL_VAL);
+    return !followUpCommand.getValueType().equals(ValueType.NULL_VAL);
   }
 
   public PersistedBatchOperation addFinishedPartition(final int partitionId) {
-    finishedPartitionsProp.add().setValue(partitionId);
+    finishedPartitions.addInt(partitionId);
     return this;
   }
 
   public List<Integer> getFinishedPartitions() {
-    return finishedPartitionsProp.stream().map(IntegerValue::getValue).toList();
+    return finishedPartitions.stream().toList();
   }
 
   public PersistedBatchOperation addError(final BatchOperationError error) {
-    errorsProp.add().wrap(error);
+    errors.add(new BatchOperationError().wrap(error));
     return this;
   }
 
   public List<BatchOperationError> getErrors() {
-    return errorsProp.stream().toList();
+    return errors.stream().toList();
   }
 
   public int getNumTotalItems() {
-    return numTotalItemsProp.getValue();
+    return numTotalItems;
   }
 
   public PersistedBatchOperation setNumTotalItems(final int numTotalItems) {
-    numTotalItemsProp.setValue(numTotalItems);
+    this.numTotalItems = numTotalItems;
     return this;
   }
 
   public int getNumExecutedItems() {
-    return numExecutedItemsProp.getValue();
+    return numExecutedItems;
   }
 
   public PersistedBatchOperation setNumExecutedItems(final int numExecutedItems) {
-    numExecutedItemsProp.setValue(numExecutedItems);
+    this.numExecutedItems = numExecutedItems;
     return this;
   }
 
@@ -434,7 +410,7 @@ public class PersistedBatchOperation extends UnpackedObject
    * @return this instance for method chaining
    */
   public PersistedBatchOperation addChunkKey(final Long chunkKey) {
-    chunkKeysProp.add().setValue(chunkKey);
+    chunkKeys.addLong(chunkKey);
     return this;
   }
 
@@ -445,13 +421,12 @@ public class PersistedBatchOperation extends UnpackedObject
    * @return this instance for method chaining
    */
   public PersistedBatchOperation removeChunkKey(final Long chunkKey) {
-    final var newKeys =
-        chunkKeysProp.stream().map(LongValue::getValue).filter(k -> !k.equals(chunkKey)).toList();
+    final var newKeys = chunkKeys.stream().filter(k -> !k.equals(chunkKey)).toList();
 
-    chunkKeysProp.reset();
+    chunkKeys.clear();
 
     for (final var key : newKeys) {
-      chunkKeysProp.add().setValue(key);
+      chunkKeys.addLong(key);
     }
 
     return this;
@@ -464,10 +439,7 @@ public class PersistedBatchOperation extends UnpackedObject
    * @return the minimum chunk key or <code>-1</code> if there are no chunks
    */
   public long getMinChunkKey() {
-    return chunkKeysProp.stream()
-        .min(Comparator.comparing(LongValue::getValue))
-        .map(LongValue::getValue)
-        .orElse(-1L);
+    return chunkKeys.stream().min(Comparator.naturalOrder()).orElse(-1L);
   }
 
   public boolean hasChunks() {
@@ -481,10 +453,17 @@ public class PersistedBatchOperation extends UnpackedObject
    * @return the maximum chunk key or <code>-1</code> if there are no chunks
    */
   public long getMaxChunkKey() {
-    return chunkKeysProp.stream()
-        .max(Comparator.comparing(LongValue::getValue))
-        .map(LongValue::getValue)
-        .orElse(-1L);
+    return chunkKeys.stream().max(Comparator.naturalOrder()).orElse(-1L);
+  }
+
+  @Override
+  protected MsgpackCodec<PersistedBatchOperation> codec() {
+    return PersistedBatchOperationCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PersistedBatchOperation> ops() {
+    return PersistedBatchOperationOps.INSTANCE;
   }
 
   public enum BatchOperationStatus {

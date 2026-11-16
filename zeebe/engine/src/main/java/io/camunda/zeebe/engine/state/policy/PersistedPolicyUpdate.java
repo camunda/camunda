@@ -8,36 +8,34 @@
 package io.camunda.zeebe.engine.state.policy;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
 import org.jspecify.annotations.NullMarked;
 
 /**
  * An open policy update: its identifiers, without policy data, and how many chunks are buffered.
  */
+@MsgpackPojo
 @NullMarked
-public final class PersistedPolicyUpdate extends UnpackedObject implements DbValue {
+public final class PersistedPolicyUpdate extends MsgpackBufferValue<PersistedPolicyUpdate>
+    implements DbValue {
 
-  private final ObjectProperty<PolicyUpdateRecord> updateProp =
-      new ObjectProperty<>("update", new PolicyUpdateRecord());
-  private final IntegerProperty bufferedChunkCountProp =
-      new IntegerProperty("bufferedChunkCount", 0);
-
-  public PersistedPolicyUpdate() {
-    super(2);
-    declareProperty(updateProp).declareProperty(bufferedChunkCountProp);
-  }
+  final PolicyUpdateRecord update = new PolicyUpdateRecord();
+  int bufferedChunkCount = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   /** The identifiers of the update; its sections are empty. */
   public PolicyUpdateRecord getUpdate() {
-    return updateProp.getValue();
+    return update;
   }
 
   public PersistedPolicyUpdate setUpdate(final PolicyUpdateRecord chunk) {
-    updateProp
-        .getValue()
+    update
         .setPolicyId(chunk.getPolicyId())
         .setPolicyVersion(chunk.getPolicyVersion())
         .setBasePolicyVersion(chunk.getBasePolicyVersion())
@@ -48,16 +46,26 @@ public final class PersistedPolicyUpdate extends UnpackedObject implements DbVal
   }
 
   public int getBufferedChunkCount() {
-    return bufferedChunkCountProp.getValue();
+    return bufferedChunkCount;
   }
 
   public PersistedPolicyUpdate setBufferedChunkCount(final int bufferedChunkCount) {
-    bufferedChunkCountProp.setValue(bufferedChunkCount);
+    this.bufferedChunkCount = bufferedChunkCount;
     return this;
   }
 
   /** Whether every chunk of the update is buffered, so it can be applied. */
   public boolean hasAllChunksBuffered() {
     return getBufferedChunkCount() == getUpdate().getChunkCount();
+  }
+
+  @Override
+  protected MsgpackCodec<PersistedPolicyUpdate> codec() {
+    return PersistedPolicyUpdateCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PersistedPolicyUpdate> ops() {
+    return PersistedPolicyUpdateOps.INSTANCE;
   }
 }

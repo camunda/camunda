@@ -8,19 +8,21 @@
 package io.camunda.zeebe.engine.state.user;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import org.jspecify.annotations.NullMarked;
 
-public class PersistedUser extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class PersistedUser extends MsgpackBufferValue<PersistedUser> implements DbValue {
 
-  private final ObjectProperty<UserRecord> userProp =
-      new ObjectProperty<>("user", new UserRecord());
-
-  public PersistedUser() {
-    super(1);
-    declareProperty(userProp);
-  }
+  final UserRecord user = new UserRecord();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public PersistedUser copy() {
     final var copy = new PersistedUser();
@@ -29,11 +31,11 @@ public class PersistedUser extends UnpackedObject implements DbValue {
   }
 
   public UserRecord getUser() {
-    return userProp.getValue();
+    return user;
   }
 
   public void setUser(final UserRecord record) {
-    userProp.getValue().copyFrom(record);
+    user.copyFrom(record);
   }
 
   public long getUserKey() {
@@ -54,5 +56,15 @@ public class PersistedUser extends UnpackedObject implements DbValue {
 
   public String getPassword() {
     return getUser().getPassword();
+  }
+
+  @Override
+  protected MsgpackCodec<PersistedUser> codec() {
+    return PersistedUserCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PersistedUser> ops() {
+    return PersistedUserOps.INSTANCE;
   }
 }

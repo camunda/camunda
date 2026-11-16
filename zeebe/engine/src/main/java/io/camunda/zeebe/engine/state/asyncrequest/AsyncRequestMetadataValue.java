@@ -8,42 +8,62 @@
 package io.camunda.zeebe.engine.state.asyncrequest;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
 import io.camunda.zeebe.util.ProjectionOf;
 import io.camunda.zeebe.util.collection.Tuple;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public class AsyncRequestMetadataValue extends UnpackedObject
+@MsgpackPojo
+@NullMarked
+public final class AsyncRequestMetadataValue extends MsgpackBufferValue<AsyncRequestMetadataValue>
     implements DbValue, ProjectionOf<Tuple<AsyncRequestRecord, Long>, AsyncRequestMetadataValue> {
 
-  private final LongProperty asyncRequestKeyProperty = new LongProperty("asyncRequestKey", -1);
-
-  private final ObjectProperty<AsyncRequestRecord> recordProp =
-      new ObjectProperty<>("asyncRequestRecord", new AsyncRequestRecord());
-
-  public AsyncRequestMetadataValue() {
-    super(2);
-    declareProperty(asyncRequestKeyProperty).declareProperty(recordProp);
-  }
+  long asyncRequestKey = -1;
+  final AsyncRequestRecord asyncRequestRecord = new AsyncRequestRecord();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public void wrap(final long asyncRequestKey, final AsyncRequestRecord record) {
-    asyncRequestKeyProperty.setValue(asyncRequestKey);
-    recordProp.getValue().wrap(record);
+    this.asyncRequestKey = asyncRequestKey;
+    asyncRequestRecord.wrap(record);
   }
 
   public AsyncRequestRecord getRecord() {
-    return recordProp.getValue();
+    return asyncRequestRecord;
   }
 
   public long getAsyncRequestKey() {
-    return asyncRequestKeyProperty.getValue();
+    return asyncRequestKey;
   }
 
   @Override
   public AsyncRequestMetadataValue wrap(final Tuple<AsyncRequestRecord, Long> source) {
     wrap(source.getRight(), source.getLeft());
     return this;
+  }
+
+  @Override
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    final byte[] bytes = new byte[length];
+    final UnsafeBuffer mutableBuffer = new UnsafeBuffer(bytes);
+    buffer.getBytes(offset, bytes, 0, length);
+    super.wrap(mutableBuffer, 0, length);
+  }
+
+  @Override
+  protected MsgpackCodec<AsyncRequestMetadataValue> codec() {
+    return AsyncRequestMetadataValueCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<AsyncRequestMetadataValue> ops() {
+    return AsyncRequestMetadataValueOps.INSTANCE;
   }
 }

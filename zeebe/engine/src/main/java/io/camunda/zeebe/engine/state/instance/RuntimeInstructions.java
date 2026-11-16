@@ -8,34 +8,51 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationRuntimeInstructionValue;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.StreamSupport;
+import org.jspecify.annotations.NullMarked;
 
-public class RuntimeInstructions extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class RuntimeInstructions extends MsgpackBufferValue<RuntimeInstructions>
+    implements DbValue {
 
-  private final ArrayProperty<RuntimeInstructionValue> runtimeInstructions =
-      new ArrayProperty<>("instructions", RuntimeInstructionValue::new);
+  @MsgpackProperty("instructions")
+  final List<RuntimeInstructionValue> runtimeInstructions = new ArrayList<>();
 
-  public RuntimeInstructions() {
-    super(1);
-    declareProperty(runtimeInstructions);
-  }
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public List<RuntimeInstructionValue> getRuntimeInstructions() {
-    return StreamSupport.stream(runtimeInstructions.spliterator(), false).toList();
+    return runtimeInstructions.stream().toList();
   }
 
   public void setRuntimeInstructions(
       final List<ProcessInstanceCreationRuntimeInstructionValue> instructions) {
-    runtimeInstructions.reset();
+    runtimeInstructions.clear();
     instructions.forEach(
         instruction -> {
-          final var newInstruction = runtimeInstructions.add();
+          final var newInstruction = new RuntimeInstructionValue();
           newInstruction.setType(instruction.getType());
           newInstruction.setAfterElementId(instruction.getAfterElementId());
+          runtimeInstructions.add(newInstruction);
         });
+  }
+
+  @Override
+  protected MsgpackCodec<RuntimeInstructions> codec() {
+    return RuntimeInstructionsCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<RuntimeInstructions> ops() {
+    return RuntimeInstructionsOps.INSTANCE;
   }
 }

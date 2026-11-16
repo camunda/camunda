@@ -8,25 +8,47 @@
 package io.camunda.zeebe.engine.state.agenthistory;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class DbAgentHistory extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class DbAgentHistory extends MsgpackBufferValue<DbAgentHistory> implements DbValue {
 
-  private final ObjectProperty<AgentHistoryRecord> recordProp =
-      new ObjectProperty<>("agentHistoryRecord", new AgentHistoryRecord());
-
-  public DbAgentHistory() {
-    super(1);
-    declareProperty(recordProp);
-  }
+  final AgentHistoryRecord agentHistoryRecord = new AgentHistoryRecord();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public AgentHistoryRecord getRecord() {
-    return recordProp.getValue();
+    return agentHistoryRecord;
   }
 
   public void setRecord(final AgentHistoryRecord record) {
-    recordProp.getValue().copyFrom(record);
+    agentHistoryRecord.copyFrom(record);
+  }
+
+  @Override
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    final byte[] bytes = new byte[length];
+    final UnsafeBuffer mutableBuffer = new UnsafeBuffer(bytes);
+    buffer.getBytes(offset, bytes, 0, length);
+    super.wrap(mutableBuffer, 0, length);
+  }
+
+  @Override
+  protected MsgpackCodec<DbAgentHistory> codec() {
+    return DbAgentHistoryCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<DbAgentHistory> ops() {
+    return DbAgentHistoryOps.INSTANCE;
   }
 }

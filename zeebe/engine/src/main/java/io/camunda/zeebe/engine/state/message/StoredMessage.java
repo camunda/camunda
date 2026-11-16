@@ -8,38 +8,60 @@
 package io.camunda.zeebe.engine.state.message;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public class StoredMessage extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class StoredMessage extends MsgpackBufferValue<StoredMessage> implements DbValue {
 
-  private final LongProperty messageKeyProp = new LongProperty("messageKey");
-
-  private final ObjectProperty<MessageRecord> messageProp =
-      new ObjectProperty<>("message", new MessageRecord());
-
-  public StoredMessage() {
-    super(2);
-    declareProperty(messageKeyProp).declareProperty(messageProp);
-  }
+  final RequiredLong messageKey = new RequiredLong();
+  final MessageRecord message = new MessageRecord();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public long getMessageKey() {
-    return messageKeyProp.getValue();
+    return messageKey.get();
   }
 
   public StoredMessage setMessageKey(final long messageKey) {
-    messageKeyProp.setValue(messageKey);
+    this.messageKey.set(messageKey);
     return this;
   }
 
   public MessageRecord getMessage() {
-    return messageProp.getValue();
+    return message;
   }
 
   public StoredMessage setMessage(final MessageRecord record) {
-    messageProp.getValue().wrap(record);
+    message.wrap(record);
     return this;
+  }
+
+  // The nested record reads its values from the input buffer, so the input is copied first.
+  @Override
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    final byte[] bytes = new byte[length];
+    final UnsafeBuffer mutableBuffer = new UnsafeBuffer(bytes);
+    buffer.getBytes(offset, bytes, 0, length);
+    super.wrap(mutableBuffer, 0, length);
+  }
+
+  @Override
+  protected MsgpackCodec<StoredMessage> codec() {
+    return StoredMessageCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<StoredMessage> ops() {
+    return StoredMessageOps.INSTANCE;
   }
 }

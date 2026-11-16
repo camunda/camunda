@@ -9,28 +9,28 @@ package io.camunda.zeebe.engine.state.authorization;
 
 import io.camunda.security.core.auth.MappingRuleMatcher;
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public class PersistedMappingRule extends UnpackedObject
+@MsgpackPojo
+@NullMarked
+public final class PersistedMappingRule extends MsgpackBufferValue<PersistedMappingRule>
     implements DbValue, MappingRuleMatcher.MappingRule {
 
-  private final LongProperty mappingRuleKeyProp = new LongProperty("mappingRuleKey", -1L);
-  private final StringProperty claimNameProp = new StringProperty("claimName", "");
-  private final StringProperty claimValueProp = new StringProperty("claimValue", "");
-  private final StringProperty nameProp = new StringProperty("name", "");
-  private final StringProperty mappingRuleIdProp = new StringProperty("mappingRuleId", "");
-
-  public PersistedMappingRule() {
-    super(5);
-    declareProperty(mappingRuleKeyProp)
-        .declareProperty(claimNameProp)
-        .declareProperty(claimValueProp)
-        .declareProperty(nameProp)
-        .declareProperty(mappingRuleIdProp);
-  }
+  long mappingRuleKey = -1L;
+  DirectBuffer claimName = Decoding.EMPTY;
+  DirectBuffer claimValue = Decoding.EMPTY;
+  DirectBuffer name = Decoding.EMPTY;
+  DirectBuffer mappingRuleId = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public PersistedMappingRule copy() {
     final var copy = new PersistedMappingRule();
@@ -39,47 +39,47 @@ public class PersistedMappingRule extends UnpackedObject
   }
 
   public long getMappingRuleKey() {
-    return mappingRuleKeyProp.getValue();
+    return mappingRuleKey;
   }
 
   public PersistedMappingRule setMappingRuleKey(final long mappingRuleKey) {
-    mappingRuleKeyProp.setValue(mappingRuleKey);
+    this.mappingRuleKey = mappingRuleKey;
     return this;
   }
 
   public String getClaimName() {
-    return BufferUtil.bufferAsString(claimNameProp.getValue());
+    return BufferUtil.bufferAsString(claimName);
   }
 
   public PersistedMappingRule setClaimName(final String claimName) {
-    claimNameProp.setValue(claimName);
+    this.claimName = BufferUtil.wrapString(claimName);
     return this;
   }
 
   public String getClaimValue() {
-    return BufferUtil.bufferAsString(claimValueProp.getValue());
+    return BufferUtil.bufferAsString(claimValue);
   }
 
   public PersistedMappingRule setClaimValue(final String claimValue) {
-    claimValueProp.setValue(claimValue);
+    this.claimValue = BufferUtil.wrapString(claimValue);
     return this;
   }
 
   public String getName() {
-    return BufferUtil.bufferAsString(nameProp.getValue());
+    return BufferUtil.bufferAsString(name);
   }
 
   public PersistedMappingRule setName(final String name) {
-    nameProp.setValue(name);
+    this.name = BufferUtil.wrapString(name);
     return this;
   }
 
   public String getMappingRuleId() {
-    return BufferUtil.bufferAsString(mappingRuleIdProp.getValue());
+    return BufferUtil.bufferAsString(mappingRuleId);
   }
 
   public PersistedMappingRule setMappingRuleId(final String mappingRuleId) {
-    mappingRuleIdProp.setValue(mappingRuleId);
+    this.mappingRuleId = BufferUtil.wrapString(mappingRuleId);
     return this;
   }
 
@@ -96,5 +96,15 @@ public class PersistedMappingRule extends UnpackedObject
   @Override
   public String claimValue() {
     return getClaimValue();
+  }
+
+  @Override
+  protected MsgpackCodec<PersistedMappingRule> codec() {
+    return PersistedMappingRuleCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PersistedMappingRule> ops() {
+    return PersistedMappingRuleOps.INSTANCE;
   }
 }

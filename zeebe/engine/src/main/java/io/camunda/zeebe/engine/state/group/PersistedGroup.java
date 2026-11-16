@@ -8,71 +8,84 @@
 package io.camunda.zeebe.engine.state.group;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.util.ProjectionOf;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public class PersistedGroup extends UnpackedObject
+@MsgpackPojo
+@NullMarked
+public final class PersistedGroup extends MsgpackBufferValue<PersistedGroup>
     implements DbValue, ProjectionOf<GroupRecord, PersistedGroup> {
 
-  private final LongProperty groupKeyProp = new LongProperty("groupKey");
-  private final StringProperty groupIdProp = new StringProperty("groupId");
-  private final StringProperty descriptionProp = new StringProperty("description");
-  private final StringProperty nameProp = new StringProperty("name");
-
-  public PersistedGroup() {
-    super(4);
-    declareProperty(groupKeyProp)
-        .declareProperty(groupIdProp)
-        .declareProperty(descriptionProp)
-        .declareProperty(nameProp);
-  }
+  final RequiredLong groupKey = new RequiredLong();
+  @Nullable DirectBuffer groupId;
+  @Nullable DirectBuffer description;
+  @Nullable DirectBuffer name;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public PersistedGroup wrap(final GroupRecord group) {
-    groupKeyProp.setValue(group.getGroupKey());
-    groupIdProp.setValue(group.getGroupId());
-    descriptionProp.setValue(group.getDescription());
-    nameProp.setValue(group.getNameBuffer());
+    groupKey.set(group.getGroupKey());
+    groupId = BufferUtil.wrapString(group.getGroupId());
+    description = BufferUtil.wrapString(group.getDescription());
+    name = group.getNameBuffer();
     return this;
   }
 
   public long getGroupKey() {
-    return groupKeyProp.getValue();
+    return groupKey.get();
   }
 
   public PersistedGroup setGroupKey(final long groupKey) {
-    groupKeyProp.setValue(groupKey);
+    this.groupKey.set(groupKey);
     return this;
   }
 
   public String getGroupId() {
-    return BufferUtil.bufferAsString(groupIdProp.getValue());
+    return BufferUtil.bufferAsString(Decoding.required(groupId, "groupId"));
   }
 
   public PersistedGroup setGroupId(final String groupId) {
-    groupIdProp.setValue(groupId);
+    this.groupId = BufferUtil.wrapString(groupId);
     return this;
   }
 
   public String getDescription() {
-    return BufferUtil.bufferAsString(descriptionProp.getValue());
+    return BufferUtil.bufferAsString(Decoding.required(description, "description"));
   }
 
   public PersistedGroup setDescription(final String description) {
-    descriptionProp.setValue(description);
+    this.description = BufferUtil.wrapString(description);
     return this;
   }
 
   public String getName() {
-    return BufferUtil.bufferAsString(nameProp.getValue());
+    return BufferUtil.bufferAsString(Decoding.required(name, "name"));
   }
 
   public PersistedGroup setName(final String name) {
-    nameProp.setValue(name);
+    this.name = BufferUtil.wrapString(name);
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<PersistedGroup> codec() {
+    return PersistedGroupCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PersistedGroup> ops() {
+    return PersistedGroupOps.INSTANCE;
   }
 }

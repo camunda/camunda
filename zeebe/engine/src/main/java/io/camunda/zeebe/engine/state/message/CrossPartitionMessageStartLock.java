@@ -8,13 +8,17 @@
 package io.camunda.zeebe.engine.state.message;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Value of the cross-partition message-start lock column family on {@code P_K}. Marks a local
@@ -34,41 +38,36 @@ import org.agrona.DirectBuffer;
  *       written before the ordinal was persisted read back as 0, the main index.
  * </ul>
  */
-public final class CrossPartitionMessageStartLock extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class CrossPartitionMessageStartLock
+    extends MsgpackBufferValue<CrossPartitionMessageStartLock> implements DbValue {
 
-  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final IntegerProperty storageOrdinalProp =
-      new IntegerProperty("storageOrdinal", StorageOrdinalRelated.MAIN_INDEX);
-
-  public CrossPartitionMessageStartLock() {
-    super(3);
-    declareProperty(processInstanceKeyProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(storageOrdinalProp);
-  }
+  long processInstanceKey = -1L;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  int storageOrdinal = StorageOrdinalRelated.MAIN_INDEX;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey;
   }
 
   public CrossPartitionMessageStartLock setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
   public DirectBuffer getTenantIdBuffer() {
-    return tenantIdProp.getValue();
+    return tenantId;
   }
 
   public CrossPartitionMessageStartLock setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   public CrossPartitionMessageStartLock setTenantId(final DirectBuffer tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = tenantId;
     return this;
   }
 
@@ -77,11 +76,21 @@ public final class CrossPartitionMessageStartLock extends UnpackedObject impleme
    *     was persisted (released V1 STARTED applier), which is the main index
    */
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public CrossPartitionMessageStartLock setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<CrossPartitionMessageStartLock> codec() {
+    return CrossPartitionMessageStartLockCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<CrossPartitionMessageStartLock> ops() {
+    return CrossPartitionMessageStartLockOps.INSTANCE;
   }
 }

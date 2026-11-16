@@ -9,43 +9,62 @@ package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class TaskListenerIndicesRecord extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class TaskListenerIndicesRecord extends MsgpackBufferValue<TaskListenerIndicesRecord>
+    implements DbValue {
 
-  private final IntegerProperty creatingTaskListenerIndexProp =
-      new IntegerProperty("creatingTaskListenerIndex", 0);
-  private final IntegerProperty assigningTaskListenerIndexProp =
-      new IntegerProperty("assigningTaskListenerIndex", 0);
-  private final IntegerProperty updatingTaskListenerIndexProp =
-      new IntegerProperty("updatingTaskListenerIndex", 0);
-  private final IntegerProperty completingTaskListenerIndexProp =
-      new IntegerProperty("completingTaskListenerIndex", 0);
-  private final IntegerProperty cancelingTaskListenerIndexProp =
-      new IntegerProperty("cancelingTaskListenerIndex", 0);
-
-  TaskListenerIndicesRecord() {
-    super(5);
-    declareProperty(creatingTaskListenerIndexProp)
-        .declareProperty(assigningTaskListenerIndexProp)
-        .declareProperty(updatingTaskListenerIndexProp)
-        .declareProperty(completingTaskListenerIndexProp)
-        .declareProperty(cancelingTaskListenerIndexProp);
-  }
+  int creatingTaskListenerIndex = 0;
+  int assigningTaskListenerIndex = 0;
+  int updatingTaskListenerIndex = 0;
+  int completingTaskListenerIndex = 0;
+  int cancelingTaskListenerIndex = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public int getTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
-    return getTaskListenerIndexProp(eventType).getValue();
+    return switch (eventType) {
+      case creating -> creatingTaskListenerIndex;
+      case assigning -> assigningTaskListenerIndex;
+      case updating -> updatingTaskListenerIndex;
+      case completing -> completingTaskListenerIndex;
+      case canceling -> cancelingTaskListenerIndex;
+      default ->
+          throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
+    };
   }
 
   public void incrementTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
-    getTaskListenerIndexProp(eventType).increment();
+    switch (eventType) {
+      case creating -> creatingTaskListenerIndex++;
+      case assigning -> assigningTaskListenerIndex++;
+      case updating -> updatingTaskListenerIndex++;
+      case completing -> completingTaskListenerIndex++;
+      case canceling -> cancelingTaskListenerIndex++;
+      default ->
+          throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
+    }
   }
 
   public void resetTaskListenerIndex(final ZeebeTaskListenerEventType eventType) {
-    getTaskListenerIndexProp(eventType).reset();
+    switch (eventType) {
+      case creating -> creatingTaskListenerIndex = 0;
+      case assigning -> assigningTaskListenerIndex = 0;
+      case updating -> updatingTaskListenerIndex = 0;
+      case completing -> completingTaskListenerIndex = 0;
+      case canceling -> cancelingTaskListenerIndex = 0;
+      default ->
+          throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
+    }
   }
 
   @Override
@@ -56,15 +75,13 @@ public final class TaskListenerIndicesRecord extends UnpackedObject implements D
     super.wrap(mutableBuffer, 0, length);
   }
 
-  private IntegerProperty getTaskListenerIndexProp(final ZeebeTaskListenerEventType eventType) {
-    return switch (eventType) {
-      case creating -> creatingTaskListenerIndexProp;
-      case assigning -> assigningTaskListenerIndexProp;
-      case updating -> updatingTaskListenerIndexProp;
-      case completing -> completingTaskListenerIndexProp;
-      case canceling -> cancelingTaskListenerIndexProp;
-      default ->
-          throw new IllegalArgumentException("Unsupported ZeebeTaskListenerEventType " + eventType);
-    };
+  @Override
+  protected MsgpackCodec<TaskListenerIndicesRecord> codec() {
+    return TaskListenerIndicesRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<TaskListenerIndicesRecord> ops() {
+    return TaskListenerIndicesRecordOps.INSTANCE;
   }
 }

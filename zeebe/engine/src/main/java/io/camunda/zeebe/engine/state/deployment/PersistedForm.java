@@ -10,121 +10,130 @@ package io.camunda.zeebe.engine.state.deployment;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredInt;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.ProjectionOf;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class PersistedForm extends UnpackedObject
+@MsgpackPojo
+@NullMarked
+public final class PersistedForm extends MsgpackBufferValue<PersistedForm>
     implements DbValue, ProjectionOf<FormRecord, PersistedForm> {
   private static final long NO_DEPLOYMENT_KEY = -1L;
 
-  private final StringProperty formIdProp = new StringProperty("formId");
-  private final IntegerProperty versionProp = new IntegerProperty("version");
-  private final LongProperty formKeyProp = new LongProperty("formKey");
-  private final StringProperty resourceNameProp = new StringProperty("resourceName");
-  private final BinaryProperty resourceProp = new BinaryProperty("resource", new UnsafeBuffer());
-  private final BinaryProperty checksumProp = new BinaryProperty("checksum", new UnsafeBuffer());
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty deploymentKeyProp =
-      new LongProperty("deploymentKey", NO_DEPLOYMENT_KEY);
-  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
+  @Nullable DirectBuffer formId;
+  final RequiredInt version = new RequiredInt();
+  final RequiredLong formKey = new RequiredLong();
+  @Nullable DirectBuffer resourceName;
 
-  public PersistedForm() {
-    super(9);
-    declareProperty(formIdProp)
-        .declareProperty(versionProp)
-        .declareProperty(formKeyProp)
-        .declareProperty(resourceNameProp)
-        .declareProperty(resourceProp)
-        .declareProperty(checksumProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(deploymentKeyProp)
-        .declareProperty(versionTagProp);
-  }
+  @MsgpackProperty(binary = true)
+  DirectBuffer resource = Decoding.EMPTY;
+
+  @MsgpackProperty(binary = true)
+  DirectBuffer checksum = Decoding.EMPTY;
+
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long deploymentKey = NO_DEPLOYMENT_KEY;
+  DirectBuffer versionTag = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public PersistedForm copy() {
     final var copy = new PersistedForm();
-    copy.formIdProp.setValue(BufferUtil.cloneBuffer(getFormId()));
-    copy.versionProp.setValue(getVersion());
-    copy.formKeyProp.setValue(getFormKey());
-    copy.resourceNameProp.setValue(BufferUtil.cloneBuffer(getResourceName()));
-    copy.resourceProp.setValue(BufferUtil.cloneBuffer(getResource()));
-    copy.checksumProp.setValue(BufferUtil.cloneBuffer(getChecksum()));
-    copy.tenantIdProp.setValue(getTenantId());
-    copy.deploymentKeyProp.setValue(getDeploymentKey());
-    copy.versionTagProp.setValue(getVersionTag());
+    copy.formId = BufferUtil.cloneBuffer(getFormId());
+    copy.version.set(getVersion());
+    copy.formKey.set(getFormKey());
+    copy.resourceName = BufferUtil.cloneBuffer(getResourceName());
+    copy.resource = BufferUtil.cloneBuffer(getResource());
+    copy.checksum = BufferUtil.cloneBuffer(getChecksum());
+    copy.tenantId = BufferUtil.wrapString(getTenantId());
+    copy.deploymentKey = getDeploymentKey();
+    copy.versionTag = BufferUtil.wrapString(getVersionTag());
     return copy;
   }
 
   public DirectBuffer getFormId() {
-    return formIdProp.getValue();
+    return Decoding.required(formId, "formId");
   }
 
   public int getVersion() {
-    return versionProp.getValue();
+    return version.get();
   }
 
   public String getVersionTag() {
-    return bufferAsString(versionTagProp.getValue());
+    return bufferAsString(versionTag);
   }
 
   public long getFormKey() {
-    return formKeyProp.getValue();
+    return formKey.get();
   }
 
   public DirectBuffer getResourceName() {
-    return resourceNameProp.getValue();
+    return Decoding.required(resourceName, "resourceName");
   }
 
   public DirectBuffer getResource() {
-    return resourceProp.getValue();
+    return resource;
   }
 
   public DirectBuffer getChecksum() {
-    return checksumProp.getValue();
+    return checksum;
   }
 
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public boolean hasDeploymentKey() {
-    return deploymentKeyProp.getValue() != NO_DEPLOYMENT_KEY;
+    return deploymentKey != NO_DEPLOYMENT_KEY;
   }
 
   public long getDeploymentKey() {
-    return deploymentKeyProp.getValue();
+    return deploymentKey;
   }
 
   public PersistedForm setDeploymentKey(final long deploymentKey) {
-    deploymentKeyProp.setValue(deploymentKey);
+    this.deploymentKey = deploymentKey;
     return this;
   }
 
   @Override
   public PersistedForm wrap(final FormRecord record) {
-    formIdProp.setValue(record.getFormId());
-    versionProp.setValue(record.getVersion());
-    formKeyProp.setValue(record.getFormKey());
-    resourceNameProp.setValue(record.getResourceNameBuffer());
-    resourceProp.setValue(BufferUtil.wrapArray(record.getResource()));
-    checksumProp.setValue(record.getChecksumBuffer());
-    tenantIdProp.setValue(record.getTenantId());
-    deploymentKeyProp.setValue(record.getDeploymentKey());
-    versionTagProp.setValue(record.getVersionTag());
+    formId = BufferUtil.wrapString(record.getFormId());
+    version.set(record.getVersion());
+    formKey.set(record.getFormKey());
+    resourceName = record.getResourceNameBuffer();
+    resource = BufferUtil.wrapArray(record.getResource());
+    checksum = record.getChecksumBuffer();
+    tenantId = BufferUtil.wrapString(record.getTenantId());
+    deploymentKey = record.getDeploymentKey();
+    versionTag = BufferUtil.wrapString(record.getVersionTag());
     return this;
   }
 
   public boolean isDuplicateOf(final DirectBuffer resourceName, final DirectBuffer checksum) {
     return getResourceName().equals(resourceName) && getChecksum().equals(checksum);
+  }
+
+  @Override
+  protected MsgpackCodec<PersistedForm> codec() {
+    return PersistedFormCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PersistedForm> ops() {
+    return PersistedFormOps.INSTANCE;
   }
 }

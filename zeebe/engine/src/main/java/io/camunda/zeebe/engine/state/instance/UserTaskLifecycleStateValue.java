@@ -9,24 +9,39 @@ package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public class UserTaskLifecycleStateValue extends UnpackedObject implements DbValue {
+@MsgpackPojo
+@NullMarked
+public final class UserTaskLifecycleStateValue
+    extends MsgpackBufferValue<UserTaskLifecycleStateValue> implements DbValue {
 
-  private final EnumProperty<LifecycleState> lifecycleStateProp =
-      new EnumProperty<>("userTaskLifecycleState", LifecycleState.class);
-
-  public UserTaskLifecycleStateValue() {
-    super(1);
-    declareProperty(lifecycleStateProp);
-  }
+  @Nullable LifecycleState userTaskLifecycleState;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public LifecycleState getLifecycleState() {
-    return lifecycleStateProp.getValue();
+    return Decoding.required(userTaskLifecycleState, "userTaskLifecycleState");
   }
 
   public void setLifecycleState(final LifecycleState lifecycleState) {
-    lifecycleStateProp.setValue(lifecycleState);
+    userTaskLifecycleState = lifecycleState;
+  }
+
+  @Override
+  protected MsgpackCodec<UserTaskLifecycleStateValue> codec() {
+    return UserTaskLifecycleStateValueCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<UserTaskLifecycleStateValue> ops() {
+    return UserTaskLifecycleStateValueOps.INSTANCE;
   }
 }
