@@ -21,24 +21,36 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskQuery;
+import io.camunda.tasklist.store.VariableStore;
+import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.views.TaskSearchView;
+import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
+import org.junit.jupiter.params.provider.NullSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -51,11 +63,23 @@ class TaskStoreElasticSearchTest {
 
   @Captor private ArgumentCaptor<SearchRequest> searchRequestCaptor;
 
+  @Mock private RestHighLevelClient defaultClient;
+
   @Mock private TenantAwareElasticsearchClient tenantAwareClient;
 
   @Spy private TaskTemplate taskTemplate = new TaskTemplate("test", true);
 
+  @Mock private VariableStore variableStoreElasticSearch;
+
+  @Mock private TaskVariableSearchUtil taskVariableSearchUtil;
+
   @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;
+
+  @Spy
+  private SnapshotTaskVariableTemplate taskVariableTemplate =
+      new SnapshotTaskVariableTemplate("test", true);
+
+  @Spy private TasklistProperties tasklistProperties = new TasklistProperties();
 
   @InjectMocks private TaskStoreElasticSearch instance;
 
@@ -159,5 +183,90 @@ class TaskStoreElasticSearchTest {
     // leaking to the generic exception handler (logged at ERROR). See issue #35823.
     assertThatThrownBy(() -> instance.getTask("123456789"))
         .isInstanceOf(TasklistRuntimeException.class);
+  }
+
+  @Test
+  void searchWithTaskVariablesAndCreatedStateShouldNotQueryCompletedTaskVariables()
+      throws IOException {
+    // Given a CREATED search, which is restricted to runtime indices, so snapshot variables of
+    // completed tasks can never contribute to the result
+    final TaskQuery taskQuery =
+        new TaskQuery()
+            .setPageSize(50)
+            .setState(TaskState.CREATED)
+            .setTaskVariables(new TaskByVariables[] {taskVariableFilter()});
+
+    // When
+    final List<TaskSearchView> result = instance.getTasks(taskQuery);
+
+    // Then
+    assertThat(result).isEmpty();
+    verify(defaultClient, never()).search(any(SearchRequest.class), any());
+  }
+
+  @ParameterizedTest
+  @NullSource
+  @EnumSource(value = TaskState.class, names = "CREATED", mode = Mode.EXCLUDE)
+  void searchWithTaskVariablesShouldScrollCompletedTaskVariablesUsingBatchSize(
+      final TaskState taskState) throws IOException {
+    // Given
+    final int batchSize = 321;
+    tasklistProperties.getElasticsearch().setBatchSize(batchSize);
+    final TaskQuery taskQuery =
+        new TaskQuery()
+            .setPageSize(50)
+            .setState(taskState)
+            .setTaskVariables(new TaskByVariables[] {taskVariableFilter()});
+
+    final SearchResponse emptyResponse = mock(SearchResponse.class);
+    final var emptyHits = mock(SearchHits.class);
+    when(emptyResponse.getHits()).thenReturn(emptyHits);
+    when(emptyHits.getHits()).thenReturn(new SearchHit[0]);
+    when(defaultClient.search(searchRequestCaptor.capture(), eq(RequestOptions.DEFAULT)))
+        .thenReturn(emptyResponse);
+
+    // When
+    final List<TaskSearchView> result = instance.getTasks(taskQuery);
+
+    // Then
+    assertThat(result).isEmpty();
+    final SearchRequest searchRequest = searchRequestCaptor.getValue();
+    assertThat(searchRequest.indices()).containsExactly(taskVariableTemplate.getAlias());
+    assertThat(searchRequest.source().size()).isEqualTo(batchSize);
+  }
+
+  private static TaskByVariables taskVariableFilter() {
+    return new TaskByVariables().setName("varName").setValue("\"varValue\"").setOperator("eq");
+  }
+
+  @SuppressWarnings("unchecked")
+  private SearchResponse mockSearchResponse(final TaskState taskState) {
+    final SearchResponse mockedResponse = mock(SearchResponse.class);
+    final SearchHits mockedHits = mock(SearchHits.class);
+    final SearchHit mockedHit = mock(SearchHit.class);
+
+    when(mockedResponse.getHits()).thenReturn(mockedHits);
+    when(mockedHits.getHits()).thenReturn(new SearchHit[] {mockedHit});
+    when(mockedHit.getSourceAsMap())
+        .thenReturn(objectMapper.convertValue(createTaskEntity(taskState), Map.class));
+    when(mockedHit.getSortValues()).thenReturn(new Object[0]);
+
+    return mockedResponse;
+  }
+
+  private TaskEntity createTaskEntity(final TaskState taskState) {
+    final TaskEntity entity = new TaskEntity();
+    entity.setId("123456789");
+    entity.setKey(123456789L);
+    entity.setPartitionId(2);
+    entity.setBpmnProcessId("bigFormProcess");
+    entity.setProcessDefinitionId("00000000000");
+    entity.setFlowNodeBpmnId("Activity_0aaaaa");
+    entity.setFlowNodeInstanceId("11111111111");
+    entity.setProcessInstanceId("2222222222");
+    entity.setState(taskState);
+    entity.setFormKey("camunda-forms:bpmn:userTaskForm_1111111");
+    entity.setImplementation(TaskImplementation.JOB_WORKER);
+    return entity;
   }
 }
