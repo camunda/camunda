@@ -104,7 +104,7 @@ Co-located styles and tests mirror the component name (e.g. `DashboardPage.modul
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `dev`                     | Vite dev server on `:3000`, opens the browser                                                                                       |
 | `build`                   | Production bundle, then `renameProdIndex.mjs` post-build                                                                            |
-| `build:visual-regression` | Production build with the visual-regression entry point                                                                             |
+| `build:test`              | Production build using the dev `index.html` entry point and `.env.visual-regression`. Used by browser tests.                        |
 | `preview`                 | Serve the production build on `:3003`. Used for visual regression tests.                                                            |
 | `typecheck`               | Run `tsc` against `tsconfig.browser.json`, `tsconfig.vitest.json`, `tsconfig.node.json`                                             |
 | `extract-sbom`            | Vite build with the SBOM Rollup plugin                                                                                              |

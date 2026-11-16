@@ -312,9 +312,10 @@ unvalidated.
 <module>/` and check `.github/workflows/ci-<module>.yml` for a job named "Visual Regression" or
    similar. CI workflow files are the authoritative list of what actually gates the PR, more so than
    any single local config file. If a real suite exists, run it locally before opening the PR (even
-   without CI's exact container, e.g. `npm run build:visual-regression && npm run test:visual`) as a
-   smoke check — catching a stale snapshot pre-push is cheaper than discovering it from a failed CI
-   run after the PR is already open.
+   without CI's exact container, e.g. `npm run build:test && npm run test:visual` in the
+   orchestration cluster webapp, or `npm run build:visual-regression && npm run test:visual` in
+   `operate/client/`) as a smoke check — catching a stale snapshot pre-push is cheaper than
+   discovering it from a failed CI run after the PR is already open.
 5. **Compatibility check (Hard rule 7)** — does the fix change a REST/gRPC API's request/response
    shape or status codes, rename/remove an exported type/field/CLI flag, or change an on-disk/wire
    format that existing callers depend on? Check the module's `docs/adr/` for any documented
