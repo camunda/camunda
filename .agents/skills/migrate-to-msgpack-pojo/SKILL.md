@@ -1,11 +1,11 @@
 ---
 name: migrate-to-msgpack-pojo
-description: Use when converting a class built from XxxProperty fields (an engine state class that extends UnpackedObject and implements DbValue, or a record value in zeebe/protocol-impl that extends UnifiedRecordValue) into a plain @MsgpackPojo data class with a generated codec, keeping the serialized bytes identical. One class per run.
+description: Use when converting a class built from XxxProperty fields (an engine state class that extends UnpackedObject and implements DbValue, or a record value in zeebe/protocol-impl that extends UnifiedRecordValue) into a plain @MsgpackPojo data class with a generated codec, keeping the serialized bytes identical. Classes are migrated one at a time; one commit per kind (engine, protocol-impl).
 ---
 
 # Migrate a property-tree class to a `@MsgpackPojo`
 
-Converts ONE class from the property-tree style (`LongProperty`, `declareProperty`, ...) to a plain
+Converts classes, one at a time, from the property-tree style (`LongProperty`, `declareProperty`, ...) to a plain
 data class whose msgpack codec is generated. The serialized bytes must not change: state written
 by an old broker has to stay readable (rollback, migration), and records are written to the log,
 exported and replicated. A frozen copy of the old class (`<Name>V1`) plus a byte comparison test
@@ -39,7 +39,10 @@ unmigrated records mix wherever a `MsgpackRecordValue` is taken.
 
 ## Rules
 
-- Migrate exactly one class per run and one commit per class.
+- Migrate one class at a time: do steps 1-6 for a class, with its own `NameV1` and `NameSerdeTest`,
+  and see them pass before you start the next. Commit once per kind: one commit for the engine
+  state classes (kind A), one for the protocol-impl records (kind B). Never mix the kinds in a
+  commit, and never commit a class whose step 6 is not green.
 - Keep every public/protected method and constructor with the same behavior (a constructor that only
   declared properties or called `reset()` is dropped, see step 3). Do not rename, remove
   or change signatures (for B also not the getters of the `<Name>Value` interface). Only the
@@ -293,7 +296,8 @@ Edit the class in place:
    and `annotationProcessor(project(":zeebe-msgpack-codegen"))` in its `build.gradle.kts`, plus a
    `zeebe-msgpack-codegen` dependency and its annotation-processor path in `pom.xml`. The engine is
    not wired for this yet; do not assume either build is already configured. Add the wiring to both
-   build systems in the first migrated class's commit and mention it in the commit body. The
+   build systems in the commit of the kind (once per module, not per class) and mention it in
+   the commit body. The
    `microbenchmarks` Gradle and Maven files show the current configuration pattern.
 
 ## Step 4: compile and inspect the generated codec
@@ -374,12 +378,14 @@ the property type the field replaces) and finds a renamed field by its key.
 ./gradlew :<project>:spotlessApply
 ```
 
-Then `git add` only the files you changed (the class, `NameV1`, `NameSerdeTest`, build files for the
-first class of a module, nothing under the goldens), commit and push. Header example:
-`refactor: replace UnpackedObject based Foo with a generated codec`. The body must say that the
-stored format is unchanged and that the V1 comparison tests prove it, and list actual behavior
-changes (for example, final class or unset-property behavior). Generated `NameOps` provides
-content-based equality, hashing and string output. Gradle may regenerate
+Then `git add` only the files you changed (every migrated class of this kind with its `NameV1` and
+`NameSerdeTest`, the build files once per module, nothing under the goldens), commit and push: one
+commit for the whole kind. Header examples:
+`refactor: replace UnpackedObject based engine state classes with generated codecs` and
+`refactor: replace UnpackedObject based records with generated codecs`. The body lists the migrated
+classes, says that the stored format is unchanged and that the V1 comparison tests prove it, and
+lists actual behavior changes per class (for example, final class or unset-property behavior).
+Generated `NameOps` provides content-based equality, hashing and string output. Gradle may regenerate
 `dist/src/main/config/defaults.yaml`; revert it with `git checkout`.
 
 ## When to STOP and report
