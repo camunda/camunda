@@ -10,13 +10,13 @@ package io.camunda.zeebe.engine.processing.tenant;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.TenantValidator;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
-import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -27,9 +27,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class TenantCreateProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
-  private static final String TENANT_ALREADY_EXISTS_ERROR_MESSAGE =
-      "Expected to create tenant with ID '%s', but a tenant with this ID already exists";
-  private final TenantState tenantState;
+  private final TenantValidator tenantValidator;
   private final PermissionsBehavior permissionsBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -38,12 +36,12 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
   private final CommandDistributionBehavior commandDistributionBehavior;
 
   public TenantCreateProcessor(
-      final TenantState tenantState,
+      final TenantValidator tenantValidator,
       final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    this.tenantState = tenantState;
+    this.tenantValidator = tenantValidator;
     this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -59,11 +57,9 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
     }
 
     final var record = command.getValue();
-    if (tenantAlreadyExists(record.getTenantId())) {
-      rejectCommand(
-          command,
-          RejectionType.ALREADY_EXISTS,
-          TENANT_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getTenantId()));
+    final var validation = tenantValidator.validateCreate(record);
+    if (validation.isLeft()) {
+      rejectCommand(command, validation.getLeft());
     } else {
       createTenant(command, record);
       distributeCommand(command, record);
@@ -72,16 +68,13 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
 
   @Override
   public void processDistributedCommand(final TypedRecord<TenantRecord> command) {
-    final var record = command.getValue();
-    tenantState
-        .getTenantById(record.getTenantId())
-        .ifPresentOrElse(
-            tenant -> {
-              final var errorMessage =
-                  TENANT_ALREADY_EXISTS_ERROR_MESSAGE.formatted(tenant.getTenantId());
-              rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-            },
-            () -> stateWriter.appendFollowUpEvent(command.getKey(), TenantIntent.CREATED, record));
+    tenantValidator
+        .validateCreate(command.getValue())
+        .ifRightOrLeft(
+            record ->
+                stateWriter.appendFollowUpEvent(command.getKey(), TenantIntent.CREATED, record),
+            rejection ->
+                rejectionWriter.appendRejection(command, rejection.type(), rejection.reason()));
 
     commandDistributionBehavior.acknowledgeCommand(command);
   }
@@ -91,14 +84,10 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
         permissionsBehavior.isAuthorized(
             command, AuthorizationResourceType.TENANT, PermissionType.CREATE);
     if (authResult.isLeft()) {
-      rejectCommandWithUnauthorizedError(command, authResult.getLeft());
+      rejectCommand(command, authResult.getLeft());
       return false;
     }
     return true;
-  }
-
-  private boolean tenantAlreadyExists(final String tenantId) {
-    return tenantState.getTenantById(tenantId).isPresent();
   }
 
   private void createTenant(final TypedRecord<TenantRecord> command, final TenantRecord record) {
@@ -117,8 +106,7 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
         .distribute(command);
   }
 
-  private void rejectCommandWithUnauthorizedError(
-      final TypedRecord<TenantRecord> command, final Rejection rejection) {
+  private void rejectCommand(final TypedRecord<TenantRecord> command, final Rejection rejection) {
     rejectCommand(command, rejection.type(), rejection.reason());
   }
 
