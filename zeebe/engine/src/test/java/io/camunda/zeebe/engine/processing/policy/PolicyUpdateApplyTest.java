@@ -48,6 +48,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -290,6 +291,44 @@ public final class PolicyUpdateApplyTest {
                 .withRoleId(validRoleId)
                 .exists())
         .isFalse();
+  }
+
+  @Test
+  public void shouldNameOnlyTheFirstReasonsOfAnUpdateWithManyInvalidEntries() {
+    // given members of roles that neither the state nor the update has
+    final int invalidEntries = PolicyUpdateAppendChunkProcessor.MAX_REPORTED_ERRORS + 15;
+    final var missingRoleIds =
+        IntStream.range(0, invalidEntries).mapToObj(i -> "role-" + i + "-" + uid()).toList();
+    final var chunk =
+        chunk()
+            .setMemberships(
+                missingRoleIds.stream()
+                    .<PolicyMembershipEntryValue>map(
+                        roleId ->
+                            membership(
+                                PolicyUpdateEntityType.ROLE,
+                                roleId,
+                                EntityType.CLIENT,
+                                "client-" + uid()))
+                    .toList());
+
+    // when
+    apply(chunk);
+
+    // then
+    final var rejection = rejectionOf(chunk.getUpdateId());
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .contains(missingRoleIds.get(PolicyUpdateAppendChunkProcessor.MAX_REPORTED_ERRORS - 1))
+        .doesNotContain(missingRoleIds.get(PolicyUpdateAppendChunkProcessor.MAX_REPORTED_ERRORS))
+        .endsWith("and 15 more");
+    assertThat(
+            RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.FAILED)
+                .filter(record -> record.getValue().getUpdateId().equals(chunk.getUpdateId()))
+                .getFirst()
+                .getValue()
+                .getErrorMessage())
+        .isEqualTo(rejection.getRejectionReason());
   }
 
   @Test

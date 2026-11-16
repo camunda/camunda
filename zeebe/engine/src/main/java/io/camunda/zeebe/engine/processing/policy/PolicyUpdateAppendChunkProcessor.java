@@ -50,6 +50,13 @@ import org.jspecify.annotations.NullMarked;
 public final class PolicyUpdateAppendChunkProcessor
     implements TypedRecordProcessor<PolicyUpdateRecord> {
 
+  /**
+   * The reasons of an invalid update that the failure names. The failure event and the rejection
+   * both carry them, and must fit into one batch together with the rejected chunk, however many
+   * entries of the update are invalid.
+   */
+  static final int MAX_REPORTED_ERRORS = 10;
+
   private final PolicyUpdateState policyUpdateState;
   private final PolicyUpdateValidator validator;
   private final KeyGenerator keyGenerator;
@@ -106,9 +113,7 @@ public final class PolicyUpdateAppendChunkProcessor
             RejectionType.INVALID_ARGUMENT,
             "Expected policy update '%s' of policy '%s' to be applicable, but: %s"
                 .formatted(
-                    updateOfChunk.getUpdateId(),
-                    updateOfChunk.getPolicyId(),
-                    String.join("; ", errors)));
+                    updateOfChunk.getUpdateId(), updateOfChunk.getPolicyId(), summarize(errors)));
         return;
       }
     }
@@ -190,6 +195,16 @@ public final class PolicyUpdateAppendChunkProcessor
             .setErrorMessage(reason);
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), PolicyUpdateIntent.FAILED, failed);
     rejectionWriter.appendRejection(command, rejectionType, reason);
+  }
+
+  private static String summarize(final List<String> errors) {
+    if (errors.size() <= MAX_REPORTED_ERRORS) {
+      return String.join("; ", errors);
+    }
+    return "%s; and %d more"
+        .formatted(
+            String.join("; ", errors.subList(0, MAX_REPORTED_ERRORS)),
+            errors.size() - MAX_REPORTED_ERRORS);
   }
 
   /** All chunks of the update, in their order: the buffered ones and the given new one. */
