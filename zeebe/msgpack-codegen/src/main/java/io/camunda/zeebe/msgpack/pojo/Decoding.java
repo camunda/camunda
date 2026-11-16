@@ -12,13 +12,11 @@ import io.camunda.zeebe.msgpack.spec.MsgPackCodes;
 import io.camunda.zeebe.msgpack.spec.MsgPackFormat;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackType;
-import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.msgpack.value.BaseValue;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -308,90 +306,6 @@ public final class Decoding {
             .formatted(
                 values.getClass().getComponentType().getSimpleName(),
                 buffer.getStringWithoutLengthUtf8(offset, length)));
-  }
-
-  // Lists nested to any depth with Long leaves, e.g. List<List<Long>>. The depth is not needed: an
-  // element is a list if and only if it is stored as an array.
-
-  /** Writes a list of numbers or of such lists, recursively. */
-  public static int writeNestedLongs(final MsgPackWriter writer, final List<?> list) {
-    int n = writer.writeArrayHeader(list.size());
-    for (final Object element : list) {
-      n +=
-          element instanceof final List<?> nested
-              ? writeNestedLongs(writer, nested)
-              : writer.writeInteger((Long) element);
-    }
-    return n;
-  }
-
-  /** The encoded length that {@link #writeNestedLongs} writes. */
-  public static int lengthNestedLongs(final List<?> list) {
-    int n = MsgPackWriter.getEncodedArrayHeaderLength(list.size());
-    for (final Object element : list) {
-      n +=
-          element instanceof final List<?> nested
-              ? lengthNestedLongs(nested)
-              : MsgPackWriter.getEncodedLongValueLength((Long) element);
-    }
-    return n;
-  }
-
-  /**
-   * Replaces the content of {@code target}, a list of numbers or of such lists, with the array at
-   * the reader's offset. The generic type of the target is the caller's contract.
-   */
-  @SuppressWarnings("unchecked")
-  public static void readNestedLongs(final MsgPackReader reader, final List<?> target) {
-    final var list = (List<Object>) target;
-    list.clear();
-    final int size = reader.readArrayHeader();
-    for (int i = 0; i < size; i++) {
-      final boolean isList =
-          MsgPackFormat.valueOf(reader.getBuffer().getByte(reader.getOffset())).getType()
-              == MsgPackType.ARRAY;
-      if (isList) {
-        final var nested = new ArrayList<Object>();
-        readNestedLongs(reader, nested);
-        list.add(nested);
-      } else {
-        list.add(reader.readInteger());
-      }
-    }
-  }
-
-  /** Deep copy for {@link #readNestedLongs}. */
-  @SuppressWarnings("unchecked")
-  public static void copyNestedLongs(final List<?> source, final List<?> target) {
-    final var list = (List<Object>) target;
-    list.clear();
-    for (final Object element : source) {
-      if (element instanceof final List<?> nested) {
-        final var copy = new ArrayList<Object>();
-        copyNestedLongs(nested, copy);
-        list.add(copy);
-      } else {
-        list.add(element);
-      }
-    }
-  }
-
-  /** Appends the JSON of a list of numbers or of such lists. */
-  public static void appendNestedLongs(final StringBuilder builder, final List<?> list) {
-    builder.append('[');
-    boolean first = true;
-    for (final Object element : list) {
-      if (!first) {
-        builder.append(',');
-      }
-      first = false;
-      if (element instanceof final List<?> nested) {
-        appendNestedLongs(builder, nested);
-      } else {
-        builder.append(element);
-      }
-    }
-    builder.append(']');
   }
 
   /** Names the property whose value could not be read, like {@code ObjectValue} does. */

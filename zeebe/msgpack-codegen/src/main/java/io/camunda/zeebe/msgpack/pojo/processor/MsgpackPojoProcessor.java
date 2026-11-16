@@ -18,6 +18,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 import javax.annotation.processing.AbstractProcessor;
@@ -34,6 +35,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Generates for every {@link MsgpackPojo} a stateless {@code <Pojo>Codec} and a {@code <Pojo>Ops}.
@@ -45,6 +47,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
   private static final String UNSAFE_BUFFER = "org.agrona.concurrent.UnsafeBuffer";
   private static final String BUFFER_VALUE = "io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue";
   private static final String LIST = "java.util.List";
+  private static final String NESTED_LISTS = "io.camunda.zeebe.msgpack.pojo.NestedLists";
   private static final String INT_ARRAY_LIST = "org.agrona.collections.IntArrayList";
   private static final String LONG_ARRAY_LIST = "org.agrona.collections.LongArrayList";
   private static final String REQUIRED_LONG = "io.camunda.zeebe.msgpack.pojo.RequiredLong";
@@ -235,20 +238,27 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       }
       final var keyLiteral = processingEnv.getElementUtils().getConstantExpression(key);
       final var sanitized = field.getAnnotation(MsgpackSanitized.class) != null;
+      final var shape = kind == Type.LIST_OF_LISTS ? listShape(mirror, fieldName) : null;
       final var pojo =
           (kind == Type.NESTED || kind == Type.NESTED_LIST)
-              && nestedType(mirror, kind).getAnnotation(MsgpackPojo.class) != null;
+                  && nestedType(mirror, kind).getAnnotation(MsgpackPojo.class) != null
+              || shape != null
+                  && shape.item() != null
+                  && shape.item().getAnnotation(MsgpackPojo.class) != null;
       properties.add(
           new Property(
               keyLiteral,
               kind,
               fieldName,
-              javaType(mirror, kind),
+              shape != null && shape.item() != null
+                  ? shape.item().getQualifiedName().toString()
+                  : javaType(mirror, kind),
               inPlace,
               nullable,
               sentinel,
               sanitized,
-              pojo));
+              pojo,
+              shape));
     }
     if (properties.isEmpty()) {
       throw new IllegalArgumentException("@MsgpackPojo class has no @MsgpackProperty fields");
@@ -312,9 +322,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
           if (isType(argument, "java.lang.Long")) {
             return Type.LONG_LIST;
           }
-          if (argument.getKind() == TypeKind.DECLARED
-              && isNestedLongList((DeclaredType) argument)) {
-            return Type.NESTED_LONG_LIST;
+          if (isType(argument, LIST) && listShape(mirror, field) != null) {
+            return Type.LIST_OF_LISTS;
           }
           if (argument.getKind() == TypeKind.DECLARED) {
             final var item = (TypeElement) ((DeclaredType) argument).asElement();
@@ -376,14 +385,37 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     }
   }
 
-  /** A list of {@code Long}s, or of such lists, to any depth. */
-  private boolean isNestedLongList(final DeclaredType type) {
-    if (!isType(type, LIST) || type.getTypeArguments().size() != 1) {
-      return false;
+  /**
+   * The nesting depth and the innermost element of a {@code List<...<List<E>>>}, with {@code E} a
+   * {@code Long}, a {@code DirectBuffer}, a {@link MsgpackPojo} or a {@code BaseValue}; null for
+   * any other type.
+   */
+  private @Nullable Shape listShape(final TypeMirror mirror, final String field) {
+    if (mirror.getKind() != TypeKind.DECLARED
+        || !isType(mirror, LIST)
+        || ((DeclaredType) mirror).getTypeArguments().size() != 1) {
+      return null;
     }
-    final var element = type.getTypeArguments().get(0);
-    return isType(element, "java.lang.Long")
-        || element.getKind() == TypeKind.DECLARED && isNestedLongList((DeclaredType) element);
+    final var element = ((DeclaredType) mirror).getTypeArguments().get(0);
+    if (isType(element, "java.lang.Long")) {
+      return new Shape(1, Leaf.LONG, null);
+    }
+    if (isType(element, DIRECT_BUFFER)) {
+      return new Shape(1, Leaf.STRING, null);
+    }
+    if (element.getKind() != TypeKind.DECLARED) {
+      return null;
+    }
+    final var inner = listShape(element, field);
+    if (inner != null) {
+      return new Shape(inner.depth() + 1, inner.leaf(), inner.item());
+    }
+    final var item = (TypeElement) ((DeclaredType) element).asElement();
+    if (item.getAnnotation(MsgpackPojo.class) != null || isBaseValue(item)) {
+      requirePublicConstructor(item, field);
+      return new Shape(1, Leaf.ITEM, item);
+    }
+    return null;
   }
 
   private boolean isType(final TypeMirror mirror, final String qualifiedName) {
@@ -452,6 +484,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         "  public static final MsgpackOps<%1$s> INSTANCE = new Instance();\n\n".formatted(pojo));
     s.append("  private static final %s DEFAULTS = new %s();\n\n".formatted(pojo, pojo));
     sentinels(s, m, true);
+    leafOps(s, m);
     s.append("  private %sOps() {}\n\n".formatted(pojo));
     s.append("  /** Restores the field initializers. */\n");
     s.append("  public static void reset(final %s target) {\n".formatted(pojo));
@@ -466,7 +499,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         continue;
       }
       switch (p.type()) {
-        case STRING_LIST, LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST, NESTED_LONG_LIST ->
+        case STRING_LIST, LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST, LIST_OF_LISTS ->
             s.append(
                 "    target.%1$s.clear();\n    target.%1$s.addAll(DEFAULTS.%1$s);\n".formatted(f));
         case NESTED -> s.append("    target.%s.reset();\n".formatted(f));
@@ -565,7 +598,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                 "    %1$s.clear();\n    for (int i = 0; i < %2$s.size(); i++) {\n      %1$s.add(Decoding.copy(%2$s.get(i)));\n    }\n"
                     .formatted(to, from);
             case LONG_LIST -> "    %1$s.clear();\n    %1$s.addAll(%2$s);\n".formatted(to, from);
-            case NESTED_LONG_LIST -> "    Decoding.copyNestedLongs(%s, %s);\n".formatted(from, to);
+            case LIST_OF_LISTS ->
+                "    %s.copy(%s, %s, %d, %s);\n"
+                    .formatted(NESTED_LISTS, from, to, p.depth(), p.leafOpsName());
             case INT_ARRAY_LIST, LONG_ARRAY_LIST ->
                 "    %1$s.clear();\n    for (int i = 0; i < %2$s.size(); i++) {\n      %1$s.%3$s(%2$s.%4$s(i));\n    }\n"
                     .formatted(
@@ -613,8 +648,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                     .formatted(x, y);
             case STRING, BINARY, RAW, DOCUMENT -> "!Decoding.equalContent(%s, %s)".formatted(x, y);
             case STRING_LIST -> "!Decoding.equalContents(%s, %s)".formatted(x, y);
-            case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST, NESTED_LONG_LIST ->
-                "!%s.equals(%s)".formatted(x, y);
+            case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST -> "!%s.equals(%s)".formatted(x, y);
+            case LIST_OF_LISTS ->
+                "!%s.equal(%s, %s, %d, %s)"
+                    .formatted(NESTED_LISTS, x, y, p.depth(), p.leafOpsName());
             case NESTED ->
                 p.pojo()
                     ? "!%sOps.equals(%s, %s)".formatted(p.javaType(), x, y)
@@ -706,7 +743,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
                 "    sb.append('[');\n    for (int i = 0; i < %1$s.size(); i++) {\n      if (i > 0) {\n        sb.append(',');\n      }\n      sb.append(%1$s.%2$s(i));\n    }\n    sb.append(']');\n"
                     .formatted(x, getter(p.type()));
-            case NESTED_LONG_LIST -> "    Decoding.appendNestedLongs(sb, %s);\n".formatted(x);
+            case LIST_OF_LISTS ->
+                "    %s.appendTo(sb, %s, %d, %s);\n"
+                    .formatted(NESTED_LISTS, x, p.depth(), p.leafOpsName());
             case NESTED ->
                 p.pojo()
                     ? "    %sOps.appendTo(sb, %s);\n".formatted(p.javaType(), x)
@@ -747,8 +786,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                 "java.util.Objects.hashCode(%s)".formatted(x);
             case STRING, BINARY, RAW, DOCUMENT -> "Decoding.contentHash(%s)".formatted(x);
             case STRING_LIST -> "Decoding.contentHash(%s)".formatted(x);
-            case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST, NESTED_LONG_LIST ->
-                "%s.hashCode()".formatted(x);
+            case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST -> "%s.hashCode()".formatted(x);
+            case LIST_OF_LISTS ->
+                "%s.hash(%s, %d, %s)".formatted(NESTED_LISTS, x, p.depth(), p.leafOpsName());
             // the hash code of a BaseValue is not consistent with its equals (it includes whether
             // a property was set and the recycled ones), so it is not used: equal values must hash
             // alike
@@ -828,7 +868,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                     + "    for (int i = 0; i < %1$s.size(); i++) {\n".formatted(get)
                     + "      n += w.writeInteger(%s.%s(i));\n".formatted(get, getter(p.type()))
                     + "    }\n";
-            case NESTED_LONG_LIST -> "    n += Decoding.writeNestedLongs(w, %s);\n".formatted(get);
+            case LIST_OF_LISTS ->
+                "    n += %s.write(w, %s, %d, %s);\n"
+                    .formatted(NESTED_LISTS, get, p.depth(), p.leafCodecName());
             case NESTED -> "    n += CODEC_%d.write(w, %s);\n".formatted(i, get);
             case NESTED_LIST ->
                 "    n += w.writeArrayHeader(%1$s.size());\n".formatted(get)
@@ -883,7 +925,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                     + "      n += MsgPackWriter.getEncodedLongValueLength(%s.%s(i));\n"
                         .formatted(get, getter(p.type()))
                     + "    }\n";
-            case NESTED_LONG_LIST -> "    n += Decoding.lengthNestedLongs(%s);\n".formatted(get);
+            case LIST_OF_LISTS ->
+                "    n += %s.length(%s, %d, %s);\n"
+                    .formatted(NESTED_LISTS, get, p.depth(), p.leafCodecName());
             case NESTED -> "    n += CODEC_%d.getLength(%s);\n".formatted(i, get);
             case NESTED_LIST ->
                 "    n += MsgPackWriter.getEncodedArrayHeaderLength(%s.size());\n".formatted(get)
@@ -940,7 +984,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             case STRING_LIST, LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
                 "{\n          %1$s.clear();\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            %1$s.%2$s;\n          }\n        }"
                     .formatted(f, addElement(p.type()));
-            case NESTED_LONG_LIST -> "Decoding.readNestedLongs(r, %s);".formatted(f);
+            case LIST_OF_LISTS ->
+                "%s.read(r, %s, %d, %s);".formatted(NESTED_LISTS, f, p.depth(), p.leafCodecName());
             case NESTED -> "CODEC_%d.read(r, %s);".formatted(i, f);
             case NESTED_LIST ->
                 "{\n          %1$s.clear();\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            final %2$s item = new %2$s();\n            CODEC_%3$d.read(r, item);\n            %1$s.add(item);\n          }\n        }"
@@ -1073,6 +1118,103 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     }
   }
 
+  /** The innermost elements of a list of lists: the built-in ones, or through the item codec. */
+  private static String leafCodec(final Property p, final int index) {
+    final var codec = NESTED_LISTS + ".ElementCodec";
+    return switch (p.leaf()) {
+      case LONG ->
+          "  private static final %1$s<Long> %2$s = %1$s.LONG;\n"
+              .formatted(codec, p.leafCodecName());
+      case STRING ->
+          "  private static final %1$s<org.agrona.DirectBuffer> %2$s = %1$s.STRING;\n"
+              .formatted(codec, p.leafCodecName());
+      case ITEM ->
+          """
+            private static final MsgpackCodec<%1$s> CODEC_%4$d = Codecs.of(%1$s.class);
+            private static final %2$s<%1$s> %3$s =
+                new %2$s<>() {
+                  @Override
+                  public int write(final MsgPackWriter w, final %1$s value) {
+                    return CODEC_%4$d.write(w, value);
+                  }
+
+                  @Override
+                  public int length(final %1$s value) {
+                    return CODEC_%4$d.getLength(value);
+                  }
+
+                  @Override
+                  public %1$s read(final MsgPackReader r) {
+                    final %1$s item = new %1$s();
+                    CODEC_%4$d.read(r, item);
+                    return item;
+                  }
+                };
+          """
+              .formatted(p.javaType(), codec, p.leafCodecName(), index);
+    };
+  }
+
+  private static void leafOps(final StringBuilder s, final Model m) {
+    for (final var p : m.properties()) {
+      if (p.type() != Type.LIST_OF_LISTS) {
+        continue;
+      }
+      final var ops = NESTED_LISTS + ".ElementOps";
+      switch (p.leaf()) {
+        case LONG ->
+            s.append(
+                "  private static final %1$s<Long> %2$s = %1$s.LONG;\n\n"
+                    .formatted(ops, p.leafOpsName()));
+        case STRING ->
+            s.append(
+                "  private static final %1$s<org.agrona.DirectBuffer> %2$s = %1$s.STRING;\n\n"
+                    .formatted(ops, p.leafOpsName()));
+        case ITEM ->
+            s.append(
+                """
+                  private static final %2$s<%1$s> %3$s =
+                      new %2$s<>() {
+                        @Override
+                        public %1$s copy(final %1$s value) {
+                          final %1$s copy = new %1$s();
+                          %4$s;
+                          return copy;
+                        }
+
+                        @Override
+                        public void appendTo(final StringBuilder builder, final %1$s value) {
+                          %5$s;
+                        }
+
+                        @Override
+                        public boolean equal(final %1$s a, final %1$s b) {
+                          return %6$s;
+                        }
+
+                        @Override
+                        public int hash(final %1$s value) {
+                          return %7$s;
+                        }
+                      };
+
+                """
+                    .formatted(
+                        p.javaType(),
+                        ops,
+                        p.leafOpsName(),
+                        p.pojo()
+                            ? "%sOps.copy(value, copy)".formatted(p.javaType())
+                            : "Decoding.copyValue(value, copy)",
+                        p.pojo()
+                            ? "%sOps.appendTo(builder, value)".formatted(p.javaType())
+                            : "value.writeJSON(builder)",
+                        p.pojo() ? "%sOps.equals(a, b)".formatted(p.javaType()) : "a.equals(b)",
+                        p.pojo() ? "%sOps.hashCode(value)".formatted(p.javaType()) : "0"));
+      }
+    }
+  }
+
   private static void constants(final StringBuilder s, final Model m) {
     int i = 0;
     for (final var p : m.properties()) {
@@ -1106,6 +1248,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         s.append(
             "  private static final MsgpackCodec<%1$s> CODEC_%2$d = Codecs.of(%1$s.class);\n"
                 .formatted(p.javaType(), i));
+      } else if (p.type() == Type.LIST_OF_LISTS) {
+        s.append(leafCodec(p, i));
       }
       i++;
     }
@@ -1148,8 +1292,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     LONG_LIST(true, false),
     INT_ARRAY_LIST(true, false),
     LONG_ARRAY_LIST(true, false),
-    /** A {@code List<List<Long>>}, or nested deeper: lists of {@code Long}s, stored as arrays. */
-    NESTED_LONG_LIST(true, false),
+    /** Lists nested at least twice, such as {@code List<List<Long>>}, see {@code NestedLists}. */
+    LIST_OF_LISTS(true, false),
     NESTED(true, false),
     NESTED_LIST(true, false);
 
@@ -1184,7 +1328,25 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       boolean nullable,
       boolean sentinel,
       boolean sanitized,
-      boolean pojo) {
+      boolean pojo,
+      @Nullable Shape shape) {
+
+    /** Nesting depth of a {@code LIST_OF_LISTS}. */
+    int depth() {
+      return Objects.requireNonNull(shape).depth();
+    }
+
+    Leaf leaf() {
+      return Objects.requireNonNull(shape).leaf();
+    }
+
+    String leafCodecName() {
+      return "LEAF_" + field;
+    }
+
+    String leafOpsName() {
+      return "LEAF_OPS_" + field;
+    }
 
     /** Holders and {@code @Nullable} fields can be unset, a property without default. */
     boolean canBeUnset() {
@@ -1219,6 +1381,16 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     String value(final String v) {
       return isHolder() ? "%s.%s.get()".formatted(v, field) : "%s.%s".formatted(v, field);
     }
+  }
+
+  /** Nesting depth and innermost element of a {@link Type#LIST_OF_LISTS}. */
+  private record Shape(int depth, Leaf leaf, @Nullable TypeElement item) {}
+
+  private enum Leaf {
+    LONG,
+    STRING,
+    /** A {@link MsgpackPojo} or a {@code BaseValue}, see {@link Shape#item}. */
+    ITEM
   }
 
   private record Model(String pkg, String name, List<Property> properties, String unknownField) {}
