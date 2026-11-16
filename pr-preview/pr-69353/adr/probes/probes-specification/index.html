@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.10.2">
 <title data-rh="true">Probes – specification | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-69353/adr/probes/probes-specification/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-adr-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-adr-current"><meta data-rh="true" property="og:title" content="Probes – specification | Camunda Platform"><meta data-rh="true" name="description" content="Specification for Connector Validation Phase 2, Option E, validated on 2026-11-10. This file is the"><meta data-rh="true" property="og:description" content="Specification for Connector Validation Phase 2, Option E, validated on 2026-11-10. This file is the"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-69353/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-69353/adr/probes/probes-specification/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-69353/adr/probes/probes-specification/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-69353/adr/probes/probes-specification/" hreflang="x-default"><link rel="stylesheet" href="/camunda/pr-preview/pr-69353/assets/css/styles.44533d03.css">
-<script src="/camunda/pr-preview/pr-69353/assets/js/runtime~main.8e527395.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-69353/assets/js/main.05a288c5.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-69353/assets/js/runtime~main.d9041027.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-69353/assets/js/main.d3f20acd.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -257,6 +257,11 @@ for an <code>ACTIVATED</code> probe, with its key. As for jobs, there is no chec
 worker that collected it.</li>
 <li class="">The <code>worker</code> in the answer (D20) is the worker name of the poll that collected the probe,
 recorded in <code>PROBE_BATCH:ACTIVATED</code>.</li>
+<li class="">The deadline counts when a command is processed, not only when <code>TIME_OUT</code> is: a poll skips a
+probe past its deadline, and an <code>ANSWER</code> or <code>YIELD</code> past it is rejected with <code>NOT_FOUND</code> (F4),
+even while its <code>TIME_OUT</code> is still queued. So the reason of the time-out is the state at the
+deadline (note 1). Divergence from jobs, whose completion is accepted until the time-out is
+processed: the client&#x27;s response must reach the gateway before it gives up (section 10.1).</li>
 </ol>
 <ul>
 <li class="">The engine keeps the client request with the probe and answers it when the probe ends
