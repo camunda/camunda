@@ -605,6 +605,22 @@
     </dependency>
 
     <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-oauth2-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-oauth2-client</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>com.nimbusds</groupId>
+          <artifactId>oauth2-oidc-sdk</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-transport</artifactId>
     </dependency>
@@ -1194,6 +1210,11 @@
                  at runtime (see PR #52064). -->
             <ignoredNonTestScopedDependency>org.springframework.security:spring-security-web</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>org.springframework.security:spring-security-config</ignoredNonTestScopedDependency>
+            <!-- Only MigratingWebSessionAttributeConverterTest references them directly. Declaring
+                 them test-scope would shadow the transitive compile scope and drop them from the
+                 distribution, which breaks the OIDC login at runtime. -->
+            <ignoredNonTestScopedDependency>org.springframework.security:spring-security-oauth2-core</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>org.springframework.security:spring-security-oauth2-client</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>io.camunda:camunda-search-domain</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>io.camunda:zeebe-backup-store-filesystem</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
