@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.CloseHelper;
@@ -331,6 +332,20 @@ class SegmentsManagerTest {
         .isNotNull()
         .isNotInstanceOf(ForkJoinWorkerThread.class)
         .matches(Thread::isVirtual, "is a virtual thread");
+  }
+
+  @Test
+  void shouldCloseBackgroundIoExecutor() {
+    // given
+    final var bgIoExecutor = Mockito.spy(Executors.newVirtualThreadPerTaskExecutor());
+    segments = journalFactory.segmentsManager(directory, bgIoExecutor);
+    segments.open();
+
+    // when
+    segments.close();
+
+    // then
+    Mockito.verify(bgIoExecutor).close();
   }
 
   private SegmentedJournal openJournal() {

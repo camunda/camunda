@@ -13,6 +13,7 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalMetaStore;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -56,7 +57,7 @@ final class SegmentsManager implements AutoCloseable {
   private final SegmentLoader segmentLoader;
   private final String name;
   private final JournalMetaStore metaStore;
-  private final ExecutorService segmentPreparationExecutor;
+  private final ExecutorService bgIoExecutor;
 
   private volatile @Nullable Segment currentSegment;
 
@@ -68,6 +69,28 @@ final class SegmentsManager implements AutoCloseable {
       final SegmentLoader segmentLoader,
       final JournalMetrics journalMetrics,
       final JournalMetaStore metaStore) {
+    this(
+        journalIndex,
+        maxSegmentSize,
+        directory,
+        name,
+        segmentLoader,
+        journalMetrics,
+        metaStore,
+        Executors.newThreadPerTaskExecutor(
+            Thread.ofVirtual().name("journal-bg-io-" + name + "-", 0).factory()));
+  }
+
+  @VisibleForTesting
+  SegmentsManager(
+      final JournalIndex journalIndex,
+      final int maxSegmentSize,
+      final Path directory,
+      final String name,
+      final SegmentLoader segmentLoader,
+      final JournalMetrics journalMetrics,
+      final JournalMetaStore metaStore,
+      final ExecutorService bgIoExecutor) {
     this.name = checkNotNull(name, "name cannot be null");
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
@@ -75,9 +98,7 @@ final class SegmentsManager implements AutoCloseable {
     this.segmentLoader = segmentLoader;
     this.journalMetrics = journalMetrics;
     this.metaStore = metaStore;
-    segmentPreparationExecutor =
-        Executors.newThreadPerTaskExecutor(
-            Thread.ofVirtual().name("zeebe-journal-" + name + "-", 0).factory());
+    this.bgIoExecutor = bgIoExecutor;
   }
 
   @Override
@@ -100,7 +121,7 @@ final class SegmentsManager implements AutoCloseable {
       nextSegment = null;
     }
 
-    segmentPreparationExecutor.close();
+    bgIoExecutor.close();
     currentSegment = null;
   }
 
@@ -330,8 +351,7 @@ final class SegmentsManager implements AutoCloseable {
             .withMaxSegmentSize(maxSegmentSize)
             .build();
     nextSegment =
-        CompletableFuture.supplyAsync(
-            () -> createUninitializedSegment(descriptor), segmentPreparationExecutor);
+        CompletableFuture.supplyAsync(() -> createUninitializedSegment(descriptor), bgIoExecutor);
   }
 
   SortedMap<Long, Segment> getTailSegments(final long index) {
