@@ -34,7 +34,13 @@ services:
 
   camunda-waitstates-isolated-off:
     container_name: camunda-waitstates-isolated-off
-    image: ${CAMUNDA_DOCKER_IMAGE:-camunda/camunda:SNAPSHOT}
+    # Default must track docker-compose.yml's `camunda` service (8.10-SNAPSHOT),
+    # not the main-line `camunda/camunda:SNAPSHOT`: the RDBMS API nightly runs
+    # Camunda from a built binary and never exports CAMUNDA_DOCKER_IMAGE, so the
+    # fallback is what this isolated stack actually pulls there. A main-line image
+    # does not come up against this branch's config and the beforeAll topology
+    # wait fails with ECONNRESET. Keep this tag in sync with docker-compose.yml.
+    image: ${CAMUNDA_DOCKER_IMAGE:-camunda/camunda:8.10-SNAPSHOT}
     environment:
       - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g'
       - ZEEBE_BROKER_NETWORK_HOST=camunda-waitstates-isolated-off
