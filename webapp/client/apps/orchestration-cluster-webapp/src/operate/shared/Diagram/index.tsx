@@ -203,7 +203,7 @@ function Diagram({
 			}
 
 			const {width, height} = entry.contentRect;
-			const hasChanged = lastSize !== undefined && (lastSize.width !== width || lastSize.height !== height);
+			const hasChanged = lastSize === undefined || lastSize.width !== width || lastSize.height !== height;
 			lastSize = {width, height};
 
 			if (hasChanged && width > 0 && height > 0) {
