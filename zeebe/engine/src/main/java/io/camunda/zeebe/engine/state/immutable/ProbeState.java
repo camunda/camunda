@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.engine.state.probe.PersistedProbe;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import java.util.function.BiPredicate;
 import org.jspecify.annotations.NullMarked;
@@ -23,6 +24,12 @@ public interface ProbeState {
 
   /** Returns the state of the probe, or {@link State#NOT_FOUND} if it does not exist. */
   State getState(long probeKey);
+
+  /**
+   * Returns a copy of the probe with its state, read once, or {@code null} if no probe with this
+   * key exists.
+   */
+  @Nullable PersistedProbe getPersistedProbe(long probeKey);
 
   /**
    * Visits copies of the probes whose deadline is at or before the timestamp, earliest first, until

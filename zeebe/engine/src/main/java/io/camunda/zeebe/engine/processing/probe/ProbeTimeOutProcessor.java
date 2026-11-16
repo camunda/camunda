@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProbeState;
-import io.camunda.zeebe.engine.state.immutable.ProbeState.State;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
@@ -50,23 +49,23 @@ public final class ProbeTimeOutProcessor implements TypedRecordProcessor<ProbeRe
   @Override
   public void processRecord(final TypedRecord<ProbeRecord> command) {
     final long probeKey = command.getKey();
-    final var state = probeState.getState(probeKey);
-    final var probe = probeState.getProbe(probeKey);
-    if (state == State.NOT_FOUND || probe == null) {
+    final var persistedProbe = probeState.getPersistedProbe(probeKey);
+    if (persistedProbe == null) {
       reject(command, "no such probe was found");
       return;
     }
+    final var probe = persistedProbe.getRecord();
     if (probe.getDeadline() > clock.millis()) {
       reject(command, "it has not timed out");
       return;
     }
 
     final var reason =
-        switch (state) {
+        switch (persistedProbe.getState()) {
           case ACTIVATABLE -> ProbeEndReason.NO_WORKER;
           case WAITING_FOR_SECRET_RESOLUTION -> ProbeEndReason.SECRET_RESOLUTION_TIMEOUT;
           case ACTIVATED -> ProbeEndReason.WORKER_DID_NOT_ANSWER;
-          case NOT_FOUND -> throw new IllegalStateException("Rejected above");
+          case NOT_FOUND -> throw new IllegalStateException("A stored probe is never NOT_FOUND");
         };
     probeBehavior.timeOut(probeKey, probe, reason);
   }

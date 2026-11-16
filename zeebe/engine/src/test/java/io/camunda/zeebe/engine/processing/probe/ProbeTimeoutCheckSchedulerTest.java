@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.immutable.ProbeState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.probe.PersistedProbe;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.engine.util.ScheduledTaskTestHarness;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
@@ -157,6 +158,11 @@ final class ProbeTimeoutCheckSchedulerTest {
     @Override
     public State getState(final long probeKey) {
       return delegate.getState(probeKey);
+    }
+
+    @Override
+    public @Nullable PersistedProbe getPersistedProbe(final long probeKey) {
+      return delegate.getPersistedProbe(probeKey);
     }
 
     @Override

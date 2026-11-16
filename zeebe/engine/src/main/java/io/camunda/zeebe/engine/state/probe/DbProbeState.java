@@ -112,6 +112,15 @@ public final class DbProbeState implements MutableProbeState {
   }
 
   @Override
+  public @Nullable PersistedProbe getPersistedProbe(final long key) {
+    probeKey.wrapLong(key);
+    final var probe = probesColumnFamily.get(probeKey);
+    return probe == null
+        ? null
+        : new PersistedProbe().setState(probe.getState()).setRecord(probe.getRecord());
+  }
+
+  @Override
   public State getState(final long key) {
     probeKey.wrapLong(key);
     final var probe = probesColumnFamily.get(probeKey);
