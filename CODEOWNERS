@@ -213,6 +213,9 @@
 # Engine-expert skill
 /.agents/skills/engine-expert/  @korthout @camunda/core-features
 
+# Grafana dashboards skill
+/.agents/skills/grafana-dashboards/ @camunda/core-features
+
 # Experience FE frontend skills
 /.agents/skills/frontend-feature/          @camunda/orchestration-cluster-webapps
 /.agents/skills/frontend-integration-test/ @camunda/orchestration-cluster-webapps
