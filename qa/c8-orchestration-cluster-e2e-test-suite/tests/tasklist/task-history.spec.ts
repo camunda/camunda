@@ -21,8 +21,25 @@ test.describe('Task History Audit Log', () => {
   let processInstance: ProcessInstance;
 
   test.beforeAll(async () => {
-    await deploy(['./resources/usertask_to_be_completed.bpmn']);
-    processInstance = await createSingleInstance('usertask_to_be_completed', 1);
+    // Use a process dedicated to this suite instead of the shared
+    // `usertask_to_be_completed` one. `task-details.spec.ts` runs in parallel
+    // (same chromium project, 4 workers), deploys that same process, and its
+    // `complete task` test opens a task by process id via `.nth(0)` — which
+    // can land on, and complete, THIS suite's instance. A completed task can
+    // no longer be unassigned, so the afterEach's Unassign→"Assign to me"
+    // loop then times out. A unique process id keeps our instance invisible
+    // to any by-name selection in another suite.
+    await deploy(['./resources/usertask_for_history.bpmn']);
+    // deployResources resolves once the deployment is committed, but the new
+    // definition still has to be distributed to every partition before an
+    // instance can be created by id+version. Because this process is deployed
+    // only here (no other parallel suite pre-warms it), creating immediately
+    // can hit a partition that has not applied the deployment yet and fail
+    // with 404 NOT_FOUND. Retry across that short distribution window rather
+    // than a fixed sleep so it waits exactly as long as needed and no longer.
+    await expect(async () => {
+      processInstance = await createSingleInstance('usertask_for_history', 1);
+    }).toPass({timeout: 30000, intervals: [1000]});
   });
 
   test.beforeEach(
