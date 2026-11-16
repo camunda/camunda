@@ -24,11 +24,12 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Applies one buffered chunk of a policy update, once all its chunks are buffered. The chunk is
- * turned into identity commands, which the identity processors apply and distribute to the other
- * partitions. Each identity processor validates its own command, so an entry that cannot be
- * applied, for example a delete of a missing role, is rejected on its own while the other entries
- * of the chunk apply.
+ * Applies one buffered chunk of a policy update, once all its chunks are buffered and the update is
+ * validated (see {@link PolicyUpdateAppendChunkProcessor}). The chunk is turned into identity
+ * commands, which the identity processors apply and distribute to the other partitions. Each
+ * identity processor still validates its own command, so an entry that became invalid since the
+ * update was validated, or that the update validation doesn't check yet, is rejected on its own
+ * while the other entries of the chunk apply.
  *
  * <p>The processor then writes the command for the next chunk. Its identity commands are written
  * after those of this chunk, so the chunks are applied in order. After the last chunk, it instead
@@ -43,7 +44,6 @@ public final class PolicyUpdateApplyChunkProcessor
 
   private final PolicyUpdateState policyUpdateState;
   private final PolicyUpdateCommandMapper commandMapper;
-  private final PolicyUpdateValidator validator;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -52,12 +52,10 @@ public final class PolicyUpdateApplyChunkProcessor
   public PolicyUpdateApplyChunkProcessor(
       final PolicyUpdateState policyUpdateState,
       final PolicyUpdateCommandMapper commandMapper,
-      final PolicyUpdateValidator validator,
       final KeyGenerator keyGenerator,
       final Writers writers) {
     this.policyUpdateState = policyUpdateState;
     this.commandMapper = commandMapper;
-    this.validator = validator;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     commandWriter = writers.command();
@@ -93,16 +91,6 @@ public final class PolicyUpdateApplyChunkProcessor
                   update.getUpdateId(),
                   update.getPolicyId(),
                   String.join("; ", commands.getLeft())));
-      return;
-    }
-
-    final var errors = validator.validate(chunk.get(), commands.get());
-    if (!errors.isEmpty()) {
-      rejectionWriter.appendRejection(
-          command,
-          RejectionType.INVALID_ARGUMENT,
-          "Expected policy update '%s' of policy '%s' to be applicable, but: %s"
-              .formatted(update.getUpdateId(), update.getPolicyId(), String.join("; ", errors)));
       return;
     }
 

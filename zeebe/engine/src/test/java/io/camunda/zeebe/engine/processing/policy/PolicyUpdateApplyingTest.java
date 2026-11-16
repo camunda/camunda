@@ -12,6 +12,7 @@ import static io.camunda.zeebe.engine.processing.policy.PolicyUpdateApplyTest.ui
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyDeleteEntry;
 import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
@@ -33,13 +34,16 @@ import org.junit.Test;
  * Chunks that arrive while their update is being applied. Applying writes identity commands that
  * nothing can undo, so such a chunk is only rejected and the update never fails.
  *
- * <p>To hold an update in the apply phase, its last chunk has an entry that cannot be applied: its
- * first chunk is applied, and the last one is rejected, so the update stays open with all its
- * chunks buffered. The held update blocks every later update, so each test gets its own engine.
+ * <p>To receive a chunk while the update is being applied, the test writes it in one batch after
+ * all chunks of the update: the last of them writes the command that applies the update, which
+ * lands on the log after the test's chunk, since the engine processes one command per batch. Each
+ * test gets its own engine, so the updates don't affect each other.
  */
 public final class PolicyUpdateApplyingTest {
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  // one command per batch, so the command that applies an update lands on the log after the
+  // chunks that the test wrote in the same batch as the update's chunks
+  @Rule public final EngineRule engine = EngineRule.singlePartition().maxCommandsInBatch(1);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -49,11 +53,8 @@ public final class PolicyUpdateApplyingTest {
 
   @Test
   public void shouldRejectAChunkThatIsReceivedAgainWithoutFailingTheUpdate() {
-    // given
-    holdUpdateWhileApplying();
-
     // when
-    apply(engine, chunk(0));
+    appendWhileApplying(chunk(0));
 
     // then
     assertRejectedWithoutFailingTheUpdate(0);
@@ -61,11 +62,8 @@ public final class PolicyUpdateApplyingTest {
 
   @Test
   public void shouldRejectAChunkWithOtherIdentifiersWithoutFailingTheUpdate() {
-    // given
-    holdUpdateWhileApplying();
-
     // when
-    apply(engine, chunk(1).setSeqNo(8));
+    appendWhileApplying(chunk(1).setSeqNo(8));
 
     // then
     assertRejectedWithoutFailingTheUpdate(1);
@@ -73,18 +71,15 @@ public final class PolicyUpdateApplyingTest {
 
   @Test
   public void shouldRejectAChunkWithAnIndexOutOfRangeWithoutFailingTheUpdate() {
-    // given
-    holdUpdateWhileApplying();
-
     // when
-    apply(engine, chunk(2));
+    appendWhileApplying(chunk(2));
 
     // then
     assertRejectedWithoutFailingTheUpdate(2);
   }
 
   @Test
-  public void shouldRejectAChunkWithAnEntryWithoutEntityType() {
+  public void shouldFailAnUpdateWithAnEntryWithoutEntityType() {
     // given
     final var id = "entity-" + uid();
 
@@ -93,26 +88,37 @@ public final class PolicyUpdateApplyingTest {
 
     // then
     final var rejection =
-        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPLY_CHUNK)
+        RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPEND_CHUNK)
             .onlyCommandRejections()
             .filter(record -> record.getValue().getUpdateId().equals(updateId))
             .getFirst();
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(rejection.getRejectionReason()).contains(id, "not specified");
+    assertThat(
+            RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.FAILED)
+                .filter(record -> record.getValue().getUpdateId().equals(updateId))
+                .exists())
+        .isTrue();
   }
 
-  /** Applies the first of two chunks and leaves the update open with both chunks buffered. */
-  private void holdUpdateWhileApplying() {
+  /**
+   * Appends both chunks of an update and then the given chunk, in one batch, so the given chunk is
+   * received after the update is complete and before it is applied.
+   */
+  private void appendWhileApplying(final PolicyUpdateRecord chunk) {
     final var roleId = "role-" + uid();
-    apply(engine, chunk(0).setRoles(List.<RoleRecordValue>of(role(roleId))));
-    apply(engine, chunk(1).setDeletes(List.of(deleteWithoutEntityType("entity-" + uid()))));
+    engine.writeRecords(
+        append(chunk(0).setRoles(List.<RoleRecordValue>of(role(roleId)))),
+        append(chunk(1)),
+        append(chunk));
 
     assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).withRoleId(roleId).exists())
         .isTrue();
-    RecordingExporter.policyUpdateRecords(PolicyUpdateIntent.APPLY_CHUNK)
-        .onlyCommandRejections()
-        .filter(record -> record.getValue().getUpdateId().equals(updateId))
-        .await();
+  }
+
+  private static RecordToWrite append(final PolicyUpdateRecord chunk) {
+    return RecordToWrite.commandWithoutClaims()
+        .policyUpdate(PolicyUpdateIntent.APPEND_CHUNK, chunk);
   }
 
   private void assertRejectedWithoutFailingTheUpdate(final int chunkIndex) {
