@@ -37,7 +37,7 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
 - Supported field types: `long`, `int`, `boolean`, `@MsgpackRequired long`/`int`,
   `RequiredLong`/`RequiredInt` and `@Nullable Long`/`Integer`/`Boolean` (no default, see below), `DirectBuffer`/`UnsafeBuffer` (string, binary,
   raw msgpack, or a document), enums (stored by `toString()`, read by `name()`, so `toString()` must
-  not be overridden), `List<DirectBuffer>`, `List<Long>`, agrona's
+  not be overridden), `List<DirectBuffer>`, `List<Long>`, `List<List<Long>>`, agrona's
   `IntArrayList`/`LongArrayList` (unboxed, prefer them over `List<Long>`), other
   `@MsgpackPojo`s and `BaseValue`s, and lists of those (`List<Item>`, replacing an `ArrayProperty` of
   objects).
