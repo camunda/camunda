@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
@@ -23,7 +24,6 @@ import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -38,9 +38,8 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
 
-  private static final String GROUP_NOT_FOUND_ERROR_MESSAGE =
-      "Expected to delete group with ID '%s', but a group with this ID does not exist.";
   private final GroupState groupState;
+  private final GroupValidator groupValidator;
   private final EntityMembershipsRemover membershipsRemover;
   private final AuthorizationState authorizationState;
   private final MembershipState membershipState;
@@ -55,12 +54,14 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
 
   public GroupDeleteProcessor(
       final ProcessingState processingState,
+      final GroupValidator groupValidator,
       final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final MembershipStateAdapter membershipStateAdapter) {
     groupState = processingState.getGroupState();
+    this.groupValidator = groupValidator;
     authorizationState = processingState.getAuthorizationState();
     membershipState = processingState.getMembershipState();
     this.permissionsBehavior = permissionsBehavior;
@@ -82,21 +83,17 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
         permissionsBehavior.isAuthorized(
             command, AuthorizationResourceType.GROUP, PermissionType.DELETE, groupId);
     if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      reject(command, isAuthorized.getLeft());
       return;
     }
 
-    final var persistedRecord = groupState.get(groupId);
-    if (persistedRecord.isEmpty()) {
-      final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(groupId);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+    final var validation = groupValidator.validateDelete(record);
+    if (validation.isLeft()) {
+      reject(command, validation.getLeft());
       return;
     }
 
-    final var persistedGroup = persistedRecord.get();
+    final var persistedGroup = groupState.get(groupId).orElseThrow();
     final var groupKey = persistedGroup.getGroupKey();
     record.setGroupKey(groupKey);
 
@@ -117,22 +114,19 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
 
   @Override
   public void processDistributedCommand(final TypedRecord<GroupRecord> command) {
-    final var record = command.getValue();
-    groupState
-        .get(record.getGroupId())
-        .ifPresentOrElse(
-            group -> {
-              removeAssignedEntities(command.getValue());
+    groupValidator
+        .validateDelete(command.getValue())
+        .ifRightOrLeft(
+            record -> {
+              removeAssignedEntities(record);
               membershipsRemover.removeRoleAndTenantMemberships(
-                  EntityType.GROUP, command.getValue().getGroupId());
-              deleteAuthorizations(command.getValue());
+                  EntityType.GROUP, record.getGroupId());
+              deleteAuthorizations(record);
               stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.DELETED, record);
               invalidateMembershipCache();
             },
-            () -> {
-              final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(record.getGroupId());
-              rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-            });
+            rejection ->
+                rejectionWriter.appendRejection(command, rejection.type(), rejection.reason()));
 
     commandDistributionBehavior.acknowledgeCommand(command);
   }
@@ -178,5 +172,10 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
           stateWriter.appendFollowUpEvent(
               authorizationKey, AuthorizationIntent.DELETED, authorization);
         });
+  }
+
+  private void reject(final TypedRecord<GroupRecord> command, final Rejection rejection) {
+    rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+    responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
   }
 }

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.tenant;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.TenantValidator;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
   private final TenantState tenantState;
+  private final TenantValidator tenantValidator;
   private final PermissionsBehavior permissionsBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -39,11 +41,13 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
 
   public TenantUpdateProcessor(
       final TenantState tenantState,
+      final TenantValidator tenantValidator,
       final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     this.tenantState = tenantState;
+    this.tenantValidator = tenantValidator;
     this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -58,22 +62,19 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
     final var record = command.getValue();
     final var tenantId = record.getTenantId();
 
-    final var persistedTenant = tenantState.getTenantById(tenantId);
-    if (persistedTenant.isEmpty()) {
-      rejectCommand(
-          command,
-          RejectionType.NOT_FOUND,
-          "Expected to update tenant with id '%s', but no tenant with this id exists."
-              .formatted(tenantId));
+    final var validation = tenantValidator.validateUpdate(record);
+    if (validation.isLeft()) {
+      rejectCommand(command, validation.getLeft());
       return;
     }
 
-    if (!isAuthorizedToUpdate(command, persistedTenant.get())) {
+    final var persistedTenant = tenantState.getTenantById(tenantId).orElseThrow();
+    if (!isAuthorizedToUpdate(command, persistedTenant)) {
       return;
     }
 
-    updateExistingTenant(persistedTenant.get(), record);
-    updateStateAndDistribute(command, persistedTenant.get());
+    updateExistingTenant(persistedTenant, record);
+    updateStateAndDistribute(command, persistedTenant);
   }
 
   @Override
@@ -92,7 +93,7 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
             PermissionType.UPDATE,
             persistedTenant.getTenantId());
     if (authResult.isLeft()) {
-      rejectCommandWithUnauthorizedError(command, authResult.getLeft());
+      rejectCommand(command, authResult.getLeft());
       return false;
     }
     return true;
@@ -131,8 +132,7 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
         .distribute(ValueType.TENANT, TenantIntent.UPDATE, updatedRecord, command.getAuthInfo());
   }
 
-  private void rejectCommandWithUnauthorizedError(
-      final TypedRecord<TenantRecord> command, final Rejection rejection) {
+  private void rejectCommand(final TypedRecord<TenantRecord> command, final Rejection rejection) {
     rejectCommand(command, rejection.type(), rejection.reason());
   }
 

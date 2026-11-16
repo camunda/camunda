@@ -23,6 +23,11 @@ public final class StateIdentityView implements IdentityView {
   }
 
   @Override
+  public boolean tenantExists(final String tenantId) {
+    return state.getTenantState().getTenantById(tenantId).isPresent();
+  }
+
+  @Override
   public boolean roleExists(final String roleId) {
     return state.getRoleState().getRole(roleId).isPresent();
   }

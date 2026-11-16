@@ -37,6 +37,7 @@ import org.jspecify.annotations.NullMarked;
 final class PolicyUpdateIdentityView implements IdentityView {
 
   private final IdentityView state;
+  private final Map<String, Boolean> tenants = new HashMap<>();
   private final Map<String, Boolean> roles = new HashMap<>();
   private final Map<String, Boolean> groups = new HashMap<>();
   private final Map<String, Boolean> mappingRules = new HashMap<>();
@@ -81,6 +82,8 @@ final class PolicyUpdateIdentityView implements IdentityView {
                 RelationType.TENANT,
                 tenant.getTenantId());
         switch ((TenantIntent) command.intent()) {
+          case CREATE -> tenants.put(tenant.getTenantId(), true);
+          case DELETE -> tenants.put(tenant.getTenantId(), false);
           case ADD_ENTITY -> relations.put(relation, true);
           case REMOVE_ENTITY -> relations.put(relation, false);
           default -> {}
@@ -96,6 +99,12 @@ final class PolicyUpdateIdentityView implements IdentityView {
       // authorizations are not part of the view
       default -> {}
     }
+  }
+
+  @Override
+  public boolean tenantExists(final String tenantId) {
+    final var changed = tenants.get(tenantId);
+    return changed != null ? changed : state.tenantExists(tenantId);
   }
 
   @Override

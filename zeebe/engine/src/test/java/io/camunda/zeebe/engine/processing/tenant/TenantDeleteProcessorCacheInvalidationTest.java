@@ -12,8 +12,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.StateIdentityView;
+import io.camunda.zeebe.engine.processing.identity.TenantValidator;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
@@ -88,6 +91,7 @@ class TenantDeleteProcessorCacheInvalidationTest {
     processor =
         new TenantDeleteProcessor(
             state,
+            new TenantValidator(new StateIdentityView(state), mock(EngineSecurityConfig.class)),
             mock(PermissionsBehavior.class),
             mock(KeyGenerator.class),
             writers,

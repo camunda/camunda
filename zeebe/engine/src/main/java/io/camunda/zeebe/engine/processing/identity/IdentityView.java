@@ -20,6 +20,8 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public interface IdentityView {
 
+  boolean tenantExists(String tenantId);
+
   boolean roleExists(String roleId);
 
   boolean groupExists(String groupId);

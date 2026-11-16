@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.processing.tenant;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.StateIdentityView;
+import io.camunda.zeebe.engine.processing.identity.TenantValidator;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -31,12 +33,14 @@ public class TenantProcessors {
       final EngineSecurityConfig securityConfig,
       final AuthorizationScopeStateAdapter authorizationScopeStateAdapter,
       final MembershipStateAdapter membershipStateAdapter) {
+    final var tenantValidator =
+        new TenantValidator(new StateIdentityView(processingState), securityConfig);
     typedRecordProcessors
         .onCommand(
             ValueType.TENANT,
             TenantIntent.CREATE,
             new TenantCreateProcessor(
-                processingState.getTenantState(),
+                tenantValidator,
                 permissionsBehavior,
                 keyGenerator,
                 writers,
@@ -46,6 +50,7 @@ public class TenantProcessors {
             TenantIntent.UPDATE,
             new TenantUpdateProcessor(
                 processingState.getTenantState(),
+                tenantValidator,
                 permissionsBehavior,
                 keyGenerator,
                 writers,
@@ -54,18 +59,19 @@ public class TenantProcessors {
             ValueType.TENANT,
             TenantIntent.ADD_ENTITY,
             new TenantAddEntityProcessor(
-                processingState,
+                processingState.getTenantState(),
+                tenantValidator,
                 permissionsBehavior,
                 keyGenerator,
                 writers,
                 commandDistributionBehavior,
-                securityConfig,
                 membershipStateAdapter))
         .onCommand(
             ValueType.TENANT,
             TenantIntent.REMOVE_ENTITY,
             new TenantRemoveEntityProcessor(
-                processingState,
+                processingState.getTenantState(),
+                tenantValidator,
                 permissionsBehavior,
                 keyGenerator,
                 writers,
@@ -76,6 +82,7 @@ public class TenantProcessors {
             TenantIntent.DELETE,
             new TenantDeleteProcessor(
                 processingState,
+                tenantValidator,
                 permissionsBehavior,
                 keyGenerator,
                 writers,
