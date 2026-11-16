@@ -172,8 +172,8 @@ public final class CamundaBackgroundTaskManagerFactory {
     return new OpensearchBatchOperationUpdateRepository(
         asyncClient,
         executor,
-        batchOperationTemplate.getFullQualifiedName(),
-        operationTemplate.getFullQualifiedName(),
+        batchOperationTemplate.getActiveNames(),
+        operationTemplate.getActiveNames(),
         logger);
   }
 
@@ -226,8 +226,8 @@ public final class CamundaBackgroundTaskManagerFactory {
     return new ElasticsearchBatchOperationUpdateRepository(
         asyncClient,
         executor,
-        batchOperationTemplate.getFullQualifiedName(),
-        operationTemplate.getFullQualifiedName(),
+        batchOperationTemplate.getActiveNames(),
+        operationTemplate.getActiveNames(),
         logger);
   }
 

@@ -38,20 +38,15 @@ final class ElasticsearchBatchOperationUpdateRepositoryIT extends BatchOperation
     return new ElasticsearchBatchOperationUpdateRepository(
         client,
         Runnable::run,
-        batchOperationTemplate.getFullQualifiedName(),
-        operationTemplate.getFullQualifiedName(),
+        batchOperationTemplate.getActiveNames(),
+        operationTemplate.getActiveNames(),
         LOGGER);
   }
 
   @Override
-  protected BatchOperationEntity getBatchOperationEntity(final String id) {
+  protected BatchOperationEntity getBatchOperationEntity(final String index, final String id) {
     try {
-      return client
-          .get(
-              r -> r.index(batchOperationTemplate.getFullQualifiedName()).id(id),
-              BatchOperationEntity.class)
-          .get()
-          .source();
+      return client.get(r -> r.index(index).id(id), BatchOperationEntity.class).get().source();
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new RuntimeException(e);
