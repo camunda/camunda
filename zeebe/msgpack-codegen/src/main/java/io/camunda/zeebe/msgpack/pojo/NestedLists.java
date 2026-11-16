@@ -47,6 +47,25 @@ public final class NestedLists {
           }
         };
 
+    /** Read with the range check of {@code int} properties. */
+    ElementCodec<Integer> INT =
+        new ElementCodec<>() {
+          @Override
+          public int write(final MsgPackWriter writer, final Integer value) {
+            return writer.writeInteger(value);
+          }
+
+          @Override
+          public int length(final Integer value) {
+            return MsgPackWriter.getEncodedLongValueLength(value);
+          }
+
+          @Override
+          public Integer read(final MsgPackReader reader) {
+            return Decoding.readInt(reader);
+          }
+        };
+
     /** Strings, read as views on the source buffer like {@code List<DirectBuffer>}. */
     ElementCodec<DirectBuffer> STRING =
         new ElementCodec<>() {
@@ -94,6 +113,29 @@ public final class NestedLists {
 
           @Override
           public int hash(final Long value) {
+            return value.hashCode();
+          }
+        };
+
+    ElementOps<Integer> INT =
+        new ElementOps<>() {
+          @Override
+          public Integer copy(final Integer value) {
+            return value;
+          }
+
+          @Override
+          public void appendTo(final StringBuilder builder, final Integer value) {
+            builder.append(value);
+          }
+
+          @Override
+          public boolean equal(final Integer a, final Integer b) {
+            return a.equals(b);
+          }
+
+          @Override
+          public int hash(final Integer value) {
             return value.hashCode();
           }
         };

@@ -387,8 +387,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
 
   /**
    * The nesting depth and the innermost element of a {@code List<...<List<E>>>}, with {@code E} a
-   * {@code Long}, a {@code DirectBuffer}, a {@link MsgpackPojo} or a {@code BaseValue}; null for
-   * any other type.
+   * {@code Long}, an {@code Integer}, a {@code DirectBuffer}, a {@link MsgpackPojo} or a {@code
+   * BaseValue}; null for any other type.
    */
   private @Nullable Shape listShape(final TypeMirror mirror, final String field) {
     if (mirror.getKind() != TypeKind.DECLARED
@@ -399,6 +399,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     final var element = ((DeclaredType) mirror).getTypeArguments().get(0);
     if (isType(element, "java.lang.Long")) {
       return new Shape(1, Leaf.LONG, null);
+    }
+    if (isType(element, "java.lang.Integer")) {
+      return new Shape(1, Leaf.INT, null);
     }
     if (isType(element, DIRECT_BUFFER)) {
       return new Shape(1, Leaf.STRING, null);
@@ -1125,6 +1128,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
       case LONG ->
           "  private static final %1$s<Long> %2$s = %1$s.LONG;\n"
               .formatted(codec, p.leafCodecName());
+      case INT ->
+          "  private static final %1$s<Integer> %2$s = %1$s.INT;\n"
+              .formatted(codec, p.leafCodecName());
       case STRING ->
           "  private static final %1$s<org.agrona.DirectBuffer> %2$s = %1$s.STRING;\n"
               .formatted(codec, p.leafCodecName());
@@ -1165,6 +1171,10 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         case LONG ->
             s.append(
                 "  private static final %1$s<Long> %2$s = %1$s.LONG;\n\n"
+                    .formatted(ops, p.leafOpsName()));
+        case INT ->
+            s.append(
+                "  private static final %1$s<Integer> %2$s = %1$s.INT;\n\n"
                     .formatted(ops, p.leafOpsName()));
         case STRING ->
             s.append(
@@ -1388,6 +1398,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
 
   private enum Leaf {
     LONG,
+    INT,
     STRING,
     /** A {@link MsgpackPojo} or a {@code BaseValue}, see {@link Shape#item}. */
     ITEM

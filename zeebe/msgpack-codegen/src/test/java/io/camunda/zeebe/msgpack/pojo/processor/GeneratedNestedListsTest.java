@@ -98,6 +98,7 @@ final class GeneratedNestedListsTest {
                   }
 
                   final List<List<List<Long>>> deep = new ArrayList<>();
+                  final List<List<List<Integer>>> ints = new ArrayList<>();
                   final List<List<DirectBuffer>> names = new ArrayList<>();
                   final List<List<Item>> items = new ArrayList<>();
                   final List<List<io.camunda.zeebe.msgpack.value.StringValue>> values = new ArrayList<>();
@@ -176,6 +177,9 @@ final class GeneratedNestedListsTest {
     final var deep = (List<List<List<Long>>>) get(source, "deep");
     deep.addAll(expected);
     @SuppressWarnings("unchecked")
+    final var ints = (List<List<List<Integer>>>) get(source, "ints");
+    ints.add(List.of(List.of(1, -2, Integer.MAX_VALUE), List.of()));
+    @SuppressWarnings("unchecked")
     final var names = (List<List<DirectBuffer>>) get(source, "names");
     names.add(List.of(new UnsafeBuffer("a".getBytes()), new UnsafeBuffer("bc".getBytes())));
     names.add(List.of());
@@ -205,6 +209,8 @@ final class GeneratedNestedListsTest {
     assertThat(copy.toString())
         .contains("[[[1,2],[]],[[70000]]]", "\"deep\"", "[[\"a\",\"bc\"],[]]", "[[{\"id\":7");
     assertThat(copy.toString()).contains("[[\"v\"]]");
+    assertThat(get(copy, "ints")).isEqualTo(ints).isEqualTo(get(read, "ints"));
+    assertThat(copy.toString()).contains("[[[1,-2,2147483647],[]]]");
     assertThat(get(copy, "values")).isEqualTo(values);
     assertThat(((List<?>) get(copy, "values")).get(0)).isNotSameAs(values.get(0));
     assertThat(((List<?>) get(copy, "items")).get(0)).isNotSameAs(items.get(0));
