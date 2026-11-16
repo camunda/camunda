@@ -14,7 +14,6 @@ import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
 import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
 import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
-import io.camunda.zeebe.msgpack.value.StringValue;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -52,13 +51,11 @@ public final class AwaitProcessInstanceResultMetadata
     return fetchVariables;
   }
 
-  /** The variables are referenced, not copied, like the views of the legacy property. */
+  /** The variables are referenced, not copied. */
   public AwaitProcessInstanceResultMetadata setFetchVariables(
-      final Iterable<StringValue> variables) {
+      final Iterable<DirectBuffer> variables) {
     fetchVariables.clear();
-    for (final StringValue variable : variables) {
-      fetchVariables.add(variable.getValue());
-    }
+    variables.forEach(fetchVariables::add);
     return this;
   }
 

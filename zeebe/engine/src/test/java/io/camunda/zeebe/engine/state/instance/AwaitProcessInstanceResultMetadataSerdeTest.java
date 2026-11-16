@@ -40,7 +40,7 @@ final class AwaitProcessInstanceResultMetadataSerdeTest {
             .mapToObj(i -> "variable-%02d-with-a-name-longer-than-31-bytes".formatted(i))
             .toList();
     final var v1 = new AwaitProcessInstanceResultMetadataV1();
-    v1.setRequestId(1L << 40).setRequestStreamId(300).setFetchVariables(variables(names));
+    v1.setRequestId(1L << 40).setRequestStreamId(300).setFetchVariables(v1Variables(names));
     final var current = new AwaitProcessInstanceResultMetadata();
     current.setRequestId(1L << 40).setRequestStreamId(300).setFetchVariables(variables(names));
 
@@ -75,7 +75,7 @@ final class AwaitProcessInstanceResultMetadataSerdeTest {
   void shouldReadBytesWrittenByV1() {
     // given
     final var v1 = new AwaitProcessInstanceResultMetadataV1();
-    v1.setRequestId(42L).setRequestStreamId(3).setFetchVariables(variables("a", "b"));
+    v1.setRequestId(42L).setRequestStreamId(3).setFetchVariables(v1Variables("a", "b"));
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);
     final var current = new AwaitProcessInstanceResultMetadata();
@@ -158,12 +158,22 @@ final class AwaitProcessInstanceResultMetadataSerdeTest {
   }
 
   /** Builds the input of {@code setFetchVariables}, the same way the record of a command does. */
-  private static ArrayProperty<StringValue> variables(final String... names) {
+  private static List<DirectBuffer> variables(final String... names) {
     return variables(List.of(names));
   }
 
-  private static ArrayProperty<StringValue> variables(final List<String> names) {
+  private static List<DirectBuffer> variables(final List<String> names) {
     return new ProcessInstanceCreationRecord().setFetchVariables(names).fetchVariables();
+  }
+
+  private static ArrayProperty<StringValue> v1Variables(final String... names) {
+    return v1Variables(List.of(names));
+  }
+
+  private static ArrayProperty<StringValue> v1Variables(final List<String> names) {
+    final var property = new ArrayProperty<>("fetchVariables", StringValue::new);
+    names.forEach(name -> property.add().wrap(BufferUtil.wrapString(name)));
+    return property;
   }
 
   private static List<String> names(final List<DirectBuffer> buffers) {
