@@ -99,6 +99,11 @@ final class PolicyUpdateIdentityView implements IdentityView {
   }
 
   @Override
+  public boolean tenantExists(final String tenantId) {
+    return state.tenantExists(tenantId);
+  }
+
+  @Override
   public boolean roleExists(final String roleId) {
     final var changed = roles.get(roleId);
     return changed != null ? changed : state.roleExists(roleId);

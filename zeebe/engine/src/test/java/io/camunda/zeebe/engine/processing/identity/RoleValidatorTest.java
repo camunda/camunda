@@ -21,8 +21,6 @@ import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationTyp
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -249,7 +247,7 @@ final class RoleValidatorTest {
     void shouldRejectAnAssignedMember() {
       // given
       final var roleId = view.addRole(uid("role"));
-      view.addMember(roleId, EntityType.CLIENT, "client");
+      view.addRelation(RelationType.ROLE, roleId, EntityType.CLIENT, "client");
 
       // when
       final var result = validator.validateAddEntity(member(roleId, EntityType.CLIENT, "client"));
@@ -272,7 +270,7 @@ final class RoleValidatorTest {
       // given
       final var roleId = view.addRole(uid("role"));
       final var username = uid("user");
-      view.addMember(roleId, EntityType.USER, username);
+      view.addRelation(RelationType.ROLE, roleId, EntityType.USER, username);
 
       // when
       final var result = validator.validateRemoveEntity(member(roleId, EntityType.USER, username));
@@ -316,57 +314,6 @@ final class RoleValidatorTest {
                   RejectionType.NOT_FOUND,
                   "Expected to remove entity with ID 'client' from role with ID '%s', but the entity is not assigned to this role."
                       .formatted(roleId)));
-    }
-  }
-
-  private static final class FakeIdentityView implements IdentityView {
-
-    private final Set<String> roles = new HashSet<>();
-    private final Set<String> mappingRules = new HashSet<>();
-    private final Set<String> roleMembers = new HashSet<>();
-
-    String addRole(final String roleId) {
-      roles.add(roleId);
-      return roleId;
-    }
-
-    String addMappingRule(final String mappingRuleId) {
-      mappingRules.add(mappingRuleId);
-      return mappingRuleId;
-    }
-
-    void addMember(final String roleId, final EntityType entityType, final String entityId) {
-      roleMembers.add(roleId + "/" + entityType + "/" + entityId);
-    }
-
-    @Override
-    public boolean roleExists(final String roleId) {
-      return roles.contains(roleId);
-    }
-
-    @Override
-    public boolean groupExists(final String groupId) {
-      return false;
-    }
-
-    @Override
-    public boolean userExists(final String username) {
-      return false;
-    }
-
-    @Override
-    public boolean mappingRuleExists(final String mappingRuleId) {
-      return mappingRules.contains(mappingRuleId);
-    }
-
-    @Override
-    public boolean hasRelation(
-        final EntityType entityType,
-        final String entityId,
-        final RelationType relationType,
-        final String relationId) {
-      return relationType == RelationType.ROLE
-          && roleMembers.contains(relationId + "/" + entityType + "/" + entityId);
     }
   }
 }
