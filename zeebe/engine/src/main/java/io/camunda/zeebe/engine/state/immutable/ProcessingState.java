@@ -119,4 +119,6 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
   SecretReferenceState getSecretReferenceState();
 
   PolicyUpdateState getPolicyUpdateState();
+
+  ProbeState getProbeState();
 }

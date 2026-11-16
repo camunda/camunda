@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
+import io.camunda.zeebe.broker.probe.RemoteProbeNotifier;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -64,6 +65,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.engine.processing.streamprocessor.ProbeNotifier;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -167,7 +169,10 @@ public final class ZeebePartitionFactory {
 
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();
-    final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
+    final var probeNotifier =
+        new RemoteProbeNotifier(clusterServices.getEventService(), raftPartition.id().group());
+    final var typedRecordProcessorsFactory =
+        createFactory(localBroker, featureFlags, probeNotifier);
 
     final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
     final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
@@ -285,7 +290,9 @@ public final class ZeebePartitionFactory {
   }
 
   private TypedRecordProcessorsFactory createFactory(
-      final BrokerInfo localBroker, final FeatureFlags featureFlags) {
+      final BrokerInfo localBroker,
+      final FeatureFlags featureFlags,
+      final ProbeNotifier probeNotifier) {
     return recordProcessorContext -> {
       final InterPartitionCommandSender partitionCommandSender =
           recordProcessorContext.getPartitionCommandSender();
@@ -300,6 +307,7 @@ public final class ZeebePartitionFactory {
           partitionCommandSender,
           featureFlags,
           jobStreamer,
+          probeNotifier,
           searchClientsProxy,
           brokerRequestAuthorizationConverter,
           secretStoreRegistry);
