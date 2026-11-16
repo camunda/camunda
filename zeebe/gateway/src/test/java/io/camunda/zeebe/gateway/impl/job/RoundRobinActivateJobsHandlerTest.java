@@ -8,52 +8,100 @@
 package io.camunda.zeebe.gateway.impl.job;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+import static io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler.MAX_TRACKED_JOB_TYPES;
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import io.camunda.zeebe.broker.client.impl.RoundRobinDispatchStrategy;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 final class RoundRobinActivateJobsHandlerTest {
 
-  private static final int MAX_JOB_TYPES = 10;
-
   @RegisterExtension
   final ControlledActorSchedulerExtension actorScheduler = new ControlledActorSchedulerExtension();
 
+  private final StubbedBrokerClient brokerClient = new StubbedBrokerClient();
+  private final List<Integer> polledPartitions = new ArrayList<>();
+  private final RoundRobinActivateJobsHandler<Object> handler =
+      new RoundRobinActivateJobsHandler<>(
+          brokerClient, Long.MAX_VALUE, r -> new EmptyResult(), IllegalStateException::new);
+
   @Test
-  void shouldBoundTrackedJobTypes() {
-    // given
-    final Cache<String, RoundRobinDispatchStrategy> cache =
-        Caffeine.newBuilder().maximumSize(MAX_JOB_TYPES).executor(Runnable::run).build();
-    final var handler =
-        new RoundRobinActivateJobsHandler<Object>(
-            new StubbedBrokerClient(),
-            Long.MAX_VALUE,
-            r -> null,
-            IllegalStateException::new,
-            cache);
+  void shouldForgetRoundRobinPositionOfJobTypesBeyondLimit() {
+    // given - every job type activated once, which advances its round-robin cursor
+    brokerClient.registerHandler(
+        BrokerActivateJobsRequest.class,
+        (BrokerActivateJobsRequest request) -> {
+          polledPartitions.add(request.getPartitionId());
+          return new BrokerResponse<>(new JobBatchRecord(), request.getPartitionId(), 1L);
+        });
     actorScheduler.submitActor(Actor.newActor().actorStartedHandler(handler).build());
     actorScheduler.workUntilDone();
 
-    // when
-    for (int i = 0; i < MAX_JOB_TYPES * 2; i++) {
-      final var brokerRequest = new BrokerActivateJobsRequest("type-" + i);
-      brokerRequest.setPartitionGroup(DEFAULT_PHYSICAL_TENANT_ID);
-      final var request =
-          new InflightActivateJobsRequest<Object>(
-              i, brokerRequest, new NoopResponseObserver(), 1000);
-      handler.activateJobs(3, request, e -> {}, (a, b) -> {});
+    final int jobTypesCount = MAX_TRACKED_JOB_TYPES * 2;
+    for (int i = 0; i < jobTypesCount; i++) {
+      assertThat(firstPolledPartition("type-" + i)).isEqualTo(START_PARTITION_ID);
     }
 
-    // then
-    assertThat(cache.estimatedSize()).isEqualTo(MAX_JOB_TYPES);
+    // when
+    int restartedJobTypes = 0;
+    for (int i = 0; i < jobTypesCount; i++) {
+      if (firstPolledPartition("type-" + i) == START_PARTITION_ID) {
+        restartedJobTypes++;
+      }
+    }
+
+    // then - at most MAX_TRACKED_JOB_TYPES kept their cursor; all others started over
+    assertThat(restartedJobTypes).isGreaterThanOrEqualTo(jobTypesCount - MAX_TRACKED_JOB_TYPES);
+  }
+
+  private int firstPolledPartition(final String jobType) {
+    polledPartitions.clear();
+    final var brokerRequest = new BrokerActivateJobsRequest(jobType).setMaxJobsToActivate(1);
+    brokerRequest.setPartitionGroup(DEFAULT_PHYSICAL_TENANT_ID);
+    final var request =
+        new InflightActivateJobsRequest<Object>(1, brokerRequest, new NoopResponseObserver(), 1000);
+    handler.activateJobs(
+        brokerClient
+            .getTopologyManager()
+            .getTopology(DEFAULT_PHYSICAL_TENANT_ID)
+            .getPartitionsCount(),
+        request,
+        e -> {},
+        (a, b) -> {});
+    actorScheduler.workUntilDone();
+    return polledPartitions.getFirst();
+  }
+
+  private static final class EmptyResult implements JobActivationResult<Object> {
+
+    @Override
+    public int getJobsCount() {
+      return 0;
+    }
+
+    @Override
+    public List<ActivatedJob> getJobs() {
+      return List.of();
+    }
+
+    @Override
+    public Object getActivateJobsResponse() {
+      return null;
+    }
+
+    @Override
+    public List<ActivatedJob> getJobsToDefer() {
+      return List.of();
+    }
   }
 
   private static final class NoopResponseObserver implements ResponseObserver<Object> {
