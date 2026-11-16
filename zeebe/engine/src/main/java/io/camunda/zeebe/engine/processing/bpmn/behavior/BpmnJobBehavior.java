@@ -698,7 +698,7 @@ public final class BpmnJobBehavior {
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
         .setStorageOrdinal(context.getStorageOrdinal())
         .setBusinessId(getBusinessIdFromProcessInstance(context))
-        .setJobReservationToken(getJobReservationToken(context, props.getType(), jobKind));
+        .setReservationToken(getReservationToken(context, props.getType(), jobKind));
     setJobSecretReferences(secretReferences);
 
     final var jobKey = keyGenerator.nextKey();
@@ -751,7 +751,7 @@ public final class BpmnJobBehavior {
    * stub is reserved and drained by a mock worker, while an un-tokened stub — even in an instance
    * that reserves other job types — is not reserved and stays hidden from every worker by its kind.
    */
-  private String getJobReservationToken(
+  private String getReservationToken(
       final BpmnElementContext context, final String jobType, final JobKind jobKind) {
     final var elementInstance =
         stateBehavior.getElementInstance(context.getRootProcessInstanceKey());
@@ -760,7 +760,7 @@ public final class BpmnJobBehavior {
     }
     final var rootInstance = elementInstance.getValue();
     return rootInstance.getReservedJobTypes().contains(jobType)
-        ? rootInstance.getJobReservationToken()
+        ? rootInstance.getReservationToken()
         : "";
   }
 

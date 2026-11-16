@@ -118,7 +118,7 @@ public class SimpleRequestMapper {
       return io.camunda.gateway.protocol.model.ProcessInstanceCreationReserveJobsInstruction.Builder
           .create()
           .jobTypes(instruction.getJobTypes())
-          .jobReservationToken(instruction.getJobReservationToken())
+          .reservationToken(instruction.getReservationToken())
           .type(instruction.getType())
           .build();
     }

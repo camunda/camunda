@@ -920,7 +920,7 @@ final class JsonSerializableToJsonTest {
                       "priority": 0,
                       "businessId": "",
                       "jobLeaseToken": "",
-                      "jobReservationToken": "",
+                      "reservationToken": "",
                       "jobKind": "BPMN_ELEMENT",
                       "jobListenerEventType": "UNSPECIFIED",
                       "retryBackoff": 1002,
@@ -977,7 +977,7 @@ final class JsonSerializableToJsonTest {
                     }
                   ],
                   "timeout": 2,
-                  "jobReservationToken": "",
+                  "reservationToken": "",
                   "calledProcessId": "",
                   "tenantIds": [],
                   "tenantFilter": "PROVIDED"
@@ -1006,7 +1006,7 @@ final class JsonSerializableToJsonTest {
                   "jobKeys": [],
                   "jobs": [],
                   "timeout": -1,
-                  "jobReservationToken": "",
+                  "reservationToken": "",
                   "calledProcessId": "",
                   "tenantIds": [],
                   "tenantFilter": "PROVIDED"
@@ -1124,7 +1124,7 @@ final class JsonSerializableToJsonTest {
                   "priority": 42,
                   "businessId": "biz-42",
                   "jobLeaseToken": "lease-abc-123",
-                  "jobReservationToken": "",
+                  "reservationToken": "",
                   "jobKind": "BPMN_ELEMENT",
                   "jobListenerEventType": "UNSPECIFIED",
                   "retryBackoff": 1003,
@@ -1214,7 +1214,7 @@ final class JsonSerializableToJsonTest {
                   "priority": 0,
                   "businessId": "",
                   "jobLeaseToken": "",
-                  "jobReservationToken": "",
+                  "reservationToken": "",
                   "jobKind": "BPMN_ELEMENT",
                   "jobListenerEventType": "UNSPECIFIED",
                   "retryBackoff": 0,
@@ -1283,7 +1283,7 @@ final class JsonSerializableToJsonTest {
                   "priority": 0,
                   "businessId": "",
                   "jobLeaseToken": "",
-                  "jobReservationToken": "",
+                  "reservationToken": "",
                   "jobKind": "BPMN_ELEMENT",
                   "jobListenerEventType": "UNSPECIFIED",
                   "retryBackoff": 0,
@@ -1926,7 +1926,7 @@ final class JsonSerializableToJsonTest {
                       new ProcessInstanceCreationRuntimeInstruction()
                           .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
                           .setAfterElementId("element"))
-                  .setJobReservationToken("recorder-session-1")
+                  .setReservationToken("recorder-session-1")
                   .setReservedJobTypes(List.of("send-invoice"))
                   .setProcessInstanceKey(instanceKey)
                   .setTags(Set.of("tag1", "tag2"))
@@ -1969,7 +1969,7 @@ final class JsonSerializableToJsonTest {
                   "versionTag": "v1.0",
                   "stubbedCallActivityProcessIds": [],
                   "reservedJobTypes": ["send-invoice"],
-                  "jobReservationToken": "recorder-session-1",
+                  "reservationToken": "recorder-session-1",
                   "variablesMetadata": {
                     "foo": {
                       "protectionModes": ["REDACT"]
@@ -2005,7 +2005,7 @@ final class JsonSerializableToJsonTest {
                   "versionTag": "",
                   "stubbedCallActivityProcessIds": [],
                   "reservedJobTypes": [],
-                  "jobReservationToken": "",
+                  "reservationToken": "",
                   "variablesMetadata": {},
                   "elementInstanceKey": -1
                 }
@@ -2194,7 +2194,7 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 6,
                   "businessId": "business-id-123",
                   "resumeFromJobKey": -1,
-                  "jobReservationToken": "",
+                  "reservationToken": "",
                   "stubbedCallActivityProcessIds": [],
                   "reservedJobTypes": [],
                   "elementInstanceKey": -1
@@ -2231,7 +2231,7 @@ final class JsonSerializableToJsonTest {
                   "storageOrdinal": 0,
                   "businessId": "",
                   "resumeFromJobKey": -1,
-                  "jobReservationToken": "",
+                  "reservationToken": "",
                   "stubbedCallActivityProcessIds": [],
                   "reservedJobTypes": [],
                   "elementInstanceKey": -1
@@ -3080,7 +3080,7 @@ final class JsonSerializableToJsonTest {
                     "storageOrdinal": 0,
                     "businessId": "",
                     "resumeFromJobKey": -1,
-                  "jobReservationToken": "",
+                  "reservationToken": "",
                   "stubbedCallActivityProcessIds": [],
                   "reservedJobTypes": [],
                     "elementInstanceKey": -1

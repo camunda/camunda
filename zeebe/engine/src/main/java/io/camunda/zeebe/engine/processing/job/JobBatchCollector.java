@@ -118,8 +118,7 @@ final class JobBatchCollector {
           }
 
           final var withheldReason =
-              JobWorkerDispatch.withheldFromWorkersReason(
-                  jobRecord, value.getJobReservationToken());
+              JobWorkerDispatch.withheldFromWorkersReason(jobRecord, value.getReservationToken());
           if (withheldReason != null) {
             jobMetrics.countJobEvent(withheldReason, jobRecord.getJobKind(), value.getType());
             return true;

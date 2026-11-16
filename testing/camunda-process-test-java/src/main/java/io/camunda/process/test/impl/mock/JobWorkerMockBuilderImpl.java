@@ -42,7 +42,7 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
 
   private final BiFunction<String, ActivatedJob, String> logMessagePrefix;
 
-  private String jobReservationToken;
+  private String reservationToken;
 
   public JobWorkerMockBuilderImpl(
       final String jobType,
@@ -69,8 +69,8 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
   }
 
   @Override
-  public JobWorkerMockBuilder withJobReservationToken(final String jobReservationToken) {
-    this.jobReservationToken = jobReservationToken;
+  public JobWorkerMockBuilder withReservationToken(final String reservationToken) {
+    this.reservationToken = reservationToken;
     return this;
   }
 
@@ -141,8 +141,8 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
 
           final ThrowErrorCommandStep2 command =
               jobClient.newThrowErrorCommand(job).errorCode(errorCode).variables(variables);
-          if (jobReservationToken != null) {
-            command.withJobReservationToken(jobReservationToken);
+          if (reservationToken != null) {
+            command.withReservationToken(reservationToken);
           }
 
           if (errorMessage != null) {
@@ -155,12 +155,12 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
 
   @Override
   public JobWorkerMock withHandler(final JobHandler jobHandler) {
-    return new JobWorkerMockImpl(jobType, calledProcessId, client, jobHandler, jobReservationToken);
+    return new JobWorkerMockImpl(jobType, calledProcessId, client, jobHandler, reservationToken);
   }
 
   private CompleteJobCommandStep1 applyReservationToken(final CompleteJobCommandStep1 command) {
-    if (jobReservationToken != null) {
-      command.withJobReservationToken(jobReservationToken);
+    if (reservationToken != null) {
+      command.withReservationToken(reservationToken);
     }
     return command;
   }

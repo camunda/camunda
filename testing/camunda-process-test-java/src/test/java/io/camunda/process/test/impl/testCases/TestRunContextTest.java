@@ -17,7 +17,7 @@ package io.camunda.process.test.impl.testCases;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.process.test.api.testCases.TestCaseJobReservationToken;
+import io.camunda.process.test.api.testCases.TestCaseReservationToken;
 import org.junit.jupiter.api.Test;
 
 public class TestRunContextTest {
@@ -56,16 +56,14 @@ public class TestRunContextTest {
     final TestRunContext secondRun = TestRunContext.disabled();
 
     // when
-    final String first =
-        firstRun.resolveJobReservationToken(TestCaseJobReservationToken.PLACEHOLDER);
-    final String second =
-        secondRun.resolveJobReservationToken(TestCaseJobReservationToken.PLACEHOLDER);
+    final String first = firstRun.resolveReservationToken(TestCaseReservationToken.PLACEHOLDER);
+    final String second = secondRun.resolveReservationToken(TestCaseReservationToken.PLACEHOLDER);
 
     // then
-    assertThat(first).isNotEqualTo(TestCaseJobReservationToken.PLACEHOLDER).isNotBlank();
+    assertThat(first).isNotEqualTo(TestCaseReservationToken.PLACEHOLDER).isNotBlank();
     assertThat(first)
         .describedAs("the same run resolves the placeholder to the same token")
-        .isEqualTo(firstRun.resolveJobReservationToken(TestCaseJobReservationToken.PLACEHOLDER));
+        .isEqualTo(firstRun.resolveReservationToken(TestCaseReservationToken.PLACEHOLDER));
     assertThat(first).describedAs("a new run gets a fresh token").isNotEqualTo(second);
   }
 
@@ -75,8 +73,8 @@ public class TestRunContextTest {
     final TestRunContext runContext = TestRunContext.disabled();
 
     // when/then
-    assertThat(runContext.resolveJobReservationToken("literal")).isEqualTo("literal");
-    assertThat(runContext.resolveJobReservationToken(null)).isNull();
+    assertThat(runContext.resolveReservationToken("literal")).isEqualTo("literal");
+    assertThat(runContext.resolveReservationToken(null)).isNull();
   }
 
   @Test

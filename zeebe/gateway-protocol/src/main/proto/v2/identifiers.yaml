@@ -248,7 +248,7 @@ components:
       minLength: 1
       example: "550e8400-e29b-41d4-a716-446655440000"
 
-    JobReservationToken:
+    ReservationToken:
       description: |
         A caller-chosen token that reserves a process instance's jobs for whoever created it
         (alpha).
@@ -259,8 +259,8 @@ components:
         chosen by the caller and stays the same for the life of the instance, so it should be
         a fresh, unguessable value per instance.
       type: string
-      format: JobReservationToken
-      x-semantic-type: JobReservationToken
+      format: ReservationToken
+      x-semantic-type: ReservationToken
       minLength: 1
       maxLength: 128
       example: "550e8400-e29b-41d4-a716-446655440000"

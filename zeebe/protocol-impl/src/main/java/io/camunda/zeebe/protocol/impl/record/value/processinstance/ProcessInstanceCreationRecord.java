@@ -51,8 +51,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private static final StringValue VERSION_TAG_KEY = new StringValue("versionTag");
   private static final StringValue STUBBED_CALL_ACTIVITY_PROCESS_IDS_KEY =
       new StringValue("stubbedCallActivityProcessIds");
-  private static final StringValue JOB_RESERVATION_TOKEN_KEY =
-      new StringValue("jobReservationToken");
+  private static final StringValue RESERVATION_TOKEN_KEY = new StringValue("reservationToken");
   private static final StringValue RESERVED_JOB_TYPES_KEY = new StringValue("reservedJobTypes");
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
@@ -83,8 +82,8 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private final StringProperty versionTagProperty = new StringProperty(VERSION_TAG_KEY, "");
   private final ArrayProperty<StringValue> stubbedCallActivityProcessIdsProperty =
       new ArrayProperty<>(STUBBED_CALL_ACTIVITY_PROCESS_IDS_KEY, StringValue::new);
-  private final StringProperty jobReservationTokenProperty =
-      new StringProperty(JOB_RESERVATION_TOKEN_KEY, "");
+  private final StringProperty reservationTokenProperty =
+      new StringProperty(RESERVATION_TOKEN_KEY, "");
   private final ArrayProperty<StringValue> reservedJobTypesProperty =
       new ArrayProperty<>(RESERVED_JOB_TYPES_KEY, StringValue::new);
 
@@ -104,7 +103,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(businessIdProperty)
         .declareProperty(versionTagProperty)
         .declareProperty(stubbedCallActivityProcessIdsProperty)
-        .declareProperty(jobReservationTokenProperty)
+        .declareProperty(reservationTokenProperty)
         .declareProperty(reservedJobTypesProperty);
     declareProperties(variablesPropertyGroup);
   }
@@ -354,24 +353,23 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   }
 
   @Override
-  public String getJobReservationToken() {
-    return BufferUtil.bufferAsString(jobReservationTokenProperty.getValue());
+  public String getReservationToken() {
+    return BufferUtil.bufferAsString(reservationTokenProperty.getValue());
   }
 
-  public ProcessInstanceCreationRecord setJobReservationToken(final String jobReservationToken) {
-    jobReservationTokenProperty.setValue(jobReservationToken);
+  public ProcessInstanceCreationRecord setReservationToken(final String reservationToken) {
+    reservationTokenProperty.setValue(reservationToken);
     return this;
   }
 
-  public ProcessInstanceCreationRecord setJobReservationToken(
-      final DirectBuffer jobReservationToken) {
-    jobReservationTokenProperty.setValue(jobReservationToken);
+  public ProcessInstanceCreationRecord setReservationToken(final DirectBuffer reservationToken) {
+    reservationTokenProperty.setValue(reservationToken);
     return this;
   }
 
   @JsonIgnore
-  public DirectBuffer getJobReservationTokenBuffer() {
-    return jobReservationTokenProperty.getValue();
+  public DirectBuffer getReservationTokenBuffer() {
+    return reservationTokenProperty.getValue();
   }
 
   @Override

@@ -360,7 +360,7 @@ components:
           description: >
             Activates the stand-in jobs of stubbed call activities that call this BPMN process id,
             instead of jobs of a given `type` (see the STUB_CALL_ACTIVITIES runtime instruction). It
-            implies the internal stub job type, so `type` must be omitted. A `jobReservationToken` is
+            implies the internal stub job type, so `type` must be omitted. A `reservationToken` is
             required, since stub jobs are served only to the token that reserved them. This lets one
             mock worker drain every stub of a stubbed process, a multi-instance call activity
             included. Exactly one of `type` or `calledProcessId` must be set.
@@ -424,7 +424,7 @@ components:
             recommended. Omit or set to false to activate jobs without a lease.
           type: boolean
           nullable: true
-        jobReservationToken:
+        reservationToken:
           description: >
             The reservation token of a process instance whose jobs were reserved at creation (see
             the RESERVE_JOBS runtime instruction). A worker presenting the matching token activates
@@ -441,7 +441,7 @@ components:
           addedInVersion: "8.9"
         - propertyName: withLease
           addedInVersion: "8.10"
-        - propertyName: jobReservationToken
+        - propertyName: reservationToken
           addedInVersion: "8.11"
         - propertyName: calledProcessId
           addedInVersion: "8.11"
@@ -1095,7 +1095,7 @@ components:
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
-        jobReservationToken:
+        reservationToken:
           description: >
             The reservation token the process instance reserved the job with (alpha).
 
@@ -1107,11 +1107,11 @@ components:
             This property is an alpha feature and may be subject to change in future releases.
           nullable: true
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/JobReservationToken'
+            - $ref: 'identifiers.yaml#/components/schemas/ReservationToken'
       x-properties-added-in-version:
         - propertyName: jobLeaseToken
           addedInVersion: "8.10"
-        - propertyName: jobReservationToken
+        - propertyName: reservationToken
           addedInVersion: "8.11"
 
     JobErrorRequest:
@@ -1148,7 +1148,7 @@ components:
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
-        jobReservationToken:
+        reservationToken:
           description: >
             The reservation token the process instance reserved the job with (alpha).
 
@@ -1160,13 +1160,13 @@ components:
             This property is an alpha feature and may be subject to change in future releases.
           nullable: true
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/JobReservationToken'
+            - $ref: 'identifiers.yaml#/components/schemas/ReservationToken'
       required:
         - errorCode
       x-properties-added-in-version:
         - propertyName: jobLeaseToken
           addedInVersion: "8.10"
-        - propertyName: jobReservationToken
+        - propertyName: reservationToken
           addedInVersion: "8.11"
 
     JobCompletionRequest:
@@ -1195,7 +1195,7 @@ components:
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
-        jobReservationToken:
+        reservationToken:
           description: >
             The reservation token the process instance reserved the job with (alpha).
 
@@ -1207,7 +1207,7 @@ components:
             This property is an alpha feature and may be subject to change in future releases.
           nullable: true
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/JobReservationToken'
+            - $ref: 'identifiers.yaml#/components/schemas/ReservationToken'
         businessId:
           nullable: true
           description: >
@@ -1230,7 +1230,7 @@ components:
           addedInVersion: "8.10"
         - propertyName: businessId
           addedInVersion: "8.10"
-        - propertyName: jobReservationToken
+        - propertyName: reservationToken
           addedInVersion: "8.11"
 
     JobResult:
@@ -1385,14 +1385,14 @@ components:
 
             An update without a token always applies to support operator and bulk updates of
             leased jobs. Note that this is different from lifecycle requests like complete, fail, and
-            throw-error that always require a token for leased jobs, and from `jobReservationToken`,
+            throw-error that always require a token for leased jobs, and from `reservationToken`,
             which a reserved job's update requires like every other command on it.
 
             A job that was activated without a lease requires no token.
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
-        jobReservationToken:
+        reservationToken:
           description: >
             The reservation token the process instance reserved the job with (alpha).
 
@@ -1404,7 +1404,7 @@ components:
             This property is an alpha feature and may be subject to change in future releases.
           nullable: true
           allOf:
-            - $ref: 'identifiers.yaml#/components/schemas/JobReservationToken'
+            - $ref: 'identifiers.yaml#/components/schemas/ReservationToken'
       required:
         - changeset
       x-properties-added-in-version:
@@ -1412,7 +1412,7 @@ components:
           addedInVersion: "8.8"
         - propertyName: jobLeaseToken
           addedInVersion: "8.10"
-        - propertyName: jobReservationToken
+        - propertyName: reservationToken
           addedInVersion: "8.11"
 
     JobChangeset:

@@ -167,7 +167,7 @@ public interface JobRecordValue
    * @return the reservation token, or an empty string when the job is not reserved
    * @since 8.11
    */
-  default String getJobReservationToken() {
+  default String getReservationToken() {
     return "";
   }
 

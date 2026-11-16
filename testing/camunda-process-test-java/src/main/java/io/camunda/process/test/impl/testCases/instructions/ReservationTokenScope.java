@@ -25,9 +25,9 @@ import java.util.Optional;
  * resolves; it must not outlive the instruction it was written on, or a later instruction without a
  * token would send it too.
  */
-final class JobReservationTokenScope {
+final class ReservationTokenScope {
 
-  private JobReservationTokenScope() {}
+  private ReservationTokenScope() {}
 
   static void run(
       final CamundaProcessTestContext context,
@@ -39,11 +39,11 @@ final class JobReservationTokenScope {
       return;
     }
 
-    context.setJobReservationToken(runContext.resolveJobReservationToken(token.get()));
+    context.setReservationToken(runContext.resolveReservationToken(token.get()));
     try {
       action.run();
     } finally {
-      context.setJobReservationToken(null);
+      context.setReservationToken(null);
     }
   }
 }

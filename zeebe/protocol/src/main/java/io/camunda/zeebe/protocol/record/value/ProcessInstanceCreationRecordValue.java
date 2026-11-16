@@ -123,7 +123,7 @@ public interface ProcessInstanceCreationRecordValue
    * @return the job reservation token, or an empty string if the instance reserves no jobs
    * @since 8.11
    */
-  default String getJobReservationToken() {
+  default String getReservationToken() {
     return "";
   }
 

@@ -151,7 +151,7 @@ public class CreateProcessInstanceInstructionTest {
             .addRuntimeInstructions(
                 ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction.builder()
                     .addJobTypes("send-invoice", "charge-card")
-                    .jobReservationToken(token)
+                    .reservationToken(token)
                     .build())
             .addRuntimeInstructions(
                 ImmutableCreateProcessInstanceStubCallActivitiesRuntimeInstruction.builder()

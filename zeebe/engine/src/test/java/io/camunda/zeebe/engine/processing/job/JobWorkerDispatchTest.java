@@ -35,7 +35,7 @@ final class JobWorkerDispatchTest {
   @Test
   void shouldWithholdReservedJobFromAWorkerWithoutTheToken() {
     // given
-    final JobRecord job = job().setJobReservationToken(TOKEN);
+    final JobRecord job = job().setReservationToken(TOKEN);
 
     // when / then
     assertThat(JobWorkerDispatch.withheldFromWorkersReason(job, null))
@@ -45,7 +45,7 @@ final class JobWorkerDispatchTest {
   @Test
   void shouldWithholdReservedJobFromAWorkerWithADifferentToken() {
     // given
-    final JobRecord job = job().setJobReservationToken(TOKEN);
+    final JobRecord job = job().setReservationToken(TOKEN);
 
     // when / then
     assertThat(JobWorkerDispatch.withheldFromWorkersReason(job, "ts-other"))
@@ -55,7 +55,7 @@ final class JobWorkerDispatchTest {
   @Test
   void shouldServeReservedJobToTheWorkerHoldingTheMatchingToken() {
     // given
-    final JobRecord job = job().setJobReservationToken(TOKEN);
+    final JobRecord job = job().setReservationToken(TOKEN);
 
     // when / then
     assertThat(JobWorkerDispatch.withheldFromWorkersReason(job, TOKEN)).isNull();
@@ -64,8 +64,7 @@ final class JobWorkerDispatchTest {
   @Test
   void shouldServeReservedCallActivityStubToItsTokenHolder() {
     // given
-    final JobRecord stub =
-        job().setJobKind(JobKind.CALL_ACTIVITY_STUB).setJobReservationToken(TOKEN);
+    final JobRecord stub = job().setJobKind(JobKind.CALL_ACTIVITY_STUB).setReservationToken(TOKEN);
 
     // when / then
     assertThat(JobWorkerDispatch.withheldFromWorkersReason(stub, TOKEN)).isNull();
@@ -74,8 +73,7 @@ final class JobWorkerDispatchTest {
   @Test
   void shouldWithholdReservedCallActivityStubFromAWorkerWithoutTheToken() {
     // given
-    final JobRecord stub =
-        job().setJobKind(JobKind.CALL_ACTIVITY_STUB).setJobReservationToken(TOKEN);
+    final JobRecord stub = job().setJobKind(JobKind.CALL_ACTIVITY_STUB).setReservationToken(TOKEN);
 
     // when / then
     assertThat(JobWorkerDispatch.withheldFromWorkersReason(stub, null))

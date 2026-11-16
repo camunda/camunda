@@ -212,15 +212,15 @@
                       "type": "string"
                     }
                   },
-                  "jobReservationToken": {
-                    "description": "The token that reserves the listed jobs. Use the placeholder ${jobReservationToken}: the runner substitutes a fresh token for it on each run. The same token must be given on every job instruction that acts on a reserved job.",
+                  "reservationToken": {
+                    "description": "The token that reserves the listed jobs. Use the placeholder ${reservationToken}: the runner substitutes a fresh token for it on each run. The same token must be given on every job instruction that acts on a reserved job.",
                     "type": "string"
                   }
                 },
                 "required": [
                   "type",
                   "jobTypes",
-                  "jobReservationToken"
+                  "reservationToken"
                 ],
                 "additionalProperties": false
               },
@@ -240,8 +240,8 @@
                       "type": "string"
                     }
                   },
-                  "jobReservationToken": {
-                    "description": "The token that reserves the stub jobs, so a mock worker presenting it can drain them. Use the placeholder '${jobReservationToken}'; the runner substitutes the token of the current run.",
+                  "reservationToken": {
+                    "description": "The token that reserves the stub jobs, so a mock worker presenting it can drain them. Use the placeholder '${reservationToken}'; the runner substitutes the token of the current run.",
                     "type": "string"
                   }
                 },
@@ -692,8 +692,8 @@
           "description": "The selector to identify the job to complete.",
           "$ref": "#/definitions/JobSelector"
         },
-        "jobReservationToken": {
-          "description": "The token the job's process instance reserved the job with. Use the placeholder ${jobReservationToken}: the runner substitutes the token of the current run for it. Optional; required only to act on a reserved job.",
+        "reservationToken": {
+          "description": "The token the job's process instance reserved the job with. Use the placeholder ${reservationToken}: the runner substitutes the token of the current run for it. Optional; required only to act on a reserved job.",
           "type": "string"
         },
         "variables": {
@@ -726,8 +726,8 @@
           "description": "The selector to identify the job to complete.",
           "$ref": "#/definitions/JobSelector"
         },
-        "jobReservationToken": {
-          "description": "The token the job's process instance reserved the job with. Use the placeholder ${jobReservationToken}: the runner substitutes the token of the current run for it. Optional; required only to act on a reserved job.",
+        "reservationToken": {
+          "description": "The token the job's process instance reserved the job with. Use the placeholder ${reservationToken}: the runner substitutes the token of the current run for it. Optional; required only to act on a reserved job.",
           "type": "string"
         },
         "variables": {
@@ -787,8 +787,8 @@
           "description": "The selector to identify the job to complete.",
           "$ref": "#/definitions/JobSelector"
         },
-        "jobReservationToken": {
-          "description": "The token the job's process instance reserved the job with. Use the placeholder ${jobReservationToken}: the runner substitutes the token of the current run for it. Optional; required only to act on a reserved job.",
+        "reservationToken": {
+          "description": "The token the job's process instance reserved the job with. Use the placeholder ${reservationToken}: the runner substitutes the token of the current run for it. Optional; required only to act on a reserved job.",
           "type": "string"
         },
         "denied": {
@@ -1129,11 +1129,11 @@
           "type": "string"
         },
         "calledProcessId": {
-          "description": "The called-process id whose stubbed call activities to stand in for, instead of a job type. Requires jobReservationToken. Exactly one of jobType or calledProcessId must be set.",
+          "description": "The called-process id whose stubbed call activities to stand in for, instead of a job type. Requires reservationToken. Exactly one of jobType or calledProcessId must be set.",
           "type": "string"
         },
-        "jobReservationToken": {
-          "description": "The token the jobs of this type were reserved with. Use the placeholder ${jobReservationToken}: the runner substitutes a fresh token for it on each run. Optional; required only to mock a reserved job type so the mock worker can activate its reserved jobs.",
+        "reservationToken": {
+          "description": "The token the jobs of this type were reserved with. Use the placeholder ${reservationToken}: the runner substitutes a fresh token for it on each run. Optional; required only to mock a reserved job type so the mock worker can activate its reserved jobs.",
           "type": "string"
         },
         "variables": {
@@ -1164,7 +1164,7 @@
       ],
       "dependencies": {
         "calledProcessId": [
-          "jobReservationToken"
+          "reservationToken"
         ]
       },
       "additionalProperties": false
@@ -1301,11 +1301,11 @@
           "type": "string"
         },
         "calledProcessId": {
-          "description": "The called-process id whose stubbed call activities to stand in for, instead of a job type. Requires jobReservationToken. Exactly one of jobType or calledProcessId must be set.",
+          "description": "The called-process id whose stubbed call activities to stand in for, instead of a job type. Requires reservationToken. Exactly one of jobType or calledProcessId must be set.",
           "type": "string"
         },
-        "jobReservationToken": {
-          "description": "The token the jobs of this type were reserved with. Use the placeholder ${jobReservationToken}: the runner substitutes a fresh token for it on each run. Optional; required only to mock a reserved job type so the mock worker can activate its reserved jobs.",
+        "reservationToken": {
+          "description": "The token the jobs of this type were reserved with. Use the placeholder ${reservationToken}: the runner substitutes a fresh token for it on each run. Optional; required only to mock a reserved job type so the mock worker can activate its reserved jobs.",
           "type": "string"
         },
         "errorCode": {
@@ -1340,7 +1340,7 @@
       ],
       "dependencies": {
         "calledProcessId": [
-          "jobReservationToken"
+          "reservationToken"
         ]
       },
       "additionalProperties": false
@@ -1421,8 +1421,8 @@
           "description": "The selector to identify the job to throw the error from.",
           "$ref": "#/definitions/JobSelector"
         },
-        "jobReservationToken": {
-          "description": "The token the job's process instance reserved the job with. Use the placeholder ${jobReservationToken}: the runner substitutes the token of the current run for it. Optional; required only to act on a reserved job.",
+        "reservationToken": {
+          "description": "The token the job's process instance reserved the job with. Use the placeholder ${reservationToken}: the runner substitutes the token of the current run for it. Optional; required only to act on a reserved job.",
           "type": "string"
         },
         "errorCode": {

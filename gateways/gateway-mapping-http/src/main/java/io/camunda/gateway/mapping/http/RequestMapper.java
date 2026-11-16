@@ -244,7 +244,7 @@ public class RequestMapper {
                 getLongOrZero(failRequest, JobFailRequest::getRetryBackOff),
                 getMapOrEmpty(failRequest, JobFailRequest::getVariables),
                 failRequest == null ? null : failRequest.getJobLeaseToken(),
-                failRequest == null ? null : failRequest.getJobReservationToken()));
+                failRequest == null ? null : failRequest.getReservationToken()));
   }
 
   public static Either<ProblemDetail, ErrorJobRequest> toJobErrorRequest(
@@ -260,7 +260,7 @@ public class RequestMapper {
                 getStringOrEmpty(errorRequest, JobErrorRequest::getErrorMessage),
                 getMapOrEmpty(errorRequest, JobErrorRequest::getVariables),
                 errorRequest.getJobLeaseToken(),
-                errorRequest.getJobReservationToken()));
+                errorRequest.getReservationToken()));
   }
 
   public static Either<ProblemDetail, CorrelateMessageRequest> toMessageCorrelationRequest(
@@ -296,7 +296,7 @@ public class RequestMapper {
                 getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables),
                 getJobResultOrDefault(completionRequest),
                 completionRequest == null ? null : completionRequest.getJobLeaseToken(),
-                completionRequest == null ? null : completionRequest.getJobReservationToken(),
+                completionRequest == null ? null : completionRequest.getReservationToken(),
                 completionRequest == null ? null : completionRequest.getBusinessId()));
   }
 
@@ -314,7 +314,7 @@ public class RequestMapper {
                     updateRequest.getChangeset().getTimeout(),
                     updateRequest.getChangeset().getPriority()),
                 updateRequest.getJobLeaseToken(),
-                updateRequest.getJobReservationToken()));
+                updateRequest.getReservationToken()));
   }
 
   public static Either<ProblemDetail, BatchUpdateJobRequest> toJobBatchUpdateRequest(
@@ -834,7 +834,7 @@ public class RequestMapper {
         getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable),
         getLongOrZero(activationRequest, JobActivationRequest::getRequestTimeout),
         getBooleanOrDefault(activationRequest, JobActivationRequest::getWithLease, false),
-        getStringOrEmpty(activationRequest, JobActivationRequest::getJobReservationToken),
+        getStringOrEmpty(activationRequest, JobActivationRequest::getReservationToken),
         calledProcessId);
   }
 
@@ -990,7 +990,7 @@ public class RequestMapper {
       Long retryBackoff,
       Map<String, Object> variables,
       @Nullable String jobLeaseToken,
-      @Nullable String jobReservationToken) {}
+      @Nullable String reservationToken) {}
 
   public record ErrorJobRequest(
       long jobKey,
@@ -998,14 +998,14 @@ public class RequestMapper {
       String errorMessage,
       Map<String, Object> variables,
       @Nullable String jobLeaseToken,
-      @Nullable String jobReservationToken) {}
+      @Nullable String reservationToken) {}
 
   public record CompleteJobRequest(
       long jobKey,
       Map<String, Object> variables,
       JobResult result,
       @Nullable String jobLeaseToken,
-      @Nullable String jobReservationToken,
+      @Nullable String reservationToken,
       @Nullable String businessId) {}
 
   public record UpdateJobRequest(
@@ -1013,7 +1013,7 @@ public class RequestMapper {
       @Nullable Long operationReference,
       UpdateJobChangeset changeset,
       @Nullable String jobLeaseToken,
-      @Nullable String jobReservationToken) {}
+      @Nullable String reservationToken) {}
 
   public record BroadcastSignalRequest(
       String signalName, Map<String, Object> variables, String tenantId, String runScope) {}

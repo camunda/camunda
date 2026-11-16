@@ -38,10 +38,10 @@ public interface JobWorkerMockBuilder {
    * Use it to mock a reserved job type on a shared/remote cluster while real workers keep running
    * the unreserved types — one mock drains every job of the type, multi-instance included.
    *
-   * @param jobReservationToken the reservation token the instance was created with.
+   * @param reservationToken the reservation token the instance was created with.
    * @return this builder.
    */
-  JobWorkerMockBuilder withJobReservationToken(final String jobReservationToken);
+  JobWorkerMockBuilder withReservationToken(final String reservationToken);
 
   /** Configures the mock worker to complete jobs without any variables. */
   JobWorkerMock thenComplete();

@@ -1471,7 +1471,7 @@ components:
 
         A reserved job is served to no worker, not by poll and not by push, and can be completed,
         failed, error-thrown or updated only by a caller that supplies the matching
-        `jobReservationToken`. Only jobs of a listed type are hidden; every other job of the
+        `reservationToken`. Only jobs of a listed type are hidden; every other job of the
         instance goes to workers as usual. Selection is by job type, so every job of a listed type
         is reserved, including those of called child instances. A job whose type is a FEEL
         expression is reserved only when its resolved value is listed.
@@ -1482,7 +1482,7 @@ components:
         one may be given per process instance.
       required:
         - jobTypes
-        - jobReservationToken
+        - reservationToken
       properties:
         type:
           description: The type of the runtime instruction
@@ -1497,18 +1497,18 @@ components:
           example:
             - send-invoice
             - io.camunda:http-json:1
-        jobReservationToken:
+        reservationToken:
           description: |
             The token that reserves the listed jobs for the caller. Pass it back on every command
             against one of those jobs.
           allOf:
-            - $ref: "identifiers.yaml#/components/schemas/JobReservationToken"
+            - $ref: "identifiers.yaml#/components/schemas/ReservationToken"
       x-properties-added-in-version:
         - propertyName: type
           addedInVersion: "8.11"
         - propertyName: jobTypes
           addedInVersion: "8.11"
-        - propertyName: jobReservationToken
+        - propertyName: reservationToken
           addedInVersion: "8.11"
 
     ProcessInstanceCreationStubCallActivitiesInstruction:
@@ -1529,7 +1529,7 @@ components:
         A call activity whose process id is a FEEL expression is only stubbed when its resolved value
         is listed.
 
-        When a `jobReservationToken` is given, the stub jobs are reserved for the caller: they are
+        When a `reservationToken` is given, the stub jobs are reserved for the caller: they are
         served to no worker by poll or push, except an activation that presents the matching token,
         optionally narrowed to one called process id. This lets a single mock worker drain every stub
         of a stubbed process, a multi-instance call activity included. Without a token the stub jobs are
@@ -1555,19 +1555,19 @@ components:
           example:
             - order-fulfillment
             - ship-order
-        jobReservationToken:
+        reservationToken:
           description: |
             The token that reserves the stub jobs for the caller. Pass it back on the activation and
             on every command against a stub job. Omit it to keep the stub jobs hidden from all
             workers.
           allOf:
-            - $ref: "identifiers.yaml#/components/schemas/JobReservationToken"
+            - $ref: "identifiers.yaml#/components/schemas/ReservationToken"
       x-properties-added-in-version:
         - propertyName: type
           addedInVersion: "8.11"
         - propertyName: processIds
           addedInVersion: "8.11"
-        - propertyName: jobReservationToken
+        - propertyName: reservationToken
           addedInVersion: "8.11"
 
     CreateProcessInstanceResult:

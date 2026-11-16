@@ -18,7 +18,7 @@ package io.camunda.process.test.api.testCases.instructions;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import io.camunda.process.test.api.testCases.TestCaseInstructionType;
-import io.camunda.process.test.api.testCases.TestCaseJobReservationToken;
+import io.camunda.process.test.api.testCases.TestCaseReservationToken;
 import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value;
@@ -45,7 +45,7 @@ public interface MockJobWorkerCompleteJobInstruction extends TestCaseInstruction
   /**
    * The called-process id whose stubbed call activities to stand in for, instead of a job type.
    * When set, the mock drains the stub jobs of every call activity calling this process. Requires
-   * {@link #getJobReservationToken()}. Exactly one of {@code jobType} or {@code calledProcessId} is
+   * {@link #getReservationToken()}. Exactly one of {@code jobType} or {@code calledProcessId} is
    * set.
    *
    * @return the called-process id or empty when mocking an ordinary job type
@@ -54,13 +54,13 @@ public interface MockJobWorkerCompleteJobInstruction extends TestCaseInstruction
 
   /**
    * The reservation token the jobs of this type were reserved with. Use {@link
-   * TestCaseJobReservationToken#PLACEHOLDER}: the runner substitutes the token of the current run
-   * for it. Optional; required only to mock a reserved job type, so the mock worker can activate
-   * its reserved jobs on a remote cluster.
+   * TestCaseReservationToken#PLACEHOLDER}: the runner substitutes the token of the current run for
+   * it. Optional; required only to mock a reserved job type, so the mock worker can activate its
+   * reserved jobs on a remote cluster.
    *
    * @return the job reservation token or empty if not set
    */
-  Optional<String> getJobReservationToken();
+  Optional<String> getReservationToken();
 
   /**
    * The variables to complete the job with. Optional.

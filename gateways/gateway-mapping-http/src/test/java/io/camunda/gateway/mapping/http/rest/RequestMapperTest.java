@@ -700,42 +700,42 @@ class RequestMapperTest {
     }
 
     @Test
-    void shouldMapJobReservationTokenOnJobCompletion() {
+    void shouldMapReservationTokenOnJobCompletion() {
       // given
       final var request =
-          JobCompletionRequest.Builder.create().jobReservationToken("recorder-1").build();
+          JobCompletionRequest.Builder.create().reservationToken("recorder-1").build();
 
       // when
       final var result = RequestMapper.toJobCompletionRequest(request, 1L);
 
       // then
       assertThat(result.isRight()).isTrue();
-      assertThat(result.get().jobReservationToken()).isEqualTo("recorder-1");
+      assertThat(result.get().reservationToken()).isEqualTo("recorder-1");
       assertThat(result.get().jobLeaseToken())
           .describedAs("the reservation token does not leak into the lease field")
           .isNull();
     }
 
     @Test
-    void shouldMapJobReservationTokenOnJobFail() {
+    void shouldMapReservationTokenOnJobFail() {
       // given
-      final var request = JobFailRequest.Builder.create().jobReservationToken("recorder-1").build();
+      final var request = JobFailRequest.Builder.create().reservationToken("recorder-1").build();
 
       // when
       final var result = RequestMapper.toJobFailRequest(request, 1L);
 
       // then
       assertThat(result.isRight()).isTrue();
-      assertThat(result.get().jobReservationToken()).isEqualTo("recorder-1");
+      assertThat(result.get().reservationToken()).isEqualTo("recorder-1");
     }
 
     @Test
-    void shouldMapJobReservationTokenOnJobError() {
+    void shouldMapReservationTokenOnJobError() {
       // given
       final var request =
           JobErrorRequest.Builder.create()
               .errorCode("error-1")
-              .jobReservationToken("recorder-1")
+              .reservationToken("recorder-1")
               .build();
 
       // when
@@ -743,17 +743,17 @@ class RequestMapperTest {
 
       // then
       assertThat(result.isRight()).isTrue();
-      assertThat(result.get().jobReservationToken()).isEqualTo("recorder-1");
+      assertThat(result.get().reservationToken()).isEqualTo("recorder-1");
     }
 
     @Test
-    void shouldMapJobReservationTokenOnJobUpdate() {
+    void shouldMapReservationTokenOnJobUpdate() {
       // given
       final var changeset = JobChangeset.Builder.create().priority(80).build();
       final var request =
           JobUpdateRequest.Builder.create()
               .changeset(changeset)
-              .jobReservationToken("recorder-1")
+              .reservationToken("recorder-1")
               .build();
 
       // when
@@ -761,13 +761,13 @@ class RequestMapperTest {
 
       // then
       assertThat(result.isRight()).isTrue();
-      assertThat(result.get().jobReservationToken()).isEqualTo("recorder-1");
+      assertThat(result.get().reservationToken()).isEqualTo("recorder-1");
     }
 
     @Test
-    void shouldRejectBlankJobReservationTokenOnJobCompletion() {
+    void shouldRejectBlankReservationTokenOnJobCompletion() {
       // given
-      final var request = JobCompletionRequest.Builder.create().jobReservationToken(" ").build();
+      final var request = JobCompletionRequest.Builder.create().reservationToken(" ").build();
 
       // when
       final var result = RequestMapper.toJobCompletionRequest(request, 1L);
@@ -777,10 +777,10 @@ class RequestMapperTest {
     }
 
     @Test
-    void shouldRejectOverlongJobReservationTokenOnJobCompletion() {
+    void shouldRejectOverlongReservationTokenOnJobCompletion() {
       // given
       final var request =
-          JobCompletionRequest.Builder.create().jobReservationToken("t".repeat(129)).build();
+          JobCompletionRequest.Builder.create().reservationToken("t".repeat(129)).build();
 
       // when
       final var result = RequestMapper.toJobCompletionRequest(request, 1L);

@@ -103,7 +103,7 @@
             {
               "type": "RESERVE_JOBS",
               "jobTypes": ["charge-card", "send-invoice"],
-              "jobReservationToken": "${jobReservationToken}"
+              "reservationToken": "${reservationToken}"
             },
             {
               "type": "STUB_CALL_ACTIVITIES",
@@ -116,7 +116,7 @@
           "jobSelector": {
             "elementId": "charge-card"
           },
-          "jobReservationToken": "${jobReservationToken}",
+          "reservationToken": "${reservationToken}",
           "variables": {
             "paymentStatus": "APPROVED"
           }

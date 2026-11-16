@@ -12,7 +12,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateBusinessId;
-import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateJobReservationToken;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateReservationToken;
 
 import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
@@ -43,10 +43,10 @@ public final class JobRequestValidator {
             violations.add("At least one of [type, calledProcessId] is required");
           }
           if (hasCalledProcessId
-              && (activationRequest.getJobReservationToken() == null
-                  || activationRequest.getJobReservationToken().isBlank())) {
+              && (activationRequest.getReservationToken() == null
+                  || activationRequest.getReservationToken().isBlank())) {
             violations.add(
-                ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobReservationToken")
+                ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("reservationToken")
                     + " when calledProcessId is set");
           }
           if (activationRequest.getTimeout() == null) {
@@ -74,7 +74,7 @@ public final class JobRequestValidator {
           if (errorRequest.getErrorCode() == null || errorRequest.getErrorCode().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("errorCode"));
           }
-          validateJobReservationToken(errorRequest.getJobReservationToken(), violations);
+          validateReservationToken(errorRequest.getReservationToken(), violations);
         });
   }
 
@@ -84,7 +84,7 @@ public final class JobRequestValidator {
           if (failRequest == null) {
             return;
           }
-          validateJobReservationToken(failRequest.getJobReservationToken(), violations);
+          validateReservationToken(failRequest.getReservationToken(), violations);
         });
   }
 
@@ -95,7 +95,7 @@ public final class JobRequestValidator {
           if (completionRequest == null) {
             return;
           }
-          validateJobReservationToken(completionRequest.getJobReservationToken(), violations);
+          validateReservationToken(completionRequest.getReservationToken(), violations);
           final String businessId = completionRequest.getBusinessId();
           if (businessId == null) {
             return;
@@ -121,7 +121,7 @@ public final class JobRequestValidator {
                 ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
                     List.of("retries", "timeout", "priority")));
           }
-          validateJobReservationToken(updateRequest.getJobReservationToken(), violations);
+          validateReservationToken(updateRequest.getReservationToken(), violations);
         });
   }
 

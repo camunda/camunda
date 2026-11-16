@@ -35,9 +35,9 @@ public interface ActivateJobsCommandStep1
    * Activate the stand-in jobs of stubbed call activities that call this BPMN process id, instead
    * of jobs of a given type (see the {@code STUB_CALL_ACTIVITIES} runtime instruction). It implies
    * the internal stub job type, so {@link #jobType(String)} must not also be set, and a {@link
-   * ActivateJobsCommandStep3#jobReservationToken(String) jobReservationToken} is required, since
-   * stub jobs are served only to the token that reserved them. This lets one mock worker drain
-   * every stub of a stubbed process, a multi-instance call activity included.
+   * ActivateJobsCommandStep3#reservationToken(String) reservationToken} is required, since stub
+   * jobs are served only to the token that reserved them. This lets one mock worker drain every
+   * stub of a stubbed process, a multi-instance call activity included.
    *
    * <p>Only supported over REST; a command sent over gRPC with a called process id is rejected.
    *
@@ -146,11 +146,11 @@ public interface ActivateJobsCommandStep1
      *
      * <p>If not set, only unreserved jobs are activated.
      *
-     * @param jobReservationToken the reservation token to present
+     * @param reservationToken the reservation token to present
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    ActivateJobsCommandStep3 jobReservationToken(String jobReservationToken);
+    ActivateJobsCommandStep3 reservationToken(String reservationToken);
 
     /**
      * Sets the request timeout for the command.

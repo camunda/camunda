@@ -188,7 +188,7 @@ public class ProcessInstanceCreationHelper {
       final long processInstanceKey,
       final Set<String> tags,
       final DirectBuffer businessId,
-      final DirectBuffer jobReservationToken,
+      final DirectBuffer reservationToken,
       final List<String> reservedJobTypes,
       final List<String> stubbedCallActivityProcessIds) {
     return new ProcessInstanceRecord()
@@ -204,7 +204,7 @@ public class ProcessInstanceCreationHelper {
         .setTenantId(process.getTenantId())
         .setTags(tags)
         .setBusinessId(businessId)
-        .setJobReservationToken(jobReservationToken)
+        .setReservationToken(reservationToken)
         .setReservedJobTypes(reservedJobTypes)
         .setStubbedCallActivityProcessIds(stubbedCallActivityProcessIds);
   }
@@ -213,8 +213,8 @@ public class ProcessInstanceCreationHelper {
    * Returns the reservation token the instance was created with (from its reserve-jobs
    * instruction), or an empty buffer when it was not reserved.
    */
-  public static DirectBuffer jobReservationTokenOf(final ProcessInstanceCreationRecord record) {
-    return record.getJobReservationTokenBuffer();
+  public static DirectBuffer reservationTokenOf(final ProcessInstanceCreationRecord record) {
+    return record.getReservationTokenBuffer();
   }
 
   private Either<Rejection, DeployedProcess> getProcess(

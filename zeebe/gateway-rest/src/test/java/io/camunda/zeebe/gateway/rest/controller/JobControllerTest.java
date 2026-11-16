@@ -723,7 +723,7 @@ public class JobControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldCompleteJobWithJobReservationToken() {
+  void shouldCompleteJobWithReservationToken() {
     // given
     when(jobServices.completeJob(anyLong(), any(), any(), any(), any(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
@@ -731,7 +731,7 @@ public class JobControllerTest extends RestControllerTest {
     final var request =
         """
           {
-            "jobReservationToken": "recorder-1"
+            "reservationToken": "recorder-1"
           }
         """;
 

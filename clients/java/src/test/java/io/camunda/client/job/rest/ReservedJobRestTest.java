@@ -33,21 +33,21 @@ public class ReservedJobRestTest extends ClientRestTest {
   @Test
   public void shouldCompleteReservedJob() {
     // when
-    client.newCompleteCommand(JOB_KEY).withJobReservationToken(TOKEN).send().join();
+    client.newCompleteCommand(JOB_KEY).withReservationToken(TOKEN).send().join();
 
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
-    assertThat(request.getJobReservationToken()).isEqualTo(TOKEN);
+    assertThat(request.getReservationToken()).isEqualTo(TOKEN);
   }
 
   @Test
   public void shouldFailReservedJob() {
     // when
-    client.newFailCommand(JOB_KEY).retries(0).withJobReservationToken(TOKEN).send().join();
+    client.newFailCommand(JOB_KEY).retries(0).withReservationToken(TOKEN).send().join();
 
     // then
     final JobFailRequest request = gatewayService.getLastRequest(JobFailRequest.class);
-    assertThat(request.getJobReservationToken()).isEqualTo(TOKEN);
+    assertThat(request.getReservationToken()).isEqualTo(TOKEN);
   }
 
   @Test
@@ -56,28 +56,23 @@ public class ReservedJobRestTest extends ClientRestTest {
     client
         .newThrowErrorCommand(JOB_KEY)
         .errorCode("PAYMENT_DECLINED")
-        .withJobReservationToken(TOKEN)
+        .withReservationToken(TOKEN)
         .send()
         .join();
 
     // then
     final JobErrorRequest request = gatewayService.getLastRequest(JobErrorRequest.class);
-    assertThat(request.getJobReservationToken()).isEqualTo(TOKEN);
+    assertThat(request.getReservationToken()).isEqualTo(TOKEN);
   }
 
   @Test
   public void shouldUpdateReservedJob() {
     // when
-    client
-        .newUpdateJobCommand(JOB_KEY)
-        .updateRetries(3)
-        .withJobReservationToken(TOKEN)
-        .send()
-        .join();
+    client.newUpdateJobCommand(JOB_KEY).updateRetries(3).withReservationToken(TOKEN).send().join();
 
     // then
     final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
-    assertThat(request.getJobReservationToken()).isEqualTo(TOKEN);
+    assertThat(request.getReservationToken()).isEqualTo(TOKEN);
   }
 
   @Test
@@ -86,7 +81,7 @@ public class ReservedJobRestTest extends ClientRestTest {
     client
         .newCompleteCommand(JOB_KEY)
         .variable("approved", true)
-        .withJobReservationToken(TOKEN)
+        .withReservationToken(TOKEN)
         .send()
         .join();
 
@@ -100,9 +95,8 @@ public class ReservedJobRestTest extends ClientRestTest {
   public void shouldRejectReservationTokenOverGrpc() {
     // when / then
     assertThatThrownBy(
-            () ->
-                client.newCompleteCommand(JOB_KEY).withJobReservationToken(TOKEN).useGrpc().send())
+            () -> client.newCompleteCommand(JOB_KEY).withReservationToken(TOKEN).useGrpc().send())
         .isInstanceOf(UnsupportedOperationException.class)
-        .hasMessageContaining("withJobReservationToken");
+        .hasMessageContaining("withReservationToken");
   }
 }

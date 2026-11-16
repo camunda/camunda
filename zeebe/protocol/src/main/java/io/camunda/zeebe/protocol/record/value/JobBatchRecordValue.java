@@ -82,7 +82,7 @@ public interface JobBatchRecordValue extends RecordValue {
    *
    * @return the reservation token this activation presents, or empty when none
    */
-  String getJobReservationToken();
+  String getReservationToken();
 
   /**
    * Narrows a stub activation to the stand-in jobs of one called process. When set, the activation

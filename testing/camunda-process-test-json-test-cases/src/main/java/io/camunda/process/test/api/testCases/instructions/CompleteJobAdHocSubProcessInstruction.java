@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.process.test.api.testCases.JobSelector;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import io.camunda.process.test.api.testCases.TestCaseInstructionType;
-import io.camunda.process.test.api.testCases.TestCaseJobReservationToken;
+import io.camunda.process.test.api.testCases.TestCaseReservationToken;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,12 +45,12 @@ public interface CompleteJobAdHocSubProcessInstruction extends TestCaseInstructi
 
   /**
    * The token the job's process instance reserved the job with. Use {@link
-   * TestCaseJobReservationToken#PLACEHOLDER}: the runner substitutes the token of the current run
-   * for it. Optional; required only to act on a reserved job.
+   * TestCaseReservationToken#PLACEHOLDER}: the runner substitutes the token of the current run for
+   * it. Optional; required only to act on a reserved job.
    *
    * @return the job reservation token or empty if not set
    */
-  Optional<String> getJobReservationToken();
+  Optional<String> getReservationToken();
 
   /**
    * The variables to complete the job with. Optional.

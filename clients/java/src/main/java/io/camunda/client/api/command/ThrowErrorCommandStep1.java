@@ -85,11 +85,11 @@ public interface ThrowErrorCommandStep1
      * <p>This method is only supported over REST. This is an alpha feature and may be subject to
      * change in future releases.
      *
-     * @param jobReservationToken the token the instance's jobs were reserved with
+     * @param reservationToken the token the instance's jobs were reserved with
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    ThrowErrorCommandStep2 withJobReservationToken(String jobReservationToken);
+    ThrowErrorCommandStep2 withReservationToken(String reservationToken);
 
     /**
      * Set the variables of this job.

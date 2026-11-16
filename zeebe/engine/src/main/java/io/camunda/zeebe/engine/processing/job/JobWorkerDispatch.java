@@ -41,12 +41,12 @@ public final class JobWorkerDispatch {
    */
   public static @Nullable JobAction withheldFromWorkersReason(
       final JobRecord job, final @Nullable String requesterReservationToken) {
-    if (job.isCallActivityStub() && !job.hasJobReservationToken()) {
+    if (job.isCallActivityStub() && !job.hasReservationToken()) {
       return JobAction.SKIPPED_CALL_ACTIVITY_STUB;
     }
-    if (job.hasJobReservationToken()) {
+    if (job.hasReservationToken()) {
       if (requesterReservationToken != null
-          && job.getJobReservationToken().equals(requesterReservationToken)) {
+          && job.getReservationToken().equals(requesterReservationToken)) {
         // the activation holds this job's reservation token, so its owner is claiming it
         return null;
       }

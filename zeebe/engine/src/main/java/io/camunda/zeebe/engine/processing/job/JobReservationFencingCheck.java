@@ -14,7 +14,7 @@ import io.camunda.zeebe.util.Either;
 /**
  * Fences every command on a reserved job against the reservation token.
  *
- * <p>A job of a process instance created with a {@code jobReservationToken} is handed to no job
+ * <p>A job of a process instance created with a {@code reservationToken} is handed to no job
  * worker: the caller that reserved the instance drives it, so every command on it must carry the
  * same token. A job whose instance was not reserved is always accepted here and left to the lease
  * checks in {@link JobLeaseFencingCheck}.
@@ -45,8 +45,8 @@ public final class JobReservationFencingCheck {
 
   public static JobCommandCheck forCommand() {
     return (command, jobRecord) -> {
-      final var storedToken = jobRecord.getJobReservationToken();
-      final var suppliedToken = command.getValue().getJobReservationToken();
+      final var storedToken = jobRecord.getReservationToken();
+      final var suppliedToken = command.getValue().getReservationToken();
       if (storedToken.isEmpty()) {
         if (!suppliedToken.isEmpty()) {
           return Either.left(

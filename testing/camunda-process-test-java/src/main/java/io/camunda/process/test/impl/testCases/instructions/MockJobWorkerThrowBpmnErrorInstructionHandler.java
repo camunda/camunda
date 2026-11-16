@@ -45,9 +45,9 @@ public class MockJobWorkerThrowBpmnErrorInstructionHandler
             .map(context::mockCallActivity)
             .orElseGet(() -> context.mockJobWorker(instruction.getJobType().get()));
     instruction
-        .getJobReservationToken()
-        .map(runContext::resolveJobReservationToken)
-        .ifPresent(mockBuilder::withJobReservationToken);
+        .getReservationToken()
+        .map(runContext::resolveReservationToken)
+        .ifPresent(mockBuilder::withReservationToken);
 
     if (instruction.getErrorMessage().isPresent()) {
       mockBuilder.thenThrowBpmnError(

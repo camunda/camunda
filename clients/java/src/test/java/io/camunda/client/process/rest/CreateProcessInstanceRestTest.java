@@ -336,12 +336,12 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
         (ProcessInstanceCreationReserveJobsInstruction) runtimeInstructions.get(0);
     assertThat(runtimeInstruction.getJobTypes())
         .containsExactly("send-invoice", "io.camunda:http-json:1");
-    assertThat(runtimeInstruction.getJobReservationToken()).isEqualTo("ts-8f2c");
+    assertThat(runtimeInstruction.getReservationToken()).isEqualTo("ts-8f2c");
     assertThat(runtimeInstruction.getType()).isEqualTo("RESERVE_JOBS");
   }
 
   @Test
-  public void shouldRejectBlankJobReservationToken() {
+  public void shouldRejectBlankReservationToken() {
     // when / then
     assertThatThrownBy(
             () ->

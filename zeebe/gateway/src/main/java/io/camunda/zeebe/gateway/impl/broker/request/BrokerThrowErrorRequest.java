@@ -40,8 +40,8 @@ public final class BrokerThrowErrorRequest extends BrokerExecuteCommand<JobRecor
     return this;
   }
 
-  public BrokerThrowErrorRequest setJobReservationToken(final String jobReservationToken) {
-    requestDto.setJobReservationToken(jobReservationToken);
+  public BrokerThrowErrorRequest setReservationToken(final String reservationToken) {
+    requestDto.setReservationToken(reservationToken);
     return this;
   }
 

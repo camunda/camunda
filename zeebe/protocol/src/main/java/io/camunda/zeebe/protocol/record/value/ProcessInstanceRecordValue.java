@@ -233,7 +233,7 @@ public interface ProcessInstanceRecordValue
    * @return the job reservation token, or an empty string if not set
    * @since 8.11
    */
-  default String getJobReservationToken() {
+  default String getReservationToken() {
     return "";
   }
 

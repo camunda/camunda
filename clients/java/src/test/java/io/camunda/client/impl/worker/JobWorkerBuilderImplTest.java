@@ -120,18 +120,14 @@ class JobWorkerBuilderImplTest {
   @Test
   void shouldOpenCalledProcessIdWorkerWithoutJobType() {
     // given / when / then — no jobType is required for a called-process worker
-    jobWorkerBuilder
-        .calledProcessId("ship-order")
-        .handler(mock())
-        .jobReservationToken("ts-1")
-        .open();
+    jobWorkerBuilder.calledProcessId("ship-order").handler(mock()).reservationToken("ts-1").open();
   }
 
   @Test
   void shouldThrowErrorIfCalledProcessIdWorkerHasNoReservationToken() {
     assertThatThrownBy(() -> jobWorkerBuilder.calledProcessId("ship-order").handler(mock()).open())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("jobReservationToken");
+        .hasMessageContaining("reservationToken");
   }
 
   @Test
@@ -142,7 +138,7 @@ class JobWorkerBuilderImplTest {
     jobWorkerBuilder.jobType("some-type");
     jobWorkerBuilder.calledProcessId("ship-order");
     jobWorkerBuilder.handler(mock());
-    jobWorkerBuilder.jobReservationToken("ts-1");
+    jobWorkerBuilder.reservationToken("ts-1");
     assertThatThrownBy(jobWorkerBuilder::open)
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("not both");
@@ -155,7 +151,7 @@ class JobWorkerBuilderImplTest {
                 jobWorkerBuilder
                     .calledProcessId("ship-order")
                     .handler(mock())
-                    .jobReservationToken("ts-1")
+                    .reservationToken("ts-1")
                     .streamEnabled(true)
                     .open())
         .isInstanceOf(IllegalArgumentException.class)

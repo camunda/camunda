@@ -94,12 +94,12 @@ public final class FailJobCommandImpl extends CommandWithVariables<FailJobComman
   }
 
   @Override
-  public FailJobCommandStep2 withJobReservationToken(final String jobReservationToken) {
-    if (jobReservationToken == null) {
+  public FailJobCommandStep2 withReservationToken(final String reservationToken) {
+    if (reservationToken == null) {
       return this;
     }
-    restOnlyProperty = "withJobReservationToken";
-    httpRequestObject.setJobReservationToken(jobReservationToken);
+    restOnlyProperty = "withReservationToken";
+    httpRequestObject.setReservationToken(reservationToken);
     return this;
   }
 

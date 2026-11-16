@@ -130,14 +130,14 @@ public final class CreateProcessInstanceCommandImpl
 
   @Override
   public CreateProcessInstanceCommandStep3 reserveJobs(
-      final String jobReservationToken, final String... jobTypes) {
-    ArgumentUtil.ensureNotNullNorEmpty("jobReservationToken", jobReservationToken);
+      final String reservationToken, final String... jobTypes) {
+    ArgumentUtil.ensureNotNullNorEmpty("reservationToken", reservationToken);
     ArgumentUtil.ensureNotNull("jobTypes", jobTypes);
     restOnlyProperty = "reserveJobs";
     httpRequestObject.addRuntimeInstructionsItem(
         new ProcessInstanceCreationReserveJobsInstruction()
             .jobTypes(Arrays.asList(jobTypes))
-            .jobReservationToken(jobReservationToken)
+            .reservationToken(reservationToken)
             .type(RESERVE_JOBS.name()));
     return this;
   }
@@ -155,14 +155,14 @@ public final class CreateProcessInstanceCommandImpl
 
   @Override
   public CreateProcessInstanceCommandStep3 stubCallActivities(
-      final String jobReservationToken, final List<String> processIds) {
-    ArgumentUtil.ensureNotNullNorEmpty("jobReservationToken", jobReservationToken);
+      final String reservationToken, final List<String> processIds) {
+    ArgumentUtil.ensureNotNullNorEmpty("reservationToken", reservationToken);
     ArgumentUtil.ensureNotNull("processIds", processIds);
     restOnlyProperty = "stubCallActivities";
     httpRequestObject.addRuntimeInstructionsItem(
         new ProcessInstanceCreationStubCallActivitiesInstruction()
             .processIds(processIds)
-            .jobReservationToken(jobReservationToken)
+            .reservationToken(reservationToken)
             .type(STUB_CALL_ACTIVITIES.name()));
     return this;
   }

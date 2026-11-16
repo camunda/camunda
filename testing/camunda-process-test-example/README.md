@@ -19,8 +19,8 @@ recording switches, which ride on runtime instructions of `CREATE_PROCESS_INSTAN
   by key. Jobs of any other type go to the workers as usual, so to let a job run for real, leave its
   type off the list. A reserved job is hidden from CPT's own `mockJobWorker` too, so mock those jobs
   with `COMPLETE_JOB` / `THROW_BPMN_ERROR_FROM_JOB` rather than `MOCK_JOB_WORKER_*`. The instruction
-  carries a `jobReservationToken`, and so does every job instruction that acts on a reserved job.
-  Write the placeholder `${jobReservationToken}` for it: the runner substitutes a fresh token on each
+  carries a `reservationToken`, and so does every job instruction that acts on a reserved job.
+  Write the placeholder `${reservationToken}` for it: the runner substitutes a fresh token on each
   run, so no real token is ever saved with a test case.
 - `STUB_CALL_ACTIVITIES` — each call activity calling a listed process id activates without starting
   the process it calls and waits on a stand-in job instead. Complete that job with `COMPLETE_JOB` to stand in for the called

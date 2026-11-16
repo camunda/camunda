@@ -113,8 +113,8 @@ public final class JobActivationClient {
     return this;
   }
 
-  public JobActivationClient withJobReservationToken(final String jobReservationToken) {
-    jobBatchRecord.setJobReservationToken(jobReservationToken);
+  public JobActivationClient withReservationToken(final String reservationToken) {
+    jobBatchRecord.setReservationToken(reservationToken);
     return this;
   }
 

@@ -39,8 +39,8 @@ public final class BrokerFailJobRequest extends BrokerExecuteCommand<JobRecord> 
     return this;
   }
 
-  public BrokerFailJobRequest setJobReservationToken(final String jobReservationToken) {
-    requestDto.setJobReservationToken(jobReservationToken);
+  public BrokerFailJobRequest setReservationToken(final String reservationToken) {
+    requestDto.setReservationToken(reservationToken);
     return this;
   }
 

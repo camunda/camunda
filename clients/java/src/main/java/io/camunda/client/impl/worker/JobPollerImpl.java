@@ -43,7 +43,7 @@ public final class JobPollerImpl implements JobPoller {
   private final List<String> tenantIds;
   private final TenantFilter tenantFilter;
   private final boolean withLease;
-  private final String jobReservationToken;
+  private final String reservationToken;
   private final String calledProcessId;
 
   private int maxJobsToActivate;
@@ -65,7 +65,7 @@ public final class JobPollerImpl implements JobPoller {
       final TenantFilter tenantFilter,
       final int maxJobsToActivate,
       final boolean withLease,
-      final String jobReservationToken,
+      final String reservationToken,
       final String calledProcessId) {
     this.requestTimeout = requestTimeout;
     this.jobClient = jobClient;
@@ -78,7 +78,7 @@ public final class JobPollerImpl implements JobPoller {
     this.tenantFilter = tenantFilter;
     this.maxJobsToActivate = maxJobsToActivate;
     this.withLease = withLease;
-    this.jobReservationToken = jobReservationToken;
+    this.reservationToken = reservationToken;
   }
 
   private boolean activatesByCalledProcessId() {
@@ -142,8 +142,8 @@ public final class JobPollerImpl implements JobPoller {
     }
     // only set when present: an empty token sent to a gateway that doesn't yet know this field
     // would break rolling upgrades
-    if (jobReservationToken != null && !jobReservationToken.isEmpty()) {
-      activateCommand.jobReservationToken(jobReservationToken);
+    if (reservationToken != null && !reservationToken.isEmpty()) {
+      activateCommand.reservationToken(reservationToken);
     }
     activateCommand
         .requestTimeout(requestTimeout)

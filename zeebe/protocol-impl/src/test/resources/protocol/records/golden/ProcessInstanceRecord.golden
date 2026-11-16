@@ -61,8 +61,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
   public static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   public static final StringValue RESUME_FROM_JOB_KEY_KEY = new StringValue("resumeFromJobKey");
-  public static final StringValue JOB_RESERVATION_TOKEN_KEY =
-      new StringValue("jobReservationToken");
+  public static final StringValue RESERVATION_TOKEN_KEY =
+      new StringValue("reservationToken");
   public static final StringValue STUBBED_CALL_ACTIVITY_PROCESS_IDS_KEY =
       new StringValue("stubbedCallActivityProcessIds");
   public static final StringValue RESERVED_JOB_TYPES_KEY = new StringValue("reservedJobTypes");
@@ -110,8 +110,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   private final LongProperty resumeFromJobKeyProp = new LongProperty(RESUME_FROM_JOB_KEY_KEY, -1L);
 
-  private final StringProperty jobReservationTokenProp =
-      new StringProperty(JOB_RESERVATION_TOKEN_KEY, "");
+  private final StringProperty reservationTokenProp =
+      new StringProperty(RESERVATION_TOKEN_KEY, "");
   private final ArrayProperty<StringValue> stubbedCallActivityProcessIdsProp =
       new ArrayProperty<>(STUBBED_CALL_ACTIVITY_PROCESS_IDS_KEY, StringValue::new);
   private final ArrayProperty<StringValue> reservedJobTypesProp =
@@ -138,7 +138,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(storageOrdinalProp)
         .declareProperty(businessIdProp)
         .declareProperty(resumeFromJobKeyProp)
-        .declareProperty(jobReservationTokenProp)
+        .declareProperty(reservationTokenProp)
         .declareProperty(stubbedCallActivityProcessIdsProp)
         .declareProperty(reservedJobTypesProp);
   }
@@ -159,7 +159,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     storageOrdinalProp.setValue(record.getStorageOrdinal());
     businessIdProp.setValue(record.getBusinessId());
     resumeFromJobKeyProp.setValue(record.getResumeFromJobKey());
-    jobReservationTokenProp.setValue(record.getJobReservationTokenBuffer());
+    reservationTokenProp.setValue(record.getReservationTokenBuffer());
     stubbedCallActivityProcessIdsProp.reset();
     record.stubbedCallActivityProcessIdsProp.forEach(
         processId -> stubbedCallActivityProcessIdsProp.add().wrap(processId.getValue()));
@@ -339,22 +339,22 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
-  public String getJobReservationToken() {
-    return bufferAsString(jobReservationTokenProp.getValue());
+  public String getReservationToken() {
+    return bufferAsString(reservationTokenProp.getValue());
   }
 
   @JsonIgnore
-  public DirectBuffer getJobReservationTokenBuffer() {
-    return jobReservationTokenProp.getValue();
+  public DirectBuffer getReservationTokenBuffer() {
+    return reservationTokenProp.getValue();
   }
 
-  public ProcessInstanceRecord setJobReservationToken(final String jobReservationToken) {
-    jobReservationTokenProp.setValue(jobReservationToken);
+  public ProcessInstanceRecord setReservationToken(final String reservationToken) {
+    reservationTokenProp.setValue(reservationToken);
     return this;
   }
 
-  public ProcessInstanceRecord setJobReservationToken(final DirectBuffer jobReservationToken) {
-    jobReservationTokenProp.setValue(jobReservationToken);
+  public ProcessInstanceRecord setReservationToken(final DirectBuffer reservationToken) {
+    reservationTokenProp.setValue(reservationToken);
     return this;
   }
 

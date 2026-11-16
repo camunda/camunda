@@ -87,12 +87,12 @@ public final class ThrowErrorCommandImpl extends CommandWithVariables<ThrowError
   }
 
   @Override
-  public ThrowErrorCommandStep2 withJobReservationToken(final String jobReservationToken) {
-    if (jobReservationToken == null) {
+  public ThrowErrorCommandStep2 withReservationToken(final String reservationToken) {
+    if (reservationToken == null) {
       return this;
     }
-    restOnlyProperty = "withJobReservationToken";
-    httpRequestObject.setJobReservationToken(jobReservationToken);
+    restOnlyProperty = "withReservationToken";
+    httpRequestObject.setReservationToken(reservationToken);
     return this;
   }
 

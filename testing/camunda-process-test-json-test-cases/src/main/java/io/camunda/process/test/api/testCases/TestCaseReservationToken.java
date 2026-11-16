@@ -23,10 +23,10 @@ package io.camunda.process.test.api.testCases;
  * instruction and the job instructions that act on a reserved job), and the runner substitutes a
  * fresh token for it on each run.
  */
-public final class TestCaseJobReservationToken {
+public final class TestCaseReservationToken {
 
   /** The literal value that stands for the token of the current run. */
-  public static final String PLACEHOLDER = "${jobReservationToken}";
+  public static final String PLACEHOLDER = "${reservationToken}";
 
-  private TestCaseJobReservationToken() {}
+  private TestCaseReservationToken() {}
 }

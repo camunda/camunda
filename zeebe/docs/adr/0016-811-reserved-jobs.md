@@ -22,7 +22,7 @@ jobs; the create-time, root-inheritance, poll-index, and REST-only mechanics are
 ## Decision
 
 **D1. A `RESERVE_JOBS` instruction lists the job types to reserve and carries a
-`jobReservationToken`.** A job the instance creates is reserved when its type is in `jobTypes`. A
+`reservationToken`.** A job the instance creates is reserved when its type is in `jobTypes`. A
 reserved job is handed to no worker — not by poll, not by push, not even to a worker that opts into
 leases — and pollers are not notified of it. It stays in the ordinary `ACTIVATABLE` state and can be
 completed, failed, error-thrown, or updated only by a caller that supplies the matching token. Jobs of

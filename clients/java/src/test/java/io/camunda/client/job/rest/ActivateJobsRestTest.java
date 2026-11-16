@@ -286,7 +286,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
         .newActivateJobsCommand()
         .calledProcessId("ship-order")
         .maxJobsToActivate(3)
-        .jobReservationToken("ts-1")
+        .reservationToken("ts-1")
         .send()
         .join();
 
@@ -294,7 +294,7 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     final JobActivationRequest request = gatewayService.getLastRequest(JobActivationRequest.class);
     assertThat(request.getCalledProcessId()).isEqualTo("ship-order");
     assertThat(request.getType()).isNull();
-    assertThat(request.getJobReservationToken()).isEqualTo("ts-1");
+    assertThat(request.getReservationToken()).isEqualTo("ts-1");
   }
 
   @Test

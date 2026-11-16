@@ -43,7 +43,7 @@ class ProcessInstanceMapperTest {
       final List<String> jobTypes, final String token) {
     return ProcessInstanceCreationReserveJobsInstruction.Builder.create()
         .jobTypes(jobTypes)
-        .jobReservationToken(token)
+        .reservationToken(token)
         .type("RESERVE_JOBS")
         .build();
   }
@@ -62,7 +62,7 @@ class ProcessInstanceMapperTest {
 
     // then the reserve-jobs switches are lifted onto the request, not kept as instructions
     assertThat(result.isRight()).isTrue();
-    assertThat(result.get().jobReservationToken()).isEqualTo("recorder-session-1");
+    assertThat(result.get().reservationToken()).isEqualTo("recorder-session-1");
     assertThat(result.get().reservedJobTypes()).containsExactly("send-invoice");
     assertThat(result.get().runtimeInstructions()).isEmpty();
   }
@@ -81,7 +81,7 @@ class ProcessInstanceMapperTest {
 
     // then
     assertThat(result.isRight()).isTrue();
-    assertThat(result.get().jobReservationToken()).isEqualTo("recorder-session-1");
+    assertThat(result.get().reservationToken()).isEqualTo("recorder-session-1");
     assertThat(result.get().runtimeInstructions()).isEmpty();
   }
 
@@ -104,7 +104,7 @@ class ProcessInstanceMapperTest {
 
     // then the terminate instruction stays in the list; the reservation is lifted onto the request
     assertThat(result.isRight()).isTrue();
-    assertThat(result.get().jobReservationToken()).isEqualTo("recorder-session-1");
+    assertThat(result.get().reservationToken()).isEqualTo("recorder-session-1");
     assertThat(result.get().runtimeInstructions())
         .extracting(
             ProcessInstanceCreationRuntimeInstruction::getType,
@@ -188,7 +188,7 @@ class ProcessInstanceMapperTest {
 
     // then
     assertThat(result.isRight()).isTrue();
-    assertThat(result.get().jobReservationToken()).isNull();
+    assertThat(result.get().reservationToken()).isNull();
     assertThat(result.get().runtimeInstructions()).isEmpty();
   }
 

@@ -131,8 +131,8 @@ public final class ProcessInstanceClient {
       return this;
     }
 
-    public ProcessInstanceCreationClient withJobReservationToken(final String jobReservationToken) {
-      processInstanceCreationRecord.setJobReservationToken(jobReservationToken);
+    public ProcessInstanceCreationClient withReservationToken(final String reservationToken) {
+      processInstanceCreationRecord.setReservationToken(reservationToken);
       return this;
     }
 

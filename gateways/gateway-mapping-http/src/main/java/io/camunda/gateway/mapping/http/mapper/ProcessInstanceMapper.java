@@ -128,7 +128,7 @@ public class ProcessInstanceMapper {
                     request.getBusinessId(),
                     stubbedCallActivityProcessIdsOf(request.getRuntimeInstructions()),
                     reservedJobTypesOf(request.getRuntimeInstructions()),
-                    jobReservationTokenOf(request.getRuntimeInstructions())));
+                    reservationTokenOf(request.getRuntimeInstructions())));
   }
 
   public Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
@@ -157,7 +157,7 @@ public class ProcessInstanceMapper {
                     request.getBusinessId(),
                     stubbedCallActivityProcessIdsOf(request.getRuntimeInstructions()),
                     reservedJobTypesOf(request.getRuntimeInstructions()),
-                    jobReservationTokenOf(request.getRuntimeInstructions())));
+                    reservationTokenOf(request.getRuntimeInstructions())));
   }
 
   public Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
@@ -185,7 +185,7 @@ public class ProcessInstanceMapper {
                     request.getBusinessId(),
                     stubbedCallActivityProcessIdsOf(request.getRuntimeInstructions()),
                     reservedJobTypesOf(request.getRuntimeInstructions()),
-                    jobReservationTokenOf(request.getRuntimeInstructions())));
+                    reservationTokenOf(request.getRuntimeInstructions())));
   }
 
   private Either<ProblemDetail, String> validateCreateProcessInstance(
@@ -264,11 +264,11 @@ public class ProcessInstanceMapper {
         .orElse(null);
   }
 
-  private static @Nullable String jobReservationTokenOf(
+  private static @Nullable String reservationTokenOf(
       final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
           instructions) {
     final var reserveJobs = reserveJobsOf(instructions);
-    final String reserveToken = reserveJobs == null ? null : reserveJobs.getJobReservationToken();
+    final String reserveToken = reserveJobs == null ? null : reserveJobs.getReservationToken();
     final String stubToken = stubCallActivitiesTokenOf(instructions);
     // The two instructions share the one root reservation token; when both carry one they must
     // agree. The validator rejects a mismatch, so by here either is the single token to use.
@@ -284,7 +284,7 @@ public class ProcessInstanceMapper {
     return instructions.stream()
         .filter(ProcessInstanceCreationStubCallActivitiesInstruction.class::isInstance)
         .map(ProcessInstanceCreationStubCallActivitiesInstruction.class::cast)
-        .map(ProcessInstanceCreationStubCallActivitiesInstruction::getJobReservationToken)
+        .map(ProcessInstanceCreationStubCallActivitiesInstruction::getReservationToken)
         .filter(token -> token != null)
         .findFirst()
         .orElse(null);

@@ -115,7 +115,7 @@ public final class ProcessInstanceCreationCreateProcessor
             processInstanceKey,
             record.getTags(),
             record.getBusinessIdBuffer(),
-            ProcessInstanceCreationHelper.jobReservationTokenOf(record),
+            ProcessInstanceCreationHelper.reservationTokenOf(record),
             record.getReservedJobTypes(),
             record.getStubbedCallActivityProcessIds());
 

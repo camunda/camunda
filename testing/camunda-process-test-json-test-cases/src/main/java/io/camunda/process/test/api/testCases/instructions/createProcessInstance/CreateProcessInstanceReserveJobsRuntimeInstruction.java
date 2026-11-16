@@ -16,7 +16,7 @@
 package io.camunda.process.test.api.testCases.instructions.createProcessInstance;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.camunda.process.test.api.testCases.TestCaseJobReservationToken;
+import io.camunda.process.test.api.testCases.TestCaseReservationToken;
 import java.util.List;
 import org.immutables.value.Value;
 
@@ -45,10 +45,10 @@ public interface CreateProcessInstanceReserveJobsRuntimeInstruction
   List<String> getJobTypes();
 
   /**
-   * The token that reserves the listed jobs. Use {@link TestCaseJobReservationToken#PLACEHOLDER}:
-   * the runner substitutes a fresh token for it on each run.
+   * The token that reserves the listed jobs. Use {@link TestCaseReservationToken#PLACEHOLDER}: the
+   * runner substitutes a fresh token for it on each run.
    *
    * @return the job reservation token
    */
-  String getJobReservationToken();
+  String getReservationToken();
 }

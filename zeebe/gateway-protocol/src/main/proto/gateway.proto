@@ -68,7 +68,7 @@ message ActivateJobsRequest {
   // RESERVE_JOBS runtime instruction). A worker presenting the matching token activates those
   // reserved jobs, which are withheld from every other worker; defaults to empty, which activates
   // only unreserved jobs.
-  string jobReservationToken = 10;
+  string reservationToken = 10;
 }
 
 message ActivateJobsResponse {

@@ -138,8 +138,8 @@ public final class JobClient {
     return this;
   }
 
-  public JobClient withJobReservationToken(final String jobReservationToken) {
-    jobRecord.setJobReservationToken(jobReservationToken);
+  public JobClient withReservationToken(final String reservationToken) {
+    jobRecord.setReservationToken(reservationToken);
     return this;
   }
 

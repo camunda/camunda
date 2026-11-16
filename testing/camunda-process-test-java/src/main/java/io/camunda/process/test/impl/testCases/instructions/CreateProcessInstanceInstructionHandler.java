@@ -89,12 +89,12 @@ public class CreateProcessInstanceInstructionHandler
     reserveJobs.ifPresent(
         reserve ->
             command.reserveJobs(
-                runContext.resolveJobReservationToken(reserve.getJobReservationToken()),
+                runContext.resolveReservationToken(reserve.getReservationToken()),
                 reserve.getJobTypes().toArray(new String[0])));
     stubCallActivitiesOpt.ifPresent(
         stub -> {
           final Optional<String> token =
-              stub.getJobReservationToken().map(runContext::resolveJobReservationToken);
+              stub.getReservationToken().map(runContext::resolveReservationToken);
           if (token.isPresent()) {
             command.stubCallActivities(token.get(), stub.getProcessIds());
           } else {

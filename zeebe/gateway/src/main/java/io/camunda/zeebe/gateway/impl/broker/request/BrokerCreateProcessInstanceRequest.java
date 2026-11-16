@@ -125,9 +125,8 @@ public class BrokerCreateProcessInstanceRequest
     return this;
   }
 
-  public BrokerCreateProcessInstanceRequest setJobReservationToken(
-      final String jobReservationToken) {
-    requestDto.setJobReservationToken(jobReservationToken);
+  public BrokerCreateProcessInstanceRequest setReservationToken(final String reservationToken) {
+    requestDto.setReservationToken(reservationToken);
     return this;
   }
 

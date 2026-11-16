@@ -78,7 +78,7 @@
             "businessId": {
               "type": "keyword"
             },
-            "jobReservationToken": {
+            "reservationToken": {
               "type": "keyword"
             },
             "reservedJobTypes": {

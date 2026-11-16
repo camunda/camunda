@@ -77,7 +77,7 @@ public final class ReservedJobsTest {
     final long processInstanceKey = createReservedInstance();
 
     // then
-    assertThat(createdJob(processInstanceKey).getValue().getJobReservationToken())
+    assertThat(createdJob(processInstanceKey).getValue().getReservationToken())
         .describedAs("a job of a reserved instance carries its reservation token")
         .isEqualTo(RESERVATION_TOKEN);
   }
@@ -88,7 +88,7 @@ public final class ReservedJobsTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
     // then
-    assertThat(createdJob(processInstanceKey).getValue().getJobReservationToken())
+    assertThat(createdJob(processInstanceKey).getValue().getReservationToken())
         .describedAs("an ordinary instance's jobs are not reserved")
         .isEmpty();
   }
@@ -122,12 +122,12 @@ public final class ReservedJobsTest {
         .processInstance()
         .ofBpmnProcessId(parentProcessId)
         .withReservedJobTypes(childJobType)
-        .withJobReservationToken(RESERVATION_TOKEN)
+        .withReservationToken(RESERVATION_TOKEN)
         .create();
 
     // then
     final var childJob = jobRecords(JobIntent.CREATED).withType(childJobType).getFirst();
-    assertThat(childJob.getValue().getJobReservationToken())
+    assertThat(childJob.getValue().getReservationToken())
         .describedAs("a job of a called child instance inherits the root's reservation token")
         .isEqualTo(RESERVATION_TOKEN);
     assertThat(ENGINE.jobs().withType(childJobType).activate().getValue().getJobs())
@@ -145,7 +145,7 @@ public final class ReservedJobsTest {
     ENGINE
         .job()
         .withKey(jobKey)
-        .withJobReservationToken(RESERVATION_TOKEN)
+        .withReservationToken(RESERVATION_TOKEN)
         .withRetries(2)
         .withBackOff(Duration.ofMinutes(1))
         .fail();
@@ -232,7 +232,7 @@ public final class ReservedJobsTest {
 
     // when
     final Record<JobRecordValue> completed =
-        ENGINE.job().withKey(jobKey).withJobReservationToken(RESERVATION_TOKEN).complete();
+        ENGINE.job().withKey(jobKey).withReservationToken(RESERVATION_TOKEN).complete();
 
     // then
     Assertions.assertThat(completed)
@@ -267,7 +267,7 @@ public final class ReservedJobsTest {
         ENGINE
             .job()
             .withKey(jobKey)
-            .withJobReservationToken("someone-elses-token")
+            .withReservationToken("someone-elses-token")
             .expectRejection()
             .complete();
 
@@ -327,7 +327,7 @@ public final class ReservedJobsTest {
         ENGINE
             .job()
             .withKey(jobKey)
-            .withJobReservationToken(RESERVATION_TOKEN)
+            .withReservationToken(RESERVATION_TOKEN)
             .withRetries(5)
             .withChangeset(Set.of("retries"))
             .update();
@@ -343,7 +343,7 @@ public final class ReservedJobsTest {
     // given a reserved job that the holder failed with retries left
     final long processInstanceKey = createReservedInstance();
     final long jobKey = createdJob(processInstanceKey).getKey();
-    ENGINE.job().withKey(jobKey).withJobReservationToken(RESERVATION_TOKEN).withRetries(2).fail();
+    ENGINE.job().withKey(jobKey).withReservationToken(RESERVATION_TOKEN).withRetries(2).fail();
     jobRecords(JobIntent.FAILED).withRecordKey(jobKey).await();
 
     // when
@@ -367,11 +367,11 @@ public final class ReservedJobsTest {
             .ofBpmnProcessId(processId)
             .withRuntimeTerminateInstruction("task")
             .withReservedJobTypes(jobType)
-            .withJobReservationToken(RESERVATION_TOKEN)
+            .withReservationToken(RESERVATION_TOKEN)
             .create();
 
     // then
-    assertThat(createdJob(processInstanceKey).getValue().getJobReservationToken())
+    assertThat(createdJob(processInstanceKey).getValue().getReservationToken())
         .describedAs("both instructions are accepted and the jobs are still reserved")
         .isEqualTo(RESERVATION_TOKEN);
   }
@@ -397,7 +397,7 @@ public final class ReservedJobsTest {
             .processInstance()
             .ofBpmnProcessId(otherProcessId)
             .withReservedJobTypes(listedType)
-            .withJobReservationToken(RESERVATION_TOKEN)
+            .withReservationToken(RESERVATION_TOKEN)
             .create();
     final var listedJob =
         jobRecords(JobIntent.CREATED)
@@ -406,7 +406,7 @@ public final class ReservedJobsTest {
             .getFirst();
 
     // when the holder completes the listed job so the instance reaches the unlisted task
-    ENGINE.job().withKey(listedJob.getKey()).withJobReservationToken(RESERVATION_TOKEN).complete();
+    ENGINE.job().withKey(listedJob.getKey()).withReservationToken(RESERVATION_TOKEN).complete();
 
     // then
     final var unlistedJob =
@@ -414,10 +414,10 @@ public final class ReservedJobsTest {
             .withProcessInstanceKey(processInstanceKey)
             .withType(unlistedType)
             .getFirst();
-    assertThat(listedJob.getValue().getJobReservationToken())
+    assertThat(listedJob.getValue().getReservationToken())
         .describedAs("a job of a listed type carries the reservation token")
         .isEqualTo(RESERVATION_TOKEN);
-    assertThat(unlistedJob.getValue().getJobReservationToken())
+    assertThat(unlistedJob.getValue().getReservationToken())
         .describedAs("a job of an unlisted type is not reserved")
         .isEmpty();
     assertThat(ENGINE.jobs().withType(unlistedType).activate().getValue().getJobs())
@@ -449,7 +449,7 @@ public final class ReservedJobsTest {
             .processInstance()
             .ofBpmnProcessId(parallelProcessId)
             .withReservedJobTypes(jobType)
-            .withJobReservationToken(RESERVATION_TOKEN)
+            .withReservationToken(RESERVATION_TOKEN)
             .create();
 
     // then
@@ -459,7 +459,7 @@ public final class ReservedJobsTest {
                 .withType(jobType)
                 .limit(2))
         .describedAs("selection is by job type, so both jobs of the type are reserved")
-        .extracting(r -> r.getValue().getJobReservationToken())
+        .extracting(r -> r.getValue().getReservationToken())
         .containsExactly(RESERVATION_TOKEN, RESERVATION_TOKEN);
   }
 
@@ -484,11 +484,11 @@ public final class ReservedJobsTest {
             .ofBpmnProcessId(expressionProcessId)
             .withVariable("typeVariable", jobType)
             .withReservedJobTypes(jobType)
-            .withJobReservationToken(RESERVATION_TOKEN)
+            .withReservationToken(RESERVATION_TOKEN)
             .create();
 
     // then
-    assertThat(createdJob(processInstanceKey).getValue().getJobReservationToken())
+    assertThat(createdJob(processInstanceKey).getValue().getReservationToken())
         .describedAs("the evaluated job type is matched against the list")
         .isEqualTo(RESERVATION_TOKEN);
   }
@@ -515,7 +515,7 @@ public final class ReservedJobsTest {
             .ofBpmnProcessId(callerProcessId)
             .withStubbedCallActivities(calledProcessId)
             .withReservedJobTypes(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
-            .withJobReservationToken(RESERVATION_TOKEN)
+            .withReservationToken(RESERVATION_TOKEN)
             .create();
 
     // then the stub job carries the token, so a mock worker presenting it can drain the stub
@@ -524,12 +524,12 @@ public final class ReservedJobsTest {
             .withProcessInstanceKey(processInstanceKey)
             .withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
             .getFirst();
-    assertThat(stubJob.getValue().getJobReservationToken()).isEqualTo(RESERVATION_TOKEN);
+    assertThat(stubJob.getValue().getReservationToken()).isEqualTo(RESERVATION_TOKEN);
     Assertions.assertThat(
             ENGINE
                 .job()
                 .withKey(stubJob.getKey())
-                .withJobReservationToken(RESERVATION_TOKEN)
+                .withReservationToken(RESERVATION_TOKEN)
                 .complete())
         .describedAs("the reserved stub job is completed with its token")
         .hasIntent(JobIntent.COMPLETED);
@@ -542,11 +542,11 @@ public final class ReservedJobsTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withJobReservationToken(RESERVATION_TOKEN)
+            .withReservationToken(RESERVATION_TOKEN)
             .create();
 
     // then
-    assertThat(createdJob(processInstanceKey).getValue().getJobReservationToken())
+    assertThat(createdJob(processInstanceKey).getValue().getReservationToken())
         .describedAs("an empty type list reserves nothing")
         .isEmpty();
   }
@@ -558,13 +558,13 @@ public final class ReservedJobsTest {
 
     // when a worker polls with the instance's reservation token, as a mock worker does
     final var batch =
-        ENGINE.jobs().withType(jobType).withJobReservationToken(RESERVATION_TOKEN).activate();
+        ENGINE.jobs().withType(jobType).withReservationToken(RESERVATION_TOKEN).activate();
 
     // then
     assertThat(batch.getValue().getJobs())
         .describedAs("the holder of the reservation token is served the reserved job")
         .hasSize(1);
-    assertThat(batch.getValue().getJobs().getFirst().getJobReservationToken())
+    assertThat(batch.getValue().getJobs().getFirst().getReservationToken())
         .isEqualTo(RESERVATION_TOKEN);
   }
 
@@ -575,7 +575,7 @@ public final class ReservedJobsTest {
 
     // when a worker polls with a different token
     final var batch =
-        ENGINE.jobs().withType(jobType).withJobReservationToken("someone-elses-token").activate();
+        ENGINE.jobs().withType(jobType).withReservationToken("someone-elses-token").activate();
 
     // then
     assertThat(batch.getValue().getJobs())
@@ -605,7 +605,7 @@ public final class ReservedJobsTest {
         .processInstance()
         .ofBpmnProcessId(parallelProcessId)
         .withReservedJobTypes(jobType)
-        .withJobReservationToken(RESERVATION_TOKEN)
+        .withReservationToken(RESERVATION_TOKEN)
         .create();
 
     // when the token holder polls once
@@ -614,7 +614,7 @@ public final class ReservedJobsTest {
             .jobs()
             .withType(jobType)
             .withMaxJobsToActivate(10)
-            .withJobReservationToken(RESERVATION_TOKEN)
+            .withReservationToken(RESERVATION_TOKEN)
             .activate();
 
     // then
@@ -628,7 +628,7 @@ public final class ReservedJobsTest {
         .processInstance()
         .ofBpmnProcessId(processId)
         .withReservedJobTypes(jobType)
-        .withJobReservationToken(RESERVATION_TOKEN)
+        .withReservationToken(RESERVATION_TOKEN)
         .create();
   }
 

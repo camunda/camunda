@@ -15,7 +15,7 @@
  */
 package io.camunda.process.test.impl.testCases;
 
-import io.camunda.process.test.api.testCases.TestCaseJobReservationToken;
+import io.camunda.process.test.api.testCases.TestCaseReservationToken;
 import java.util.UUID;
 
 /**
@@ -40,7 +40,7 @@ public final class TestRunContext {
 
   private final boolean enabled;
   private final String runId;
-  private final String jobReservationToken = "cpt-" + UUID.randomUUID();
+  private final String reservationToken = "cpt-" + UUID.randomUUID();
 
   TestRunContext(final boolean enabled, final String runId) {
     this.enabled = enabled;
@@ -72,14 +72,14 @@ public final class TestRunContext {
 
   /**
    * Resolves the job reservation token a test case instruction names. The placeholder {@link
-   * TestCaseJobReservationToken#PLACEHOLDER} stands for this run's fresh token, so a saved test
-   * case never contains a real token; any other value is used as written.
+   * TestCaseReservationToken#PLACEHOLDER} stands for this run's fresh token, so a saved test case
+   * never contains a real token; any other value is used as written.
    *
    * @param token the token as written in the test case, or {@code null} if the instruction has none
    * @return the token to send, or {@code null} if the instruction has none
    */
-  public String resolveJobReservationToken(final String token) {
-    return TestCaseJobReservationToken.PLACEHOLDER.equals(token) ? jobReservationToken : token;
+  public String resolveReservationToken(final String token) {
+    return TestCaseReservationToken.PLACEHOLDER.equals(token) ? reservationToken : token;
   }
 
   /** Returns the reserved run-scope tag ({@code camunda:runScope:<runId>}) for this run. */

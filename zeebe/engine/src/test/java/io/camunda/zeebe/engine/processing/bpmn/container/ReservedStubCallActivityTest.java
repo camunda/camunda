@@ -72,7 +72,7 @@ public final class ReservedStubCallActivityTest {
         ENGINE
             .jobs()
             .withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
-            .withJobReservationToken(TOKEN)
+            .withReservationToken(TOKEN)
             .withCalledProcessId(childProcessId)
             .activate();
 
@@ -90,7 +90,7 @@ public final class ReservedStubCallActivityTest {
     final long jobKey = awaitStubJob(processInstanceKey);
 
     // when
-    ENGINE.job().withKey(jobKey).withJobReservationToken(TOKEN).complete();
+    ENGINE.job().withKey(jobKey).withReservationToken(TOKEN).complete();
 
     // then
     assertThat(
@@ -135,7 +135,7 @@ public final class ReservedStubCallActivityTest {
         ENGINE
             .jobs()
             .withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
-            .withJobReservationToken("someone-elses-token")
+            .withReservationToken("someone-elses-token")
             .withCalledProcessId(childProcessId)
             .activate();
 
@@ -162,7 +162,7 @@ public final class ReservedStubCallActivityTest {
             .ofBpmnProcessId(parentProcessId)
             .withStubbedCallActivities(childProcessId, otherChildId)
             .withReservedJobTypes(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
-            .withJobReservationToken(TOKEN)
+            .withReservationToken(TOKEN)
             .create();
     awaitStubJob(processInstanceKey);
 
@@ -171,7 +171,7 @@ public final class ReservedStubCallActivityTest {
         ENGINE
             .jobs()
             .withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
-            .withJobReservationToken(TOKEN)
+            .withReservationToken(TOKEN)
             .withCalledProcessId(childProcessId)
             .activate();
 
@@ -205,7 +205,7 @@ public final class ReservedStubCallActivityTest {
             .withVariable("items", List.of(1, 2, 3))
             .withStubbedCallActivities(childProcessId)
             .withReservedJobTypes(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
-            .withJobReservationToken(TOKEN)
+            .withReservationToken(TOKEN)
             .create();
     awaitStubJob(processInstanceKey);
 
@@ -214,7 +214,7 @@ public final class ReservedStubCallActivityTest {
         ENGINE
             .jobs()
             .withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
-            .withJobReservationToken(TOKEN)
+            .withReservationToken(TOKEN)
             .withCalledProcessId(childProcessId)
             .activate();
 
@@ -288,7 +288,7 @@ public final class ReservedStubCallActivityTest {
             .ofBpmnProcessId(parentProcessId)
             .withStubbedCallActivities(childProcessId)
             .withReservedJobTypes(reservedJobType)
-            .withJobReservationToken(TOKEN)
+            .withReservationToken(TOKEN)
             .create();
     awaitStubJob(processInstanceKey);
 
@@ -299,14 +299,14 @@ public final class ReservedStubCallActivityTest {
                 .withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
                 .getFirst()
                 .getValue()
-                .getJobReservationToken())
+                .getReservationToken())
         .describedAs("an un-reserved stub carries no token even when other job types are reserved")
         .isEmpty();
     assertThat(
             ENGINE
                 .jobs()
                 .withType(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
-                .withJobReservationToken(TOKEN)
+                .withReservationToken(TOKEN)
                 .withCalledProcessId(childProcessId)
                 .activate()
                 .getValue()
@@ -332,12 +332,7 @@ public final class ReservedStubCallActivityTest {
     final long jobKey = awaitStubJob(processInstanceKey);
 
     // when the mock worker throws from the stub
-    ENGINE
-        .job()
-        .withKey(jobKey)
-        .withJobReservationToken(TOKEN)
-        .withErrorCode(errorCode)
-        .throwError();
+    ENGINE.job().withKey(jobKey).withReservationToken(TOKEN).withErrorCode(errorCode).throwError();
 
     // then the call activity's error boundary event completes the instance
     assertThat(
@@ -357,7 +352,7 @@ public final class ReservedStubCallActivityTest {
         .ofBpmnProcessId(parentProcessId)
         .withStubbedCallActivities(processIds)
         .withReservedJobTypes(Protocol.CALL_ACTIVITY_STUB_JOB_TYPE)
-        .withJobReservationToken(TOKEN)
+        .withReservationToken(TOKEN)
         .create();
   }
 

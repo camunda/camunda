@@ -35,7 +35,7 @@ import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.testCases.ImmutableTestCase;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
-import io.camunda.process.test.api.testCases.TestCaseJobReservationToken;
+import io.camunda.process.test.api.testCases.TestCaseReservationToken;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcessInstanceInstruction;
@@ -107,7 +107,7 @@ public class TestCaseRunnerTest {
                 .addRuntimeInstructions(
                     ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction.builder()
                         .addJobTypes("send-invoice")
-                        .jobReservationToken(TestCaseJobReservationToken.PLACEHOLDER)
+                        .reservationToken(TestCaseReservationToken.PLACEHOLDER)
                         .build())
                 .build());
 
@@ -147,7 +147,7 @@ public class TestCaseRunnerTest {
                     .addRuntimeInstructions(
                         ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction.builder()
                             .addJobTypes("send-invoice")
-                            .jobReservationToken(TestCaseJobReservationToken.PLACEHOLDER)
+                            .reservationToken(TestCaseReservationToken.PLACEHOLDER)
                             .build())
                     .build())
             .addInstructions(mock(TestCaseInstruction.class))
@@ -329,7 +329,7 @@ public class TestCaseRunnerTest {
       builder.addRuntimeInstructions(
           ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction.builder()
               .addJobTypes(reservedJobTypes)
-              .jobReservationToken(TestCaseJobReservationToken.PLACEHOLDER)
+              .reservationToken(TestCaseReservationToken.PLACEHOLDER)
               .build());
     }
     return builder.build();

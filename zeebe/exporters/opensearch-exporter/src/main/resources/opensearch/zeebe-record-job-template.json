@@ -165,7 +165,7 @@
             "jobLeaseToken": {
               "type": "keyword"
             },
-            "jobReservationToken": {
+            "reservationToken": {
               "type": "keyword"
             },
             "secretReferences": {

@@ -69,7 +69,7 @@ public final class JobWorkerBuilderImpl
   private Duration requestTimeout;
   private List<String> fetchVariables;
   private boolean withLease;
-  private String jobReservationToken;
+  private String reservationToken;
   private final List<String> defaultTenantIds;
   private final List<String> customTenantIds;
   private TenantFilter tenantFilter;
@@ -179,8 +179,8 @@ public final class JobWorkerBuilderImpl
   }
 
   @Override
-  public JobWorkerBuilderStep3 jobReservationToken(final String jobReservationToken) {
-    this.jobReservationToken = jobReservationToken;
+  public JobWorkerBuilderStep3 reservationToken(final String reservationToken) {
+    this.reservationToken = reservationToken;
     return this;
   }
 
@@ -237,7 +237,7 @@ public final class JobWorkerBuilderImpl
   public JobWorker open() {
     final boolean byCalledProcessId = calledProcessId != null && !calledProcessId.isEmpty();
     if (byCalledProcessId) {
-      ensureNotNullNorEmpty("jobReservationToken", jobReservationToken);
+      ensureNotNullNorEmpty("reservationToken", reservationToken);
       if (jobType != null && !jobType.isEmpty()) {
         throw new IllegalArgumentException(
             "A job worker sets either a jobType or a calledProcessId, not both.");
@@ -270,7 +270,7 @@ public final class JobWorkerBuilderImpl
             tenantFilter,
             maxJobsActive,
             withLease,
-            jobReservationToken,
+            reservationToken,
             calledProcessId);
 
     final JobExecutor jobExecutor;

@@ -129,7 +129,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   private final Supplier<CamundaDataSource> dataSourceSupplier;
 
-  private String jobReservationToken;
+  private String reservationToken;
 
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
@@ -222,8 +222,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
     final JobWorkerMockBuilder builder =
         new JobWorkerMockBuilderImpl(null, calledProcessId, client, exampleDataReader);
-    if (jobReservationToken != null) {
-      builder.withJobReservationToken(jobReservationToken);
+    if (reservationToken != null) {
+      builder.withReservationToken(reservationToken);
     }
     return builder;
   }
@@ -387,8 +387,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                   .errorCode(errorCode)
                   .variables(variables);
 
-          if (jobReservationToken != null) {
-            command.withJobReservationToken(jobReservationToken);
+          if (reservationToken != null) {
+            command.withReservationToken(reservationToken);
           }
 
           if (errorMessage != null) {
@@ -400,8 +400,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
-  public void setJobReservationToken(final String jobReservationToken) {
-    this.jobReservationToken = jobReservationToken;
+  public void setReservationToken(final String reservationToken) {
+    this.reservationToken = reservationToken;
   }
 
   @Override
@@ -725,8 +725,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   /** Builds a completion that carries this test's reservation token, if it has one. */
   private CompleteJobCommandStep1 completeCommand(final CamundaClient client, final long jobKey) {
     final CompleteJobCommandStep1 command = client.newCompleteCommand(jobKey);
-    if (jobReservationToken != null) {
-      command.withJobReservationToken(jobReservationToken);
+    if (reservationToken != null) {
+      command.withReservationToken(reservationToken);
     }
     return command;
   }

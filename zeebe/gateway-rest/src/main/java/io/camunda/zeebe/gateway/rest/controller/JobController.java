@@ -244,7 +244,7 @@ public class JobController {
                 failJobRequest.retryBackoff(),
                 failJobRequest.variables(),
                 failJobRequest.jobLeaseToken(),
-                failJobRequest.jobReservationToken(),
+                failJobRequest.reservationToken(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 
@@ -259,7 +259,7 @@ public class JobController {
                 errorJobRequest.errorMessage(),
                 errorJobRequest.variables(),
                 errorJobRequest.jobLeaseToken(),
-                errorJobRequest.jobReservationToken(),
+                errorJobRequest.reservationToken(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 
@@ -273,7 +273,7 @@ public class JobController {
                 completeJobRequest.variables(),
                 completeJobRequest.result(),
                 completeJobRequest.jobLeaseToken(),
-                completeJobRequest.jobReservationToken(),
+                completeJobRequest.reservationToken(),
                 completeJobRequest.businessId(),
                 authenticationProvider.getCamundaAuthentication()));
   }
@@ -288,7 +288,7 @@ public class JobController {
                 updateJobRequest.operationReference(),
                 updateJobRequest.changeset(),
                 updateJobRequest.jobLeaseToken(),
-                updateJobRequest.jobReservationToken(),
+                updateJobRequest.reservationToken(),
                 authenticationProvider.getCamundaAuthentication()));
   }
 

@@ -34,8 +34,8 @@ public interface JobWorkerBuilderStep1 {
    * Set the called process id whose stubbed call activities this worker drains, instead of a job
    * type (see the {@code STUB_CALL_ACTIVITIES} runtime instruction). It implies the internal stub
    * job type, so {@link #jobType(String)} must not also be set, and a {@link
-   * JobWorkerBuilderStep3#jobReservationToken(String) jobReservationToken} is required. This lets
-   * one mock worker drain every stub of a stubbed process, a multi-instance call activity included.
+   * JobWorkerBuilderStep3#reservationToken(String) reservationToken} is required. This lets one
+   * mock worker drain every stub of a stubbed process, a multi-instance call activity included.
    *
    * <p>Only supported over the polling REST path; a called-process worker cannot stream.
    *
@@ -225,10 +225,10 @@ public interface JobWorkerBuilderStep1 {
      *
      * <p>If not set, only unreserved jobs are activated.
      *
-     * @param jobReservationToken the reservation token to present
+     * @param reservationToken the reservation token to present
      * @return the builder for this worker
      */
-    JobWorkerBuilderStep3 jobReservationToken(String jobReservationToken);
+    JobWorkerBuilderStep3 reservationToken(String reservationToken);
 
     /**
      * Sets the backoff supplier. The supplier is called to determine the retry delay after each

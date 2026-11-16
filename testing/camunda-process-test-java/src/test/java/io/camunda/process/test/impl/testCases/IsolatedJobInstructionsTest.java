@@ -30,7 +30,7 @@ import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.JobSelector;
 import io.camunda.process.test.api.testCases.ImmutableJobSelector;
-import io.camunda.process.test.api.testCases.TestCaseJobReservationToken;
+import io.camunda.process.test.api.testCases.TestCaseReservationToken;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableThrowBpmnErrorFromJobInstruction;
 import io.camunda.process.test.impl.testCases.instructions.CompleteJobInstructionHandler;
@@ -75,7 +75,7 @@ public class IsolatedJobInstructionsTest {
         .execute(
             ImmutableCompleteJobInstruction.builder()
                 .jobSelector(byElementId)
-                .jobReservationToken(TestCaseJobReservationToken.PLACEHOLDER)
+                .reservationToken(TestCaseReservationToken.PLACEHOLDER)
                 .build(),
             processTestContext,
             camundaClient,
@@ -84,12 +84,12 @@ public class IsolatedJobInstructionsTest {
     // then the saved placeholder never reaches the cluster: the run's token is set for the command
     // and cleared right after it, so it cannot leak to the next instruction
     final String runToken =
-        runContext.resolveJobReservationToken(TestCaseJobReservationToken.PLACEHOLDER);
-    assertThat(runToken).isNotEqualTo(TestCaseJobReservationToken.PLACEHOLDER);
+        runContext.resolveReservationToken(TestCaseReservationToken.PLACEHOLDER);
+    assertThat(runToken).isNotEqualTo(TestCaseReservationToken.PLACEHOLDER);
     final InOrder inOrder = inOrder(processTestContext);
-    inOrder.verify(processTestContext).setJobReservationToken(runToken);
+    inOrder.verify(processTestContext).setReservationToken(runToken);
     inOrder.verify(processTestContext).completeJob(any(JobSelector.class), anyMap());
-    inOrder.verify(processTestContext).setJobReservationToken(null);
+    inOrder.verify(processTestContext).setReservationToken(null);
   }
 
   @Test
@@ -102,7 +102,7 @@ public class IsolatedJobInstructionsTest {
         .execute(
             ImmutableCompleteJobInstruction.builder()
                 .jobSelector(byElementId)
-                .jobReservationToken(TestCaseJobReservationToken.PLACEHOLDER)
+                .reservationToken(TestCaseReservationToken.PLACEHOLDER)
                 .build(),
             processTestContext,
             camundaClient,
@@ -112,7 +112,7 @@ public class IsolatedJobInstructionsTest {
             ImmutableThrowBpmnErrorFromJobInstruction.builder()
                 .jobSelector(byElementId)
                 .errorCode("ERROR")
-                .jobReservationToken(TestCaseJobReservationToken.PLACEHOLDER)
+                .reservationToken(TestCaseReservationToken.PLACEHOLDER)
                 .build(),
             processTestContext,
             camundaClient,
@@ -120,9 +120,9 @@ public class IsolatedJobInstructionsTest {
 
     // then
     final String runToken =
-        runContext.resolveJobReservationToken(TestCaseJobReservationToken.PLACEHOLDER);
-    verify(processTestContext, times(2)).setJobReservationToken(runToken);
-    verify(processTestContext, times(2)).setJobReservationToken(null);
+        runContext.resolveReservationToken(TestCaseReservationToken.PLACEHOLDER);
+    verify(processTestContext, times(2)).setReservationToken(runToken);
+    verify(processTestContext, times(2)).setReservationToken(null);
   }
 
   @Test
@@ -136,7 +136,7 @@ public class IsolatedJobInstructionsTest {
             assertionFacade);
 
     // then
-    verify(processTestContext, never()).setJobReservationToken(any());
+    verify(processTestContext, never()).setReservationToken(any());
   }
 
   @Test
@@ -146,7 +146,7 @@ public class IsolatedJobInstructionsTest {
         .execute(
             ImmutableCompleteJobInstruction.builder()
                 .jobSelector(byElementId)
-                .jobReservationToken("literal-token")
+                .reservationToken("literal-token")
                 .build(),
             processTestContext,
             camundaClient,
@@ -154,8 +154,8 @@ public class IsolatedJobInstructionsTest {
 
     // then
     final InOrder inOrder = inOrder(processTestContext);
-    inOrder.verify(processTestContext).setJobReservationToken("literal-token");
-    inOrder.verify(processTestContext).setJobReservationToken(null);
+    inOrder.verify(processTestContext).setReservationToken("literal-token");
+    inOrder.verify(processTestContext).setReservationToken(null);
   }
 
   @Test

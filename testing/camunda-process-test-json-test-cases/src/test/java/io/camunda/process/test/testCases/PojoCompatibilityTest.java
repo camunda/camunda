@@ -39,7 +39,7 @@ import io.camunda.process.test.api.testCases.ImmutableTestCase;
 import io.camunda.process.test.api.testCases.ImmutableTestCases;
 import io.camunda.process.test.api.testCases.ImmutableUserTaskSelector;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
-import io.camunda.process.test.api.testCases.TestCaseJobReservationToken;
+import io.camunda.process.test.api.testCases.TestCaseReservationToken;
 import io.camunda.process.test.api.testCases.TestCases;
 import io.camunda.process.test.api.testCases.instructions.ImmutableActivateElement;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertDecisionInstruction;
@@ -190,7 +190,7 @@ public class PojoCompatibilityTest {
                     .addRuntimeInstructions(
                         ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction.builder()
                             .addJobTypes("charge-card", "send-invoice")
-                            .jobReservationToken(TestCaseJobReservationToken.PLACEHOLDER)
+                            .reservationToken(TestCaseReservationToken.PLACEHOLDER)
                             .build())
                     .addRuntimeInstructions(
                         ImmutableCreateProcessInstanceStubCallActivitiesRuntimeInstruction.builder()
@@ -470,7 +470,7 @@ public class PojoCompatibilityTest {
             singleTestCase(
                 ImmutableCompleteJobInstruction.builder()
                     .jobSelector(ImmutableJobSelector.builder().jobType("send-invoice").build())
-                    .jobReservationToken(TestCaseJobReservationToken.PLACEHOLDER)
+                    .reservationToken(TestCaseReservationToken.PLACEHOLDER)
                     .build())),
         Arguments.of(
             "throw bpmn error from job: with reservation token",
@@ -478,7 +478,7 @@ public class PojoCompatibilityTest {
                 ImmutableThrowBpmnErrorFromJobInstruction.builder()
                     .jobSelector(ImmutableJobSelector.builder().jobType("send-invoice").build())
                     .errorCode("invalid")
-                    .jobReservationToken(TestCaseJobReservationToken.PLACEHOLDER)
+                    .reservationToken(TestCaseReservationToken.PLACEHOLDER)
                     .build())),
         // ===== COMPLETE_JOB: call activity stub =====
         Arguments.of(

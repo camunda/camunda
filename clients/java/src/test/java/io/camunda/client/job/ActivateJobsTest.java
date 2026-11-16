@@ -345,7 +345,7 @@ public final class ActivateJobsTest extends ClientTest {
                     .useGrpc()
                     .calledProcessId("ship-order")
                     .maxJobsToActivate(3)
-                    .jobReservationToken("ts-1")
+                    .reservationToken("ts-1")
                     .send()
                     .join())
         .isInstanceOf(IllegalStateException.class)

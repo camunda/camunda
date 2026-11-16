@@ -116,7 +116,7 @@ public interface CamundaProcessTestContext {
    * stubCallActivities}). One such mock drives every occurrence, a multi-instance call activity
    * included.
    *
-   * <p>The mock uses the context's {@link #setJobReservationToken(String) reservation token}, which
+   * <p>The mock uses the context's {@link #setReservationToken(String) reservation token}, which
    * must match the token the instance was stubbed with, so set it (or create the instance with a
    * token) before registering the mock. Configure the stand-in behavior — {@code thenComplete},
    * {@code thenThrowBpmnError} — on the returned builder, the same as {@link
@@ -334,9 +334,9 @@ public interface CamundaProcessTestContext {
    * <p>A reserved job is hidden from every worker, including a {@link #mockJobWorker(String) mock
    * job worker} this test opens, so do not mock and reserve the same job type.
    *
-   * @param jobReservationToken the token to send, or {@code null} to send none
+   * @param reservationToken the token to send, or {@code null} to send none
    */
-  void setJobReservationToken(final String jobReservationToken);
+  void setReservationToken(final String reservationToken);
 
   /**
    * Fires a waiting timer of the selected process instance immediately, without waiting for its due

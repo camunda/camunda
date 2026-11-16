@@ -441,7 +441,7 @@ public final class RequestMapper extends RequestUtil {
         .setTenantIds(tenantIds)
         .setTenantFilter(tenantFilter)
         .setWithLease(grpcRequest.getWithLease())
-        .setJobReservationToken(grpcRequest.getJobReservationToken());
+        .setReservationToken(grpcRequest.getReservationToken());
   }
 
   public static BrokerResolveIncidentRequest toResolveIncidentRequest(

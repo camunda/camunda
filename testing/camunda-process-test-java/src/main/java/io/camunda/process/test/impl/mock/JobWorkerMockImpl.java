@@ -37,8 +37,8 @@ public class JobWorkerMockImpl implements JobWorkerMock {
       final String jobType,
       final CamundaClient camundaClient,
       final JobHandler jobHandler,
-      final String jobReservationToken) {
-    this(jobType, null, camundaClient, jobHandler, jobReservationToken);
+      final String reservationToken) {
+    this(jobType, null, camundaClient, jobHandler, reservationToken);
   }
 
   public JobWorkerMockImpl(
@@ -46,7 +46,7 @@ public class JobWorkerMockImpl implements JobWorkerMock {
       final String calledProcessId,
       final CamundaClient camundaClient,
       final JobHandler jobHandler,
-      final String jobReservationToken) {
+      final String reservationToken) {
 
     final JobHandler loggingJobHandler =
         (jobClient, job) -> {
@@ -72,8 +72,8 @@ public class JobWorkerMockImpl implements JobWorkerMock {
             e.printStackTrace();
 
             final FailJobCommandStep2 failCommand = client.newFailCommand(job.getKey()).retries(0);
-            if (jobReservationToken != null) {
-              failCommand.withJobReservationToken(jobReservationToken);
+            if (reservationToken != null) {
+              failCommand.withReservationToken(reservationToken);
             }
             failCommand.send().join();
           }
@@ -89,8 +89,8 @@ public class JobWorkerMockImpl implements JobWorkerMock {
       // called-process worker, so disable streaming even when the client enables it by default
       workerBuilder.streamEnabled(false);
     }
-    if (jobReservationToken != null) {
-      workerBuilder.jobReservationToken(jobReservationToken);
+    if (reservationToken != null) {
+      workerBuilder.reservationToken(reservationToken);
     }
     workerBuilder.open();
   }

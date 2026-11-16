@@ -489,7 +489,7 @@ public final class DbJobState implements JobState, MutableJobState {
     EnsureUtil.ensureNotNullOrEmpty("tenantId", tenantId);
 
     final var record = getJob(key);
-    if (record != null && record.isCallActivityStub() && !record.hasJobReservationToken()) {
+    if (record != null && record.isCallActivityStub() && !record.hasReservationToken()) {
       // An un-reserved call-activity-stub job is served to no worker (the twin check lives in
       // JobWorkerDispatch#withheldFromWorkersReason), so it is kept out of the poll index instead
       // of

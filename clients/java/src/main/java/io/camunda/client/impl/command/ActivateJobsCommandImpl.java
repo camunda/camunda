@@ -158,10 +158,10 @@ public final class ActivateJobsCommandImpl
   }
 
   @Override
-  public ActivateJobsCommandStep3 jobReservationToken(final String jobReservationToken) {
-    if (jobReservationToken != null) {
-      grpcRequestObjectBuilder.setJobReservationToken(jobReservationToken);
-      httpRequestObject.setJobReservationToken(jobReservationToken);
+  public ActivateJobsCommandStep3 reservationToken(final String reservationToken) {
+    if (reservationToken != null) {
+      grpcRequestObjectBuilder.setReservationToken(reservationToken);
+      httpRequestObject.setReservationToken(reservationToken);
     }
     return this;
   }

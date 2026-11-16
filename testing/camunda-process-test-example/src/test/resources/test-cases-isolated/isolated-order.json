@@ -17,7 +17,7 @@
             {
               "type": "RESERVE_JOBS",
               "jobTypes": ["charge-card", "send-invoice"],
-              "jobReservationToken": "${jobReservationToken}"
+              "reservationToken": "${reservationToken}"
             },
             {
               "type": "STUB_CALL_ACTIVITIES",
@@ -30,7 +30,7 @@
           "jobSelector": {
             "elementId": "ServiceTask_ChargeCard"
           },
-          "jobReservationToken": "${jobReservationToken}",
+          "reservationToken": "${reservationToken}",
           "variables": {
             "paymentStatus": "APPROVED"
           }
@@ -59,7 +59,7 @@
           "jobSelector": {
             "elementId": "ServiceTask_SendInvoice"
           },
-          "jobReservationToken": "${jobReservationToken}"
+          "reservationToken": "${reservationToken}"
         },
         {
           "type": "ASSERT_PROCESS_INSTANCE",
@@ -86,7 +86,7 @@
             {
               "type": "RESERVE_JOBS",
               "jobTypes": ["charge-card", "dispatch-parcel", "send-invoice"],
-              "jobReservationToken": "${jobReservationToken}"
+              "reservationToken": "${reservationToken}"
             },
             {
               "type": "STUB_CALL_ACTIVITIES",
@@ -99,14 +99,14 @@
           "jobSelector": {
             "elementId": "ServiceTask_ChargeCard"
           },
-          "jobReservationToken": "${jobReservationToken}"
+          "reservationToken": "${reservationToken}"
         },
         {
           "type": "COMPLETE_JOB",
           "jobSelector": {
             "elementId": "ServiceTask_DispatchParcel"
           },
-          "jobReservationToken": "${jobReservationToken}",
+          "reservationToken": "${reservationToken}",
           "variables": {
             "trackingCode": "TRK-1002"
           }
@@ -123,7 +123,7 @@
           "jobSelector": {
             "elementId": "ServiceTask_SendInvoice"
           },
-          "jobReservationToken": "${jobReservationToken}"
+          "reservationToken": "${reservationToken}"
         },
         {
           "type": "ASSERT_VARIABLES",
@@ -159,7 +159,7 @@
             {
               "type": "RESERVE_JOBS",
               "jobTypes": ["charge-card"],
-              "jobReservationToken": "${jobReservationToken}"
+              "reservationToken": "${reservationToken}"
             },
             {
               "type": "STUB_CALL_ACTIVITIES",
@@ -172,7 +172,7 @@
           "jobSelector": {
             "elementId": "ServiceTask_ChargeCard"
           },
-          "jobReservationToken": "${jobReservationToken}"
+          "reservationToken": "${reservationToken}"
         },
         {
           "type": "THROW_BPMN_ERROR_FROM_JOB",
@@ -218,7 +218,7 @@
             {
               "type": "RESERVE_JOBS",
               "jobTypes": ["charge-card"],
-              "jobReservationToken": "${jobReservationToken}"
+              "reservationToken": "${reservationToken}"
             },
             {
               "type": "STUB_CALL_ACTIVITIES",
@@ -231,7 +231,7 @@
           "jobSelector": {
             "elementId": "ServiceTask_ChargeCard"
           },
-          "jobReservationToken": "${jobReservationToken}"
+          "reservationToken": "${reservationToken}"
         },
         {
           "type": "COMPLETE_JOB",

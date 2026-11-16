@@ -109,7 +109,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             .setWorker(request.worker())
             .setVariables(request.fetchVariable())
             .setWithLease(request.withLease())
-            .setJobReservationToken(request.jobReservationToken())
+            .setReservationToken(request.reservationToken())
             .setCalledProcessId(request.calledProcessId());
     // Apply the full mutator set (authorization AND, for physical-tenant-scoped services, the
     // partition group) so job activation round-robins over the tenant's partition group. The
@@ -126,7 +126,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final Long retryBackOff,
       final Map<String, Object> variables,
       final String jobLeaseToken,
-      final String jobReservationToken,
+      final String reservationToken,
       final CamundaAuthentication authentication) {
     final var request =
         new BrokerFailJobRequest(jobKey, retries, retryBackOff)
@@ -135,8 +135,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
     if (jobLeaseToken != null) {
       request.setJobLeaseToken(jobLeaseToken);
     }
-    if (jobReservationToken != null) {
-      request.setJobReservationToken(jobReservationToken);
+    if (reservationToken != null) {
+      request.setReservationToken(reservationToken);
     }
     return sendBrokerRequest(request, authentication);
   }
@@ -147,7 +147,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final String errorMessage,
       final Map<String, Object> variables,
       final String jobLeaseToken,
-      final String jobReservationToken,
+      final String reservationToken,
       final CamundaAuthentication authentication) {
     final var request =
         new BrokerThrowErrorRequest(jobKey, errorCode)
@@ -156,8 +156,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
     if (jobLeaseToken != null) {
       request.setJobLeaseToken(jobLeaseToken);
     }
-    if (jobReservationToken != null) {
-      request.setJobReservationToken(jobReservationToken);
+    if (reservationToken != null) {
+      request.setReservationToken(reservationToken);
     }
     return sendBrokerRequest(request, authentication);
   }
@@ -167,7 +167,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final Map<String, Object> variables,
       final JobResult result,
       final String jobLeaseToken,
-      final String jobReservationToken,
+      final String reservationToken,
       final String businessId,
       final CamundaAuthentication authentication) {
     final var request =
@@ -176,8 +176,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
     if (jobLeaseToken != null) {
       request.setJobLeaseToken(jobLeaseToken);
     }
-    if (jobReservationToken != null) {
-      request.setJobReservationToken(jobReservationToken);
+    if (reservationToken != null) {
+      request.setReservationToken(reservationToken);
     }
     if (businessId != null) {
       request.setBusinessId(businessId);
@@ -190,7 +190,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final Long operationReference,
       final UpdateJobChangeset changeset,
       final String jobLeaseToken,
-      final String jobReservationToken,
+      final String reservationToken,
       final CamundaAuthentication authentication) {
     final var brokerRequest =
         new BrokerUpdateJobRequest(
@@ -201,8 +201,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
     if (jobLeaseToken != null) {
       brokerRequest.setJobLeaseToken(jobLeaseToken);
     }
-    if (jobReservationToken != null) {
-      brokerRequest.setJobReservationToken(jobReservationToken);
+    if (reservationToken != null) {
+      brokerRequest.setReservationToken(reservationToken);
     }
     return sendBrokerRequest(brokerRequest, authentication);
   }
@@ -307,7 +307,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       List<String> fetchVariable,
       long requestTimeout,
       boolean withLease,
-      String jobReservationToken,
+      String reservationToken,
       String calledProcessId) {}
 
   public record UpdateJobChangeset(Integer retries, Long timeout, Integer priority) {}

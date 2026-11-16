@@ -72,7 +72,7 @@ selection. A single `COMPLETE_JOB` by job search cannot drive a multi-instance c
 stub count is fixed only at runtime, and it leaves the stub outside the ordinary worker path a recorder
 already uses for [reserved jobs](0016-811-reserved-jobs.md). So:
 
-- **The stub job is reservable.** When `STUB_CALL_ACTIVITIES` carries a `jobReservationToken`, each
+- **The stub job is reservable.** When `STUB_CALL_ACTIVITIES` carries a `reservationToken`, each
   stub job is stamped with it, re-enters the activatable-by-priority poll index, and is served only to
   an activation presenting the matching token. A stub whose switch carries no token keeps the D4
   behavior — hidden from every worker, out of the index, completed by the instance's creator — so the

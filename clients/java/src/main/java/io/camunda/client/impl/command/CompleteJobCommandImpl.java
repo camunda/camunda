@@ -128,12 +128,12 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep1 withJobReservationToken(final String jobReservationToken) {
-    if (jobReservationToken == null) {
+  public CompleteJobCommandStep1 withReservationToken(final String reservationToken) {
+    if (reservationToken == null) {
       return this;
     }
-    restOnlyProperty = "withJobReservationToken";
-    httpRequestObject.setJobReservationToken(jobReservationToken);
+    restOnlyProperty = "withReservationToken";
+    httpRequestObject.setReservationToken(reservationToken);
     return this;
   }
 

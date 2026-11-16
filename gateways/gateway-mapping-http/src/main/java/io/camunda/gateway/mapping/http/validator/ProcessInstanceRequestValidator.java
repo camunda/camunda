@@ -16,10 +16,10 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_VERSION_TAG_REQUIRES_ID;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateBusinessId;
-import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateJobReservationToken;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateOperationReference;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateProcessDefinitionId;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateReservationToken;
 
 import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
@@ -475,11 +475,11 @@ public class ProcessInstanceRequestValidator {
         } else if (jobTypes.stream().anyMatch(type -> type == null || type.isBlank())) {
           violations.add("jobTypes must not contain blank values");
         }
-        final var token = reserve.getJobReservationToken();
+        final var token = reserve.getReservationToken();
         if (token == null) {
-          violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobReservationToken"));
+          violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("reservationToken"));
         } else {
-          validateJobReservationToken(token, violations);
+          validateReservationToken(token, violations);
           reserveToken = token;
         }
       } else if (instruction
@@ -491,9 +491,9 @@ public class ProcessInstanceRequestValidator {
         } else if (processIds.stream().anyMatch(id -> id == null || id.isBlank())) {
           violations.add("processIds must not contain blank values");
         }
-        final var token = stub.getJobReservationToken();
+        final var token = stub.getReservationToken();
         if (token != null) {
-          validateJobReservationToken(token, violations);
+          validateReservationToken(token, violations);
           stubToken = token;
         }
       }
@@ -501,8 +501,7 @@ public class ProcessInstanceRequestValidator {
     if (reserveToken != null && stubToken != null && !reserveToken.equals(stubToken)) {
       // RESERVE_JOBS and STUB_CALL_ACTIVITIES share the one root reservation token, so a run that
       // gives both cannot name two different tokens.
-      violations.add(
-          "jobReservationToken must be the same on RESERVE_JOBS and STUB_CALL_ACTIVITIES");
+      violations.add("reservationToken must be the same on RESERVE_JOBS and STUB_CALL_ACTIVITIES");
     }
     if (reserveJobsCount > 1) {
       violations.add(

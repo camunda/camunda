@@ -41,8 +41,8 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue TRUNCATED_KEY = new StringValue("truncated");
   private static final StringValue WITH_LEASE_KEY = new StringValue("withLease");
-  private static final StringValue JOB_RESERVATION_TOKEN_KEY =
-      new StringValue("jobReservationToken");
+  private static final StringValue RESERVATION_TOKEN_KEY =
+      new StringValue("reservationToken");
   private static final StringValue CALLED_PROCESS_ID_KEY = new StringValue("calledProcessId");
   private static final StringValue TENANT_FILTER_KEY = new StringValue("tenantFilter");
 
@@ -60,8 +60,8 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
       new ArrayProperty<>(VARIABLES_KEY, StringValue::new);
   private final BooleanProperty truncatedProp = new BooleanProperty(TRUNCATED_KEY, false);
   private final BooleanProperty withLeaseProp = new BooleanProperty(WITH_LEASE_KEY, false);
-  private final StringProperty jobReservationTokenProp =
-      new StringProperty(JOB_RESERVATION_TOKEN_KEY, "");
+  private final StringProperty reservationTokenProp =
+      new StringProperty(RESERVATION_TOKEN_KEY, "");
   private final StringProperty calledProcessIdProp = new StringProperty(CALLED_PROCESS_ID_KEY, "");
   private final EnumProperty<TenantFilter> tenantFilterProp =
       new EnumProperty<>(TENANT_FILTER_KEY, TenantFilter.class, TenantFilter.PROVIDED);
@@ -77,7 +77,7 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
         .declareProperty(variablesProp)
         .declareProperty(truncatedProp)
         .declareProperty(withLeaseProp)
-        .declareProperty(jobReservationTokenProp)
+        .declareProperty(reservationTokenProp)
         .declareProperty(calledProcessIdProp)
         .declareProperty(tenantIdsProp)
         .declareProperty(tenantFilterProp);
@@ -164,8 +164,8 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   }
 
   @Override
-  public String getJobReservationToken() {
-    return BufferUtil.bufferAsString(jobReservationTokenProp.getValue());
+  public String getReservationToken() {
+    return BufferUtil.bufferAsString(reservationTokenProp.getValue());
   }
 
   @Override
@@ -207,8 +207,8 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
     return this;
   }
 
-  public JobBatchRecord setJobReservationToken(final String jobReservationToken) {
-    jobReservationTokenProp.setValue(jobReservationToken);
+  public JobBatchRecord setReservationToken(final String reservationToken) {
+    reservationTokenProp.setValue(reservationToken);
     return this;
   }
 

@@ -38,7 +38,7 @@ the recorder exclusive control of that instance's jobs and call activities.
 
 **D2. Each switch is its own runtime instruction that names what the engine stands aside for:
 `RESERVE_JOBS` and `STUB_CALL_ACTIVITIES`.** The create request carries runtime instructions in its
-`runtimeInstructions` list. `RESERVE_JOBS` carries a `jobTypes` list and a `jobReservationToken`
+`runtimeInstructions` list. `RESERVE_JOBS` carries a `jobTypes` list and a `reservationToken`
 ([ADR 0016](0016-811-reserved-jobs.md) D1); `STUB_CALL_ACTIVITIES` carries a `processIds` list
 ([ADR 0017](0017-811-stubbed-call-activities.md) D1). At most one of each is allowed per instance, and
 omitting an instruction leaves that switch off. Both use the same shape on purpose: an explicit list

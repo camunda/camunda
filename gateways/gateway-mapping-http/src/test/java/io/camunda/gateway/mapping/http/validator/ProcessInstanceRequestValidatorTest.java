@@ -157,7 +157,7 @@ class ProcessInstanceRequestValidatorTest {
 
   @Test
   @DisplayName("Should reject a blank job reservation token when creating by version tag")
-  void shouldRejectBlankJobReservationTokenWhenCreatingByVersionTag() {
+  void shouldRejectBlankReservationTokenWhenCreatingByVersionTag() {
     // given
     final var request =
         ProcessInstanceCreationInstructionByVersionTag.Builder.create()
@@ -176,12 +176,12 @@ class ProcessInstanceRequestValidatorTest {
         .get()
         .extracting(ProblemDetail::getDetail)
         .asString()
-        .contains("No jobReservationToken provided");
+        .contains("No reservationToken provided");
   }
 
   @Test
   @DisplayName("Should reject a blank job reservation token")
-  void shouldRejectBlankJobReservationToken() {
+  void shouldRejectBlankReservationToken() {
     // given
     final var request =
         ProcessInstanceCreationInstructionByKey.Builder.create()
@@ -199,12 +199,12 @@ class ProcessInstanceRequestValidatorTest {
         .get()
         .extracting(ProblemDetail::getDetail)
         .asString()
-        .contains("No jobReservationToken provided");
+        .contains("No reservationToken provided");
   }
 
   @Test
   @DisplayName("Should reject an over-long job reservation token")
-  void shouldRejectOverLongJobReservationToken() {
+  void shouldRejectOverLongReservationToken() {
     // given
     final var request =
         ProcessInstanceCreationInstructionByKey.Builder.create()
@@ -233,7 +233,7 @@ class ProcessInstanceRequestValidatorTest {
       final List<String> jobTypes, final String token) {
     return ProcessInstanceCreationReserveJobsInstruction.Builder.create()
         .jobTypes(jobTypes)
-        .jobReservationToken(token)
+        .reservationToken(token)
         .type("RESERVE_JOBS")
         .build();
   }

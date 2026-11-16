@@ -49,7 +49,7 @@ public final class RequestValidator {
   /** Maximum allowed length for a business ID, matching the engine-side constraint. */
   public static final int MAX_BUSINESS_ID_LENGTH = 256;
 
-  public static final int MAX_JOB_RESERVATION_TOKEN_LENGTH = 128;
+  public static final int MAX_RESERVATION_TOKEN_LENGTH = 128;
 
   public static Optional<ProblemDetail> createProblemDetail(final List<String> violations) {
     String problems = String.join(". ", violations);
@@ -222,17 +222,17 @@ public final class RequestValidator {
     }
   }
 
-  public static void validateJobReservationToken(
-      final @Nullable String jobReservationToken, final List<String> violations) {
-    if (jobReservationToken == null) {
+  public static void validateReservationToken(
+      final @Nullable String reservationToken, final List<String> violations) {
+    if (reservationToken == null) {
       return;
     }
-    if (jobReservationToken.isBlank()) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobReservationToken"));
-    } else if (jobReservationToken.length() > MAX_JOB_RESERVATION_TOKEN_LENGTH) {
+    if (reservationToken.isBlank()) {
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("reservationToken"));
+    } else if (reservationToken.length() > MAX_RESERVATION_TOKEN_LENGTH) {
       violations.add(
           ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
-              "jobReservationToken", MAX_JOB_RESERVATION_TOKEN_LENGTH));
+              "reservationToken", MAX_RESERVATION_TOKEN_LENGTH));
     }
   }
 }
