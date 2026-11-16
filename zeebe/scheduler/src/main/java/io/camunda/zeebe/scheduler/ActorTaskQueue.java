@@ -8,6 +8,7 @@
 package io.camunda.zeebe.scheduler;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.util.function.Consumer;
 import org.agrona.UnsafeApi;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
@@ -18,7 +19,18 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
   protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
   private final ActorTaskQueueNode empty = new ActorTaskQueueNode();
 
+  /**
+   * Test-only hook, always null in production. Runs in {@link #poll()} right before the tail is
+   * reset to {@link #empty}, so tests can deterministically interleave an {@link #append} there.
+   */
+  private final Consumer<ActorTaskQueue> beforeTailReset;
+
   public ActorTaskQueue() {
+    this(null);
+  }
+
+  ActorTaskQueue(final Consumer<ActorTaskQueue> beforeTailReset) {
+    this.beforeTailReset = beforeTailReset;
     headOrdered(empty);
     UnsafeApi.putReferenceRelease(this, TAIL_OFFSET, empty);
   }
@@ -86,8 +98,13 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
 
       if (null == next.next) {
         final ActorTaskQueueNode tail = this.tail;
-        if (tail == next && casTail(tail, empty)) {
-          next = empty;
+        if (tail == next) {
+          if (beforeTailReset != null) {
+            beforeTailReset.accept(this);
+          }
+          if (casTail(tail, empty)) {
+            next = empty;
+          }
         }
       }
 
