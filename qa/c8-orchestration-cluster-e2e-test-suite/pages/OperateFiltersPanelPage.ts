@@ -195,6 +195,18 @@ export class OperateFiltersPanelPage {
     await this.processInstanceKeysFilter.fill(processInstanceKey);
   }
 
+  async reapplyProcessInstanceKeyFilterAfterReload(processInstanceKey: string) {
+    // After a reload, Operate restores the Process Instance Key(s) field from
+    // the `ids` URL param, which removes it from the "More Filters" menu. Only
+    // reopen the optional filter when the keys did not survive the reload;
+    // otherwise the field is already present and just needs refilling.
+    const idsPersisted = new URL(this.page.url()).searchParams.has('ids');
+    if (!idsPersisted) {
+      await this.displayOptionalFilter('Process Instance Key(s)');
+    }
+    await this.fillProcessInstanceKeyFilter(processInstanceKey);
+  }
+
   async fillParentProcessInstanceKeyFilter(parentProcessInstanceKey: string) {
     await this.parentProcessInstanceKey.fill(parentProcessInstanceKey);
   }

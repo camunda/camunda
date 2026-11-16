@@ -244,18 +244,17 @@ test.describe('Process Instances Filters', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          const variableProcessInstanceKeys = new Set<string>();
-          for (const element of await operateProcessesPage.processInstancesTable
-            .getByTestId('cell-processInstanceKey')
-            .elementHandles()) {
-            variableProcessInstanceKeys.add(await element.innerText());
-          }
-          expect(
-            variableProcessInstanceKeys.has(variableProcessInstanceKey),
-          ).toBeTruthy();
+          await expect(
+            operateProcessesPage.processInstancesTable
+              .getByTestId('cell-processInstanceKey')
+              .getByText(variableProcessInstanceKey, {exact: true}),
+          ).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
+          await operateFiltersPanelPage.displayOptionalFilter('Variable');
+          await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
+          await operateFiltersPanelPage.fillVariableValueFilter('604');
         },
       });
     });
@@ -312,6 +311,9 @@ test.describe('Process Instances Filters', () => {
         },
         onFailure: async () => {
           await page.reload();
+          await operateFiltersPanelPage.reapplyProcessInstanceKeyFilterAfterReload(
+            `${variableProcessInstanceKey}, ${callActivityProcessInstanceKey}`,
+          );
         },
       });
     });
