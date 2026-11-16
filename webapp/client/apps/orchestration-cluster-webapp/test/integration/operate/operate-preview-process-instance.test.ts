@@ -277,6 +277,14 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 					createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID, hasIncident: true}),
 				),
 			}),
+			mockQueryProcessInstanceIncidentsEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [createIncident()],
+						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
 		);
 		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
 
