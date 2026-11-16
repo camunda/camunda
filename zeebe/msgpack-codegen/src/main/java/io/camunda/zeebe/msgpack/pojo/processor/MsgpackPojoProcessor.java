@@ -312,8 +312,9 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
           if (isType(argument, "java.lang.Long")) {
             return Type.LONG_LIST;
           }
-          if (argument.getKind() == TypeKind.DECLARED && isLongList((DeclaredType) argument)) {
-            return Type.LONG_LIST_LIST;
+          if (argument.getKind() == TypeKind.DECLARED
+              && isNestedLongList((DeclaredType) argument)) {
+            return Type.NESTED_LONG_LIST;
           }
           if (argument.getKind() == TypeKind.DECLARED) {
             final var item = (TypeElement) ((DeclaredType) argument).asElement();
@@ -375,10 +376,14 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     }
   }
 
-  private boolean isLongList(final DeclaredType type) {
-    return isType(type, LIST)
-        && type.getTypeArguments().size() == 1
-        && isType(type.getTypeArguments().get(0), "java.lang.Long");
+  /** A list of {@code Long}s, or of such lists, to any depth. */
+  private boolean isNestedLongList(final DeclaredType type) {
+    if (!isType(type, LIST) || type.getTypeArguments().size() != 1) {
+      return false;
+    }
+    final var element = type.getTypeArguments().get(0);
+    return isType(element, "java.lang.Long")
+        || element.getKind() == TypeKind.DECLARED && isNestedLongList((DeclaredType) element);
   }
 
   private boolean isType(final TypeMirror mirror, final String qualifiedName) {
@@ -461,7 +466,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
         continue;
       }
       switch (p.type()) {
-        case STRING_LIST, LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST, LONG_LIST_LIST ->
+        case STRING_LIST, LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST, NESTED_LONG_LIST ->
             s.append(
                 "    target.%1$s.clear();\n    target.%1$s.addAll(DEFAULTS.%1$s);\n".formatted(f));
         case NESTED -> s.append("    target.%s.reset();\n".formatted(f));
@@ -560,9 +565,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                 "    %1$s.clear();\n    for (int i = 0; i < %2$s.size(); i++) {\n      %1$s.add(Decoding.copy(%2$s.get(i)));\n    }\n"
                     .formatted(to, from);
             case LONG_LIST -> "    %1$s.clear();\n    %1$s.addAll(%2$s);\n".formatted(to, from);
-            case LONG_LIST_LIST ->
-                "    %1$s.clear();\n    for (int i = 0; i < %2$s.size(); i++) {\n      %1$s.add(new java.util.ArrayList<>(%2$s.get(i)));\n    }\n"
-                    .formatted(to, from);
+            case NESTED_LONG_LIST -> "    Decoding.copyNestedLongs(%s, %s);\n".formatted(from, to);
             case INT_ARRAY_LIST, LONG_ARRAY_LIST ->
                 "    %1$s.clear();\n    for (int i = 0; i < %2$s.size(); i++) {\n      %1$s.%3$s(%2$s.%4$s(i));\n    }\n"
                     .formatted(
@@ -610,7 +613,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                     .formatted(x, y);
             case STRING, BINARY, RAW, DOCUMENT -> "!Decoding.equalContent(%s, %s)".formatted(x, y);
             case STRING_LIST -> "!Decoding.equalContents(%s, %s)".formatted(x, y);
-            case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST, LONG_LIST_LIST ->
+            case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST, NESTED_LONG_LIST ->
                 "!%s.equals(%s)".formatted(x, y);
             case NESTED ->
                 p.pojo()
@@ -703,9 +706,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
                 "    sb.append('[');\n    for (int i = 0; i < %1$s.size(); i++) {\n      if (i > 0) {\n        sb.append(',');\n      }\n      sb.append(%1$s.%2$s(i));\n    }\n    sb.append(']');\n"
                     .formatted(x, getter(p.type()));
-            case LONG_LIST_LIST ->
-                "    sb.append('[');\n    for (int i = 0; i < %1$s.size(); i++) {\n      if (i > 0) {\n        sb.append(',');\n      }\n      sb.append('[');\n      for (int j = 0; j < %1$s.get(i).size(); j++) {\n        if (j > 0) {\n          sb.append(',');\n        }\n        sb.append(%1$s.get(i).get(j));\n      }\n      sb.append(']');\n    }\n    sb.append(']');\n"
-                    .formatted(x);
+            case NESTED_LONG_LIST -> "    Decoding.appendNestedLongs(sb, %s);\n".formatted(x);
             case NESTED ->
                 p.pojo()
                     ? "    %sOps.appendTo(sb, %s);\n".formatted(p.javaType(), x)
@@ -746,7 +747,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                 "java.util.Objects.hashCode(%s)".formatted(x);
             case STRING, BINARY, RAW, DOCUMENT -> "Decoding.contentHash(%s)".formatted(x);
             case STRING_LIST -> "Decoding.contentHash(%s)".formatted(x);
-            case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST, LONG_LIST_LIST ->
+            case LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST, NESTED_LONG_LIST ->
                 "%s.hashCode()".formatted(x);
             // the hash code of a BaseValue is not consistent with its equals (it includes whether
             // a property was set and the recycled ones), so it is not used: equal values must hash
@@ -827,14 +828,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                     + "    for (int i = 0; i < %1$s.size(); i++) {\n".formatted(get)
                     + "      n += w.writeInteger(%s.%s(i));\n".formatted(get, getter(p.type()))
                     + "    }\n";
-            case LONG_LIST_LIST ->
-                "    n += w.writeArrayHeader(%1$s.size());\n".formatted(get)
-                    + "    for (int i = 0; i < %1$s.size(); i++) {\n".formatted(get)
-                    + "      n += w.writeArrayHeader(%s.get(i).size());\n".formatted(get)
-                    + "      for (int j = 0; j < %s.get(i).size(); j++) {\n".formatted(get)
-                    + "        n += w.writeInteger(%s.get(i).get(j));\n".formatted(get)
-                    + "      }\n"
-                    + "    }\n";
+            case NESTED_LONG_LIST -> "    n += Decoding.writeNestedLongs(w, %s);\n".formatted(get);
             case NESTED -> "    n += CODEC_%d.write(w, %s);\n".formatted(i, get);
             case NESTED_LIST ->
                 "    n += w.writeArrayHeader(%1$s.size());\n".formatted(get)
@@ -889,16 +883,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                     + "      n += MsgPackWriter.getEncodedLongValueLength(%s.%s(i));\n"
                         .formatted(get, getter(p.type()))
                     + "    }\n";
-            case LONG_LIST_LIST ->
-                "    n += MsgPackWriter.getEncodedArrayHeaderLength(%s.size());\n".formatted(get)
-                    + "    for (int i = 0; i < %s.size(); i++) {\n".formatted(get)
-                    + "      n += MsgPackWriter.getEncodedArrayHeaderLength(%s.get(i).size());\n"
-                        .formatted(get)
-                    + "      for (int j = 0; j < %s.get(i).size(); j++) {\n".formatted(get)
-                    + "        n += MsgPackWriter.getEncodedLongValueLength(%s.get(i).get(j));\n"
-                        .formatted(get)
-                    + "      }\n"
-                    + "    }\n";
+            case NESTED_LONG_LIST -> "    n += Decoding.lengthNestedLongs(%s);\n".formatted(get);
             case NESTED -> "    n += CODEC_%d.getLength(%s);\n".formatted(i, get);
             case NESTED_LIST ->
                 "    n += MsgPackWriter.getEncodedArrayHeaderLength(%s.size());\n".formatted(get)
@@ -955,9 +940,7 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
             case STRING_LIST, LONG_LIST, INT_ARRAY_LIST, LONG_ARRAY_LIST ->
                 "{\n          %1$s.clear();\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            %1$s.%2$s;\n          }\n        }"
                     .formatted(f, addElement(p.type()));
-            case LONG_LIST_LIST ->
-                "{\n          %1$s.clear();\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            final int m = r.readArrayHeader();\n            final java.util.List<Long> item = new java.util.ArrayList<>(m);\n            for (int j = 0; j < m; j++) {\n              item.add(r.readInteger());\n            }\n            %1$s.add(item);\n          }\n        }"
-                    .formatted(f);
+            case NESTED_LONG_LIST -> "Decoding.readNestedLongs(r, %s);".formatted(f);
             case NESTED -> "CODEC_%d.read(r, %s);".formatted(i, f);
             case NESTED_LIST ->
                 "{\n          %1$s.clear();\n          final int n = r.readArrayHeader();\n          for (int k = 0; k < n; k++) {\n            final %2$s item = new %2$s();\n            CODEC_%3$d.read(r, item);\n            %1$s.add(item);\n          }\n        }"
@@ -1165,8 +1148,8 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     LONG_LIST(true, false),
     INT_ARRAY_LIST(true, false),
     LONG_ARRAY_LIST(true, false),
-    /** A {@code List<List<Long>>}. */
-    LONG_LIST_LIST(true, false),
+    /** A {@code List<List<Long>>}, or nested deeper: lists of {@code Long}s, stored as arrays. */
+    NESTED_LONG_LIST(true, false),
     NESTED(true, false),
     NESTED_LIST(true, false);
 
