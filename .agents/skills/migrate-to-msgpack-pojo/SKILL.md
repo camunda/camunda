@@ -117,10 +117,29 @@ Also check, and STOP if any of these is true:
 2. A migrated class is not a `BaseValue`. If another still-unmigrated class holds it in an
    `ObjectProperty<Name>`/`ArrayProperty<Name>`
    (`grep -rnE "(ObjectProperty|ArrayProperty)<Name>" zeebe --include=*.java`), it will not
-   compile. Migrate the holder first, or STOP. Kind B: the generic holders (`NestedRecord`,
-   `BufferedCommandRecord`, `CommandDistributionRecord`, `PersistedCommandDistribution`) declare
-   `ObjectProperty<UnifiedRecordValue>`, so a migrated record cannot be put in them yet: STOP if
-   the record is stored there.
+   compile. Migrate the holder in the same commit (its field becomes a direct `final Name name = new
+   Name();` or `final List<Name> names = new ArrayList<>();`, so no `ObjectProperty` remains). The
+   order inside one commit does not matter, only that the commit compiles. Commit the engine
+   (kind A) before the records (kind B): engine classes hold records in `ObjectProperty<Record>`,
+   and the engine holders must already be migrated when the records are. A holder you cannot
+   migrate (STOP rule of its own) blocks the held class: STOP.
+   Generic holders (`NestedRecord`, `BufferedCommandRecord`, `CommandDistributionRecord`,
+   `PersistedCommandDistribution`) declare `ObjectProperty<UnifiedRecordValue>`, an untyped byte
+   bag whose concrete type follows a `valueType` property. Their public API already uses
+   `MsgpackRecordValue`, so migrate them with the bag as
+   `@MsgpackProperty(raw = true) DirectBuffer <key> = EMPTY_MAP;` with
+   `private static final DirectBuffer EMPTY_MAP = new UnsafeBuffer(new byte[] {(byte) 0x80});`
+   (same bytes, proven by `RawCommandValueTest` in `zeebe/msgpack-codegen`: the old empty bag wrote an
+   empty map, `Decoding.EMPTY` would write nothing). Keep
+   the getter (return an empty record while the field is the empty map, else build the concrete
+   record from `fromValueType` and `wrap` the bytes) and the setter (serialize the record into an
+   owned buffer; `null` stores `EMPTY_MAP`) with the same behavior. A getter that returns null for
+   `NULL_VAL` needs `@SuppressWarnings("NullAway")` (the interface is not `@Nullable`).
+   `RecordGoldenFilesTest` maps `raw = true` to `PackedProperty`, so it reports "type changed
+   (golden: ObjectProperty<UnifiedRecordValue>, source: PackedProperty)" for these holders: this is
+   a shape the test does not know yet, STOP until the test accepts it (a separate `test:` commit,
+   never in the migration commit). `NestedRecord` extends `ObjectValue`, not `UnifiedRecordValue`:
+   not covered, STOP.
 3. `UnpackedObject` members the class loses and that something uses: `copyFrom`, `copyTo`,
    `isEmpty`, `getEncodedLength`, `writeJSON`, `toString`, `hashCode`. Search the repo for callers
    on this class (`grep -rn "<method>(" zeebe/ --include=*.java`, check the receiver type).

@@ -23,6 +23,7 @@ package <package>;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper; // kind B only
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
@@ -158,7 +159,7 @@ final class NameSerdeTest {
 
   // kind B (records) only
   @Test
-  void shouldProduceTheSameJsonAsV1() {
+  void shouldProduceTheSameJsonAsV1() throws Exception {
     // given
     final var v1 = new NameV1();
     final var current = new Name();
@@ -169,8 +170,10 @@ final class NameSerdeTest {
     final var v1Json = v1.toJson();
     final var currentJson = current.toJson();
 
-    // then exporters see exactly the same document
-    assertThat(currentJson).isEqualTo(v1Json);
+    // then exporters see the same document; compare the trees, Jackson does not guarantee the order
+    // of the properties and it differs between the old and the new class
+    final var mapper = new ObjectMapper();
+    assertThat(mapper.readTree(currentJson)).isEqualTo(mapper.readTree(v1Json));
   }
 
   private static DirectBuffer utf8(final String s) {
