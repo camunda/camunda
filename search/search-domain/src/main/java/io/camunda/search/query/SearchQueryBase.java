@@ -33,12 +33,12 @@ public interface SearchQueryBase {
     }
 
     public T singleResult() {
-      page(new SearchQueryPage(0, 2, null, null, SINGLE_RESULT));
+      page(new SearchQueryPage(0, 2, null, null, SINGLE_RESULT, null));
       return self();
     }
 
     public T unlimited() {
-      page(new SearchQueryPage(0, 0, null, null, UNLIMITED));
+      page(new SearchQueryPage(0, 0, null, null, UNLIMITED, null));
       return self();
     }
 

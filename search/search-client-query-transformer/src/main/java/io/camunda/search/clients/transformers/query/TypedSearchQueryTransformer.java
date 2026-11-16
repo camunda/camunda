@@ -126,7 +126,7 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
     final var page = query.page();
     final var reverse = !page.isNextPage();
 
-    builder.from(page.from()).size(page.size());
+    builder.from(page.from()).size(page.size()).trackTotalHits(page.trackTotalHits());
 
     final var sort = query.sort();
     if (!(sort instanceof NoSort)) {

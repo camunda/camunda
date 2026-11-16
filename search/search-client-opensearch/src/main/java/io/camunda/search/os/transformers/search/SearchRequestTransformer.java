@@ -57,6 +57,10 @@ public final class SearchRequestTransformer
 
     final var builder = new Builder().index(value.index()).from(value.from()).size(value.size());
 
+    if (value.trackTotalHits() != null) {
+      builder.trackTotalHits(t -> t.count(value.trackTotalHits()));
+    }
+
     if (searchQuery != null) {
       final var queryTransformer = getQueryTransformer();
       final var transformedQuery = queryTransformer.apply(searchQuery);

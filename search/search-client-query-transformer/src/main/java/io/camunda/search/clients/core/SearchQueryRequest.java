@@ -31,7 +31,8 @@ public record SearchQueryRequest(
     Object[] searchAfter,
     Integer from,
     Integer size,
-    SearchSourceConfig source) {
+    SearchSourceConfig source,
+    Integer trackTotalHits) {
 
   public static SearchQueryRequest of(
       final Function<Builder, ObjectBuilder<SearchQueryRequest>> fn) {
@@ -47,7 +48,8 @@ public record SearchQueryRequest(
         .searchAfter(searchAfter)
         .from(from)
         .size(size)
-        .source(source);
+        .source(source)
+        .trackTotalHits(trackTotalHits);
   }
 
   public static final class Builder implements ObjectBuilder<SearchQueryRequest> {
@@ -60,6 +62,7 @@ public record SearchQueryRequest(
     private Integer from;
     private Integer size;
     private SearchSourceConfig source;
+    private Integer trackTotalHits;
 
     public Builder index(final List<String> values) {
       index = addValuesToList(index, values);
@@ -113,6 +116,11 @@ public record SearchQueryRequest(
       return this;
     }
 
+    public Builder trackTotalHits(final Integer value) {
+      trackTotalHits = value;
+      return this;
+    }
+
     public Builder aggregations(final List<SearchAggregator> values) {
       aggregations = addValuesToList(aggregations, values);
       return this;
@@ -138,7 +146,8 @@ public record SearchQueryRequest(
           searchAfter,
           from,
           size,
-          source);
+          source,
+          trackTotalHits);
     }
   }
 }
