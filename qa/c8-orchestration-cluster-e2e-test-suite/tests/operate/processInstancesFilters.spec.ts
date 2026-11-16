@@ -341,8 +341,7 @@ test.describe('Process Instances Filters', () => {
     });
   });
 
-  // Skipped due to bug 62004: https://github.com/camunda/camunda/issues/62004
-  test.skip('Filter process instances by parent key, date range, and error message', async ({
+  test('Filter process instances by parent key, date range, and error message', async ({
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
