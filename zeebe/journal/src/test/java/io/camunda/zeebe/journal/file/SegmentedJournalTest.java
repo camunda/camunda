@@ -17,6 +17,7 @@ package io.camunda.zeebe.journal.file;
 
 import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -40,7 +41,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -48,6 +51,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -1261,6 +1265,115 @@ class SegmentedJournalTest {
    * @param failAtSegmentCount the count which should be reached, until a OOD exception is thrown.
    * @return the failing segment allocator
    */
+  // A follower resets its journal before committing a received snapshot. When the disk is nearly
+  // full, the reset can fail to create the new first segment after it already deleted the old
+  // ones. The snapshot install is then rolled back and retried, so the journal must stay usable.
+  @Test
+  void shouldStayReadableWhenResetFailsWithOutOfDiskSpace() {
+    // given - entries 1-7 in two segments, then the disk runs full
+    final var diskFull = new AtomicBoolean();
+    journal = openJournalWithDiskFullSwitch(diskFull);
+    for (int i = 0; i < 7; i++) {
+      journal.append(journalFactory.entry());
+    }
+    diskFull.set(true);
+
+    // when - the reset for a received snapshot cannot create the new first segment
+    assertThatThrownBy(() -> journal.reset(100)).isInstanceOf(OutOfDiskSpace.class);
+
+    // then - the journal can still be read, as the partition does when it (re)starts
+    assertThatCode(() -> journal.openReader().close()).doesNotThrowAnyException();
+  }
+
+  // After a failed reset, a graceful shutdown flushes the journal and stores its last flushed
+  // index. The stored index must still match what is on disk, or the restart fails.
+  @Test
+  void shouldRestartAfterResetFailedWithOutOfDiskSpace() throws Exception {
+    // given - entries 1-7 are flushed, then the disk runs full and a reset fails
+    final var diskFull = new AtomicBoolean();
+    journal = openJournalWithDiskFullSwitch(diskFull);
+    for (int i = 0; i < 7; i++) {
+      journal.append(journalFactory.entry());
+    }
+    journal.flush();
+    diskFull.set(true);
+    assertThatThrownBy(() -> journal.reset(100)).isInstanceOf(OutOfDiskSpace.class);
+
+    // when - the broker shuts down gracefully, space is freed, and the journal is reopened
+    journal.close();
+    diskFull.set(false);
+    final var restartFactory = new TestJournalFactory("test", 5);
+    if (journalFactory.metaStore().hasLastFlushedIndex()) {
+      restartFactory
+          .metaStore()
+          .storeLastFlushedIndex(journalFactory.metaStore().loadLastFlushedIndex());
+    }
+
+    // then - the journal opens
+    assertThatCode(
+            () -> closeables.add(restartFactory.journal(restartFactory.segmentsManager(directory))))
+        .doesNotThrowAnyException();
+  }
+
+  // After a failed reset, Raft only rolls back the snapshot. A new leader that does not have that
+  // snapshot then continues the follower's old log, so the next append must not go into a segment
+  // the reset already deleted. Without a reader holding that segment, it is unmapped and the
+  // append crashes the JVM (SIGSEGV); with one, the append silently lands in the deleted file.
+  @Test
+  void shouldNotAppendIntoDeletedSegmentAfterResetFailedWithOutOfDiskSpace() throws Exception {
+    // given - entries 1-7 in two segments, and a reader that still holds the second segment
+    final var diskFull = new AtomicBoolean();
+    journal = openJournalWithDiskFullSwitch(diskFull);
+    for (int i = 0; i < 7; i++) {
+      journal.append(journalFactory.entry());
+    }
+    final var reader = journal.openReader();
+    closeables.add(reader);
+    while (reader.hasNext()) {
+      reader.next();
+    }
+
+    // the reset for a received snapshot fails, after deleting the segments
+    diskFull.set(true);
+    assertThatThrownBy(() -> journal.reset(100)).isInstanceOf(OutOfDiskSpace.class);
+    final var deletedSegments = new HashMap<Path, byte[]>();
+    try (final var files = Files.list(directory.resolve("data"))) {
+      for (final var file : files.toList()) {
+        if (SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getFileName().toString())) {
+          deletedSegments.put(file, Files.readAllBytes(file));
+        }
+      }
+    }
+
+    // when - the next entry of the old log is appended
+    journal.append(journalFactory.entry());
+
+    // then - no segment that is marked for deletion was written to
+    for (final var deleted : deletedSegments.entrySet()) {
+      assertThat(Arrays.mismatch(deleted.getValue(), Files.readAllBytes(deleted.getKey())))
+          .describedAs(
+              "first changed byte in %s, which is marked for deletion (-1: unchanged)",
+              deleted.getKey().getFileName())
+          .isEqualTo(-1);
+    }
+  }
+
+  private SegmentedJournal openJournalWithDiskFullSwitch(final AtomicBoolean diskFull) {
+    journalFactory =
+        new TestJournalFactory(
+            "test",
+            5,
+            (channel, fd, segmentSize) -> {
+              if (diskFull.get()) {
+                throw new OutOfDiskSpace("Not enough space to allocate a new journal segment");
+              }
+              SegmentAllocator.posix(SegmentAllocator.noop()).allocate(channel, fd, segmentSize);
+            });
+    final var opened = journalFactory.journal(journalFactory.segmentsManager(directory));
+    closeables.add(opened);
+    return opened;
+  }
+
   private SegmentAllocator createFailingSegmentAllocator(final int failAtSegmentCount) {
     final AtomicInteger segmentCount = new AtomicInteger(0);
     return (channel, fd, segmentSize) -> {
