@@ -1794,6 +1794,18 @@ jobs:
           gh pr edit "$PR_NUMBER" --repo "$REPO" --body-file "${RUNNER_TEMP}/pr-body.md" >/dev/null \
             || echo "::warning::could not note the unmeasured head on the PR"
 
+          # The hold the decide job may have applied asserts that the measured
+          # commit was green, and this push moved the head past that
+          # measurement. Leaving it would exempt an unmeasured head from
+          # close-stale-fix-prs indefinitely, so give it up for the same reason
+          # a best-effort PR never gets one: it is no longer proven. A human
+          # may still apply it — a reviewer's hold is their call, not ours.
+          if gh pr edit "$PR_NUMBER" --repo "$REPO" --remove-label do-not-close >/dev/null 2>&1; then
+            echo "Hold released: ${PUSHED} was not measured."
+          else
+            echo "do-not-close was not set on #${PR_NUMBER} -- nothing to release."
+          fi
+
       - name: Summarize the round
         if: always()
         env:
