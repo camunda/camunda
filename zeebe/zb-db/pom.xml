@@ -18,6 +18,7 @@
   <modules>
     <module>api</module>
     <module>rocksdb</module>
+    <module>writebehind</module>
     <module>tests</module>
   </modules>
 </project>

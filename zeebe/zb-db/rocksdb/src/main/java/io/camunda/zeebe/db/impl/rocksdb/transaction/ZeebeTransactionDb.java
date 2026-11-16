@@ -175,6 +175,11 @@ public class ZeebeTransactionDb<
   }
 
   @Override
+  public ConsistencyChecksSettings consistencyChecksSettings() {
+    return consistencyChecksSettings;
+  }
+
+  @Override
   public <KeyType extends DbKey, ValueType extends DbValue>
       ColumnFamily<KeyType, ValueType> createColumnFamily(
           final ColumnFamilyNames columnFamily,
