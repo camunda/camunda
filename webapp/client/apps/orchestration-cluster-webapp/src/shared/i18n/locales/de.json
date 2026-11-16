@@ -1341,6 +1341,7 @@
 				},
 				"instancesTable": {
 					"title": "Prozessinstanzen",
+					"showExactCount": "Genaue Anzahl anzeigen",
 					"panelLabel": "Bereich Prozessinstanzen",
 					"name": "Name",
 					"processInstanceKey": "Prozessinstanz-Schlüssel",

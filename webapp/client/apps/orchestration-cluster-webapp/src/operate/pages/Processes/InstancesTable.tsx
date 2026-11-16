@@ -11,7 +11,7 @@ import {useMachine} from '@xstate/react';
 import {useTranslation} from 'react-i18next';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
-import {DataTableSkeleton, SkeletonText} from '@carbon/react';
+import {Button, DataTableSkeleton, SkeletonText} from '@carbon/react';
 import type {
 	BatchOperationItem,
 	BatchOperationItemState,
@@ -30,6 +30,7 @@ import {getClientConfig} from '#/shared/config/getClientConfig';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {formatTimestamp} from '#/operate/shared/utils/formatTimestamp';
 import {useProcessInstancesSearch} from './useProcessInstancesSearch';
+import {useExactProcessInstancesCount} from './useExactProcessInstancesCount';
 import {
 	batchOperationItemsForInstancesQueryOptions,
 	batchOperationItemsQueryOptions,
@@ -137,8 +138,9 @@ const InstancesTable: React.FC<Props> = ({
 	const {t} = useTranslation();
 	const {
 		processInstances,
-		totalCount,
-		hasMoreTotalItems,
+		totalCount: cappedTotalCount,
+		hasMoreTotalItems: cappedHasMoreTotalItems,
+		filter,
 		status,
 		isFetching,
 		isPlaceholderData,
@@ -149,7 +151,15 @@ const InstancesTable: React.FC<Props> = ({
 		hasNextPage,
 		fetchNextPage,
 	} = useProcessInstancesSearch(search, mode !== 'batch-modification');
+	const exactCountKey = JSON.stringify(filter ?? null);
+	const [exactCountRequestedFor, setExactCountRequestedFor] = useState<string | null>(null);
+	const exactCount = useExactProcessInstancesCount(filter, exactCountRequestedFor === exactCountKey);
+	const totalCount = exactCount.data?.totalItems ?? cappedTotalCount;
+	const hasMoreTotalItems = exactCount.data?.hasMoreTotalItems ?? cappedHasMoreTotalItems;
 	const selection = useProcessInstancesSelection(search, processInstances, totalCount, hasMoreTotalItems);
+	if (selection.isAllSelected && cappedHasMoreTotalItems && exactCountRequestedFor !== exactCountKey) {
+		setExactCountRequestedFor(exactCountKey);
+	}
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
 	const [operation, send] = useMachine(processBulkOperationMachine, {input: {queryClient, navigate}});
@@ -385,7 +395,18 @@ const InstancesTable: React.FC<Props> = ({
 				title={t('operate.processes.instancesTable.title')}
 				count={totalCount}
 				hasMoreTotalItems={hasMoreTotalItems}
-			/>
+			>
+				{hasMoreTotalItems && (
+					<Button
+						kind="ghost"
+						size="sm"
+						disabled={exactCount.isFetching}
+						onClick={() => setExactCountRequestedFor(exactCountKey)}
+					>
+						{t('operate.processes.instancesTable.showExactCount')}
+					</Button>
+				)}
+			</PanelHeader>
 			{status === 'success' && (
 				<ProcessesToolbar
 					key={filterIdentity}
