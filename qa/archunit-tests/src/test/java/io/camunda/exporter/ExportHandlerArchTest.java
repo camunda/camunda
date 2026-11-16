@@ -25,6 +25,7 @@ import io.camunda.exporter.handlers.MainIndexExporterHandler;
 import io.camunda.exporter.handlers.OrdinalIndexExportHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogCleanupHandler;
 import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
+import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkItemsExportHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.util.List;
@@ -100,7 +101,10 @@ public class ExportHandlerArchTest {
               DescribedPredicate.or(
                   // audit log handlers have custom handling
                   Predicates.assignableTo(AuditLogHandler.class),
-                  Predicates.assignableTo(AuditLogCleanupHandler.class)))
+                  Predicates.assignableTo(AuditLogCleanupHandler.class),
+                  // batch operation chunk handling is custom as it deals with the item ordinals
+                  // (not the overall batch operation ordinal)
+                  Predicates.assignableTo(BatchOperationChunkItemsExportHandler.class)))
           .and()
           // TODO remove these exclusions once we have refactored the handlers to implement the
           // correct interface
