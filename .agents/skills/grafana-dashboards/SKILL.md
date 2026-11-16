@@ -36,12 +36,32 @@ Where these live in the JSON depends on the data model:
 | Datasource var   | `DatasourceVariable` named `DS_PROMETHEUS` in `spec.variables`            | `type: datasource` entry in `templating.list`     |
 | Time and refresh | `spec.timeSettings` (`from`, `to`, `autoRefresh`, `autoRefreshIntervals`) | `time`, `refresh`, `timepicker.refresh_intervals` |
 
-Set the time and refresh settings explicitly in the file. For the classic shape, see the `timepicker` block in
-[kube-dns.json](https://github.com/camunda/grafana-dashboards/blob/main/dashboards/sre/kube-dns.json#L661-L671).
+Set the time and refresh settings explicitly in the file. In the v2 model:
+
+```json
+"timeSettings": {
+  "from": "now-6h",
+  "to": "now",
+  "autoRefresh": "",
+  "autoRefreshIntervals": ["30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"]
+}
+```
+
+In the classic model:
+
+```json
+"refresh": "",
+"time": { "from": "now-6h", "to": "now" },
+"timepicker": { "refresh_intervals": ["30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"] }
+```
 
 ## Editing workflow
 
-1. Edit the dashboard JSON under `monitor/grafana/` directly.
+1. Edit the dashboard JSON under `monitor/grafana/` directly. The files are large, so locate the panel first instead
+   of reading the whole file. List panels with
+   `jq -r '.spec.elements | to_entries[] | "\(.key)\t\(.value.spec.title)"' <file>.json` (v2) or
+   `jq -r '.. | objects | select(has("gridPos")) | "\(.id)\t\(.title)"' <file>.json` (classic), then grep for the
+   panel key or title and read only that range.
 2. Keep the diff small: change only the fields the task needs. Do not reformat, re-indent, or reorder the rest of the
    file, so the pull request stays reviewable.
 3. Keep the existing data model. Do not convert a classic dashboard to v2 unless the task asks for it.
@@ -50,11 +70,26 @@ Set the time and refresh settings explicitly in the file. For the classic shape,
    [benchmark Grafana](https://dashboard.benchmark.camunda.cloud/dashboards), or, if it lacks the cluster needed, with
    the local setup in `monitor/local-env/README.md`, which forwards a cluster's Prometheus to a local Grafana over
    Teleport.
+5. Validate the file: `jq empty <file>.json` prints nothing when the JSON is valid.
+
+## Choosing a panel type
+
+When the task does not name one, follow the patterns of the existing dashboards, for example `monitor/grafana/zeebe.json`:
+
+- Trends over time, such as rates and throughput: time series.
+- Latency or size distributions of `_bucket` metrics: heatmap.
+- A single current value, such as health or the last backup: stat.
+- States over time, such as partition roles or health status: state timeline.
+- Current values per partition or node, such as positions or topology: table.
+- "Which method, URI, or namespace is worst": a table limited to the top entries (`topk(10, ...)`).
 
 ## PromQL
 
-- Pick the visualization from the metric type: counters use `rate()` or `increase()`, histograms use
+- Pick the query from the metric type: counters use `rate()` or `increase()`, histograms use
   `histogram_quantile()`, gauges are shown as they are.
+- Histograms: `histogram_quantile(0.99, sum by (le) (rate(x_bucket[$__rate_interval])))` gives one service-wide
+  quantile; `sum by (le, pod)` gives one per pod. Always keep `le` (the bucket's upper bound) in the `by` clause.
+  Without `sum`, you get one line per raw series, which is rarely intended.
 - Build a query from the inside out: start with the bare metric and check what it returns before adding operators.
 - Prefer `$__rate_interval` over a hardcoded range.
 - Avoid unbounded high-cardinality selectors. Keep the labels that legends and links rely on in the aggregation.
@@ -68,8 +103,8 @@ Set the time and refresh settings explicitly in the file. For the classic shape,
 - A new local dashboard in `grafana-dashboards` does nothing until it is listed in its folder's `configMapGenerator`,
   and a new folder must be included from `dashboards/kustomization.yaml`. Remote dashboards must be listed under
   `resources`.
-- Merging to `main` reaches the development stage. Integration and production are promoted by a manual release in
-  `grafana-dashboards` (a pre-release for integration, a full release for production).
+- Merging to `main` reaches the development stage. For promotion to integration and production, see
+  [Releasing the dashboards](https://github.com/camunda/grafana-dashboards#releasing-the-dashboards).
 - Before deleting a Zeebe dashboard, check the reliability-testing deployment in
   [zeebe-infra](https://github.com/camunda/zeebe-infra/blob/main/gcp/zeebe-io/zeebe-cluster/monitoring/kube-prometheus-stack.yml),
   which may reference it.
@@ -83,5 +118,6 @@ Set the time and refresh settings explicitly in the file. For the classic shape,
 - [ ] All queries use `DS_PROMETHEUS`; no `thanos-global-view` unless unavoidable
 - [ ] No automatic refresh; refresh intervals 30s or slower; default range 24h or less
 - [ ] Related panels are in rows; expensive or optional rows are collapsed
-- [ ] Checked against real data in the benchmark Grafana or the local environment
+- [ ] JSON is valid (`jq empty`)
+- [ ] Told the user how to check the change against real data (benchmark Grafana or local environment)
 - [ ] Diff contains only intended changes
