@@ -64,8 +64,8 @@ Open the class and every property it declares.
 | Old property                                   | New field                                                                 |
 | ---------------------------------------------- | ------------------------------------------------------------------------- |
 | `LongProperty(key, default)`                   | `long field = default;`                                                   |
-| `LongProperty(key)` without default            | `final RequiredLong field = new RequiredLong();` (unset until `set(v)`; `@Nullable Long field;` is under evaluation) |
-| `IntegerProperty(key)` without default         | `final RequiredInt field = new RequiredInt();`                            |
+| `LongProperty(key)` without default            | `final RequiredLong field = new RequiredLong();` (unset until `set(v)`), or `@MsgpackRequired long field = <sentinel>;` if the user approved a sentinel (see below) |
+| `IntegerProperty(key)` without default         | `final RequiredInt field = new RequiredInt();`, or `@MsgpackRequired int field = <sentinel>;` if approved |
 | `BooleanProperty(key)` without default         | `@Nullable Boolean field;` (null = unset)                                 |
 | `IntegerProperty(key, default)`                | `int field = default;`                                                    |
 | `BooleanProperty(key, default)`                | `boolean field = default;`                                                |
@@ -140,7 +140,8 @@ Properties WITHOUT a default (`new LongProperty("k")`, `IntegerProperty`, `Boole
 `StringProperty`, `BinaryProperty`, `DocumentProperty`, `EnumProperty`) have an unset state. Map
 them as in the table: a `long`/`int` to a `final RequiredLong`/`RequiredInt` holder, everything
 else to a `@Nullable` field without initializer (`org.jspecify.annotations.Nullable`; a
-`Boolean` field must be `@Nullable`). The generated class behaves like the old one: writing or
+`Boolean` field must be `@Nullable`). The holder is the default: it translates mechanically and
+needs no knowledge of the values. The generated class behaves like the old one: writing or
 getting the length while one is unset throws the same `MsgpackPropertyException`, reading a map
 without the key throws "Property 'k' has no valid value", `reset()` makes it unset again, and
 `toString` prints `"NO VALID WRITEABLE VALUE"`. The bytes are identical. Translate the accessors:
@@ -154,6 +155,18 @@ mention in the commit body: `get()` of an unset holder throws `IllegalStateExcep
 one a `MsgpackPropertyException` with the key), and `equals` of two objects with unset properties
 does not throw (the legacy one does). In the serde tests, cover the unset write and read like the
 `NameV1` twin does.
+
+A holder costs one object per instance and a slower copy; a `@MsgpackRequired` primitive costs
+nothing, but its sentinel can never be a real value (writing or reading it fails like an unset
+property). Swap a holder for `@MsgpackRequired long/int field = <sentinel>;` (`0` without an
+initializer) only for a property with an obvious free value, and only after the user approved it.
+Do not pick the sentinel yourself: before editing the class, list each such property with the
+proposed sentinel and the evidence that the code never sets it (a `NO_KEY`/`-1` constant, a
+position, a count and an index starting at 0 all rule out `-1` or `0`; `Long.MIN_VALUE` and
+`Integer.MIN_VALUE` are the safe choice), and wait for the answer. A property without an approved
+sentinel stays a holder. The getter of a sentinel field keeps the legacy throw with
+`return Decoding.required(field, <Name>Ops.SENTINEL_field, "k");`; `prop.hasValue()` becomes
+`field != <Name>Ops.SENTINEL_field`.
 
 ## Step 1: write down the stored layout
 
