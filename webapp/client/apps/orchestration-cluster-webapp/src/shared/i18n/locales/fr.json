@@ -2054,7 +2054,6 @@
 					"imageAlt": "Page de détails de l'instance de processus avec l'onglet des incidents et le diagramme"
 				},
 				"incidents": {
-					"title": "Incidents",
 					"list": "Liste des incidents",
 					"filterByType": "Filtrer par type d'incident",
 					"resetFilters": "Réinitialiser les filtres",

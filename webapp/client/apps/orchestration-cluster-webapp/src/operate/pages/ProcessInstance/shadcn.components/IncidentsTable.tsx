@@ -59,6 +59,19 @@ const TruncatedLink: React.FC<{label: string; children: React.ReactElement}> = (
 	</Tooltip>
 );
 
+const TruncatedText: React.FC<{children: string}> = ({children}) => (
+	<Tooltip>
+		<TooltipTrigger asChild>
+			<span tabIndex={0} className="block truncate">
+				{children}
+			</span>
+		</TooltipTrigger>
+		<TooltipContent side="bottom" className="max-w-md break-words whitespace-pre-wrap">
+			{children}
+		</TooltipContent>
+	</Tooltip>
+);
+
 const ElementName: React.FC<{
 	incident: EnhancedIncident;
 	processInstanceKey: string;
@@ -104,18 +117,7 @@ const ElementName: React.FC<{
 		);
 	}
 
-	return (
-		<Tooltip>
-			<TooltipTrigger asChild>
-				<span tabIndex={0} className="block truncate">
-					{incident.elementName}
-				</span>
-			</TooltipTrigger>
-			<TooltipContent side="bottom" className="max-w-md break-words whitespace-pre-wrap">
-				{incident.elementName}
-			</TooltipContent>
-		</Tooltip>
-	);
+	return <TruncatedText>{incident.elementName}</TruncatedText>;
 };
 
 const IncidentsTable: React.FC<Props> = ({
@@ -151,16 +153,7 @@ const IncidentsTable: React.FC<Props> = ({
 						{incident.isSelected && (
 							<span className="sr-only">{t('operate.processInstance.incidents.selectedRow')}</span>
 						)}
-						<Tooltip>
-							<TooltipTrigger asChild>
-								<span tabIndex={0} className="block truncate">
-									{incident.errorMessage}
-								</span>
-							</TooltipTrigger>
-							<TooltipContent side="bottom" className="max-w-md break-words whitespace-pre-wrap">
-								{incident.errorMessage}
-							</TooltipContent>
-						</Tooltip>
+						<TruncatedText>{incident.errorMessage}</TruncatedText>
 					</span>
 				),
 			},

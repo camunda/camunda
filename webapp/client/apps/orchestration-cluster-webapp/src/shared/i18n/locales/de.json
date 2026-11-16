@@ -2051,7 +2051,6 @@
 					"imageAlt": "Detailseite der Prozessinstanz mit Incidents-Tab und Diagramm"
 				},
 				"incidents": {
-					"title": "Incidents",
 					"list": "Incident-Liste",
 					"filterByType": "Nach Incident-Typ filtern",
 					"resetFilters": "Filter zurücksetzen",

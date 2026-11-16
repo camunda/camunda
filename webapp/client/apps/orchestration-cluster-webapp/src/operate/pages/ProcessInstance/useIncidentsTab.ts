@@ -28,6 +28,7 @@ import {
 import type {ChildInstanceWithIncident, DecisionInstanceLookup} from './incidents.types';
 
 const DEFAULT_SORT: IncidentsSort = [{field: 'creationTime', order: 'DESC'}];
+const NO_DECISION_INSTANCES: DecisionInstanceLookup = {};
 const sortSearchParamSchema = createSortSearchParamSchema(z.enum(['errorType', 'creationTime']));
 
 function sortByRootCause(decisionInstances: DecisionInstance[]) {
@@ -100,7 +101,7 @@ function useIncidentsTab() {
 				.map((incident) => incident.elementInstanceKey),
 		),
 	);
-	const {data: decisionInstancesByElementKey = {}} = useQuery({
+	const {data: decisionInstancesByElementKey = NO_DECISION_INSTANCES} = useQuery({
 		...incidentDecisionInstancesQuery({elementInstanceKey: {$in: decisionIncidentElementKeys}}),
 		enabled: decisionIncidentElementKeys.length > 0,
 		placeholderData: keepPreviousData,

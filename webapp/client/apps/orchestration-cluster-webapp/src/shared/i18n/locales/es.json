@@ -2051,7 +2051,6 @@
 					"imageAlt": "Página de detalles de la instancia de proceso con la pestaña de incidentes y el diagrama"
 				},
 				"incidents": {
-					"title": "Incidentes",
 					"list": "Lista de incidentes",
 					"filterByType": "Filtrar por tipo de incidente",
 					"resetFilters": "Restablecer filtros",

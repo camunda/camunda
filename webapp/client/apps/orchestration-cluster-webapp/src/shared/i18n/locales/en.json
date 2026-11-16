@@ -2063,7 +2063,6 @@
 					"imageAlt": "Process instance details page with incidents tab and diagram"
 				},
 				"incidents": {
-					"title": "Incidents",
 					"list": "Incidents list",
 					"filterByType": "Filter by Incident Type",
 					"resetFilters": "Reset Filters",
