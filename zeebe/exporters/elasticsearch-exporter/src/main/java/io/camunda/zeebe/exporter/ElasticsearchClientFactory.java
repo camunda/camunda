@@ -13,6 +13,7 @@ import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5ClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.search.connect.es.IoReactorExceptionCallback;
 import io.camunda.search.connect.util.SecurityUtil;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.ProxyConfiguration;
 import java.net.URISyntaxException;
@@ -92,6 +93,8 @@ final class ElasticsearchClientFactory {
     // In HC5 it is active by default, but we keep it explicit in case the default ever changes.
     builder.setIOReactorConfig(
         IOReactorConfig.custom().setIoThreadCount(1).setSoKeepAlive(true).build());
+
+    builder.setIoReactorExceptionCallback(new IoReactorExceptionCallback());
 
     if (config.hasProxyConfigured()) {
       setupProxy(builder, config.getProxy());
