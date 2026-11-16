@@ -30,7 +30,16 @@ test.describe('Task History Audit Log', () => {
     // loop then times out. A unique process id keeps our instance invisible
     // to any by-name selection in another suite.
     await deploy(['./resources/usertask_for_history.bpmn']);
-    processInstance = await createSingleInstance('usertask_for_history', 1);
+    // deployResources resolves once the deployment is committed, but the new
+    // definition still has to be distributed to every partition before an
+    // instance can be created by id+version. Because this process is deployed
+    // only here (no other parallel suite pre-warms it), creating immediately
+    // can hit a partition that has not applied the deployment yet and fail
+    // with 404 NOT_FOUND. Retry across that short distribution window rather
+    // than a fixed sleep so it waits exactly as long as needed and no longer.
+    await expect(async () => {
+      processInstance = await createSingleInstance('usertask_for_history', 1);
+    }).toPass({timeout: 30000, intervals: [1000]});
   });
 
   test.beforeEach(
