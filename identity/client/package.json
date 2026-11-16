@@ -19,7 +19,8 @@
   },
   "overrides": {
     "@camunda/oc-saas-notifications": {
-      "@camunda/design-system": "$@camunda/design-system"
+      "@camunda/design-system": "$@camunda/design-system",
+      "@camunda/camunda-composite-components": "$@camunda/camunda-composite-components"
     }
   },
   "dependencies": {
@@ -31,7 +32,7 @@
     "@carbon/elements": "11.101.0",
     "@carbon/react": "1.112.0",
     "@monaco-editor/react": "4.7.0",
-    "@tanstack/react-query": "^5.100.14",
+    "@tanstack/react-query": "5.105.3",
     "date-fns": "4.4.0",
     "i18next": "27.1.1",
     "mobx": "7.1.6",
