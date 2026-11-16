@@ -30,6 +30,9 @@ jobs:
       identifier: camunda-helm-int
       # main only supports Elasticsearch 9; the 8.11 chart deploys an ES 9 companion
       camunda-helm-dir: camunda-platform-8.11
+      # Must match exactly one registry entry: with no exact match, deploy-camunda falls back to
+      # substring-matching the scenario and deploys every "*elasticsearch*" entry into one namespace
+      shortname: eske
       test-enabled: true
       caller-git-ref: main
       # On main: uses SNAPSHOT tag; on stable: uses versioned tag (e.g. 8.9-SNAPSHOT)
