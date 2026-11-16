@@ -107,6 +107,35 @@ final class ProbeTimeoutCheckSchedulerTest {
     assertThat(probeState.checks()).isEqualTo(checks).isLessThanOrEqualTo(1);
   }
 
+  /**
+   * The checker sees only committed state. Armed before a probe's CREATE is committed, e.g. while a
+   * slow log write is pending, its first check finds nothing and it stops. This is why the CREATE
+   * processor schedules it in a side effect, which runs after the commit.
+   */
+  @Test
+  void shouldTimeOutAProbeOnlyWhenScheduledAfterItIsStored() {
+    // given the checker armed for a probe that is not stored yet
+    final long deadline = now() + 1_500;
+    harness.recover();
+    scheduler.schedule(deadline);
+    harness.advanceTime(Duration.ofMillis(500));
+    final int checks = probeState.checks();
+
+    // when the probe is stored after the first check
+    createProbe(1L, deadline);
+    harness.advanceTime(Duration.ofMillis(500));
+
+    // then the checker has stopped and does not see it
+    assertThat(probeState.checks()).isEqualTo(checks);
+
+    // when it is scheduled again, as the side effect after the commit does
+    scheduler.schedule(deadline);
+    advanceUntil(deadline + ProbeTimeoutCheckScheduler.TIMEOUT_RESOLUTION);
+
+    // then
+    assertThat(harness.writer().writtenIntents()).containsExactly(ProbeIntent.TIME_OUT);
+  }
+
   @Test
   void shouldTimeOutAfterRecoveryAProbeWhoseDeadlinePassedBefore() {
     // given a probe created on the previous leader, whose deadline passed during the leader change

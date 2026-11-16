@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableM
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -73,6 +74,7 @@ public final class ProbeCreateProcessor implements TypedRecordProcessor<ProbeRec
   private final AsyncRequestBehavior asyncRequestBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
+  private final SideEffectWriter sideEffectWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final InstantSource clock;
@@ -97,6 +99,7 @@ public final class ProbeCreateProcessor implements TypedRecordProcessor<ProbeRec
     this.asyncRequestBehavior = asyncRequestBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
+    sideEffectWriter = writers.sideEffect();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.clock = clock;
@@ -138,7 +141,10 @@ public final class ProbeCreateProcessor implements TypedRecordProcessor<ProbeRec
       probeBehavior.timeOutOnArrival(probeKey, probe);
       return;
     }
-    timeoutChecker.schedule(probe.getDeadline());
+    // the checker reads committed state only: armed before the commit, it could run while the log
+    // write is pending, find no probe and stop for good, as timers and job backoff avoid too
+    final long deadline = probe.getDeadline();
+    sideEffectWriter.appendSideEffect(() -> timeoutChecker.schedule(deadline));
     probeBehavior.notifyProbesAvailable(probe.getProbeId());
   }
 
