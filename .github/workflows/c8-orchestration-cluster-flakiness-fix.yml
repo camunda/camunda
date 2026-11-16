@@ -708,7 +708,6 @@ jobs:
           REPO: ${{ github.repository }}
           ACTION: ${{ steps.final.outputs.action }}
           BEST: ${{ steps.final.outputs.best }}
-          RATE: ${{ steps.final.outputs.rate }}
           REASON: ${{ steps.final.outputs.reason }}
           BRANCH: ${{ needs.prepare.outputs.branch }}
           TARGET_REF: ${{ needs.prepare.outputs.target_ref }}
@@ -771,17 +770,25 @@ jobs:
               --body-file "$RUNNER_TEMP/pr-body.md" --label flaky-test-fix)
             echo "Opened ${pr_url}"
 
-            # A 100% shipped rate is a proven fix, so it gets the reviewer hold
+            # A failure-free pass is a proven fix, so it gets the reviewer hold
             # that keeps close-stale-fix-prs off it; it waits for a human rather
             # than being swept the next night. A best-effort PR (every cell at
-            # MIN_PASS_RATE and up MIN_IMPROVEMENT_PP, but not 100%) is NOT
-            # proven and deliberately gets no hold: it goes on the daily clock,
-            # and the ledger re-picks the test later. Stamping every PR would
-            # make the label mean "a bot opened this" instead of "this works".
-            # Compared with awk because `rate` is a float.
-            if awk -v r="$RATE" 'BEGIN { exit !(r >= 100) }'; then
+            # MIN_PASS_RATE and up MIN_IMPROVEMENT_PP, but still failing
+            # sometimes) is NOT proven and deliberately gets no hold: it goes on
+            # the daily clock, and the ledger re-picks the test later. Stamping
+            # every PR would make the label mean "a bot opened this" instead of
+            # "this works".
+            #
+            # Gated on the score's own verdict, NOT on `rate >= 100`: rate is
+            # rounded to one decimal, so at the supported ceiling of 30 shards x
+            # 70 repeats a single failure in 2100 runs reads as 100.0% and would
+            # buy an indefinite hold for a test that is still flaky. `green` is
+            # pooled failures == 0 and no blocked cell, i.e. every planned run
+            # passed in every cell.
+            best_score="$o/flaky-score-${BEST}/score.json"
+            if [[ "$(jq -r '.verdict // ""' "$best_score")" == "green" ]]; then
               gh pr edit "$pr_url" --repo "$REPO" --add-label do-not-close
-              echo "Held: 100% pass rate, do-not-close applied"
+              echo "Held: ${BEST} is green, do-not-close applied"
             fi
           elif [[ "$branch_exists" == "true" ]]; then
             gh api -X DELETE "repos/${REPO}/git/refs/heads/${BRANCH}"
