@@ -434,46 +434,73 @@ describe('<ProcessInstance />', () => {
 		await expect.element(screen.getByRole('link', {name: 'View all called instances'})).not.toBeInTheDocument();
 	});
 
-	it.for([true, false])(
-		'should scope draining metadata to this version (matching key: %s)',
-		async (isMatching, {worker}) => {
-			const processInstance = createProcessInstance({
-				processInstanceKey: PROCESS_INSTANCE_ID,
-				processDefinitionId: 'order-process',
-				processDefinitionName: 'Order',
-				hasIncident: true,
-			});
-			worker.use(
-				mockQueryProcessInstanceIncidentsEndpoint({
-					successResponse: HttpResponse.json({
-						items: [],
-						page: {totalItems: 3, startCursor: null, endCursor: null, hasMoreTotalItems: false},
-					}),
+	it('should show the draining tag when this version is draining', async ({worker}) => {
+		const processInstance = createProcessInstance({
+			processInstanceKey: PROCESS_INSTANCE_ID,
+			processDefinitionId: 'order-process',
+			processDefinitionName: 'Order',
+			hasIncident: true,
+		});
+		worker.use(
+			mockQueryProcessInstanceIncidentsEndpoint({
+				successResponse: HttpResponse.json({
+					items: [],
+					page: {totalItems: 3, startCursor: null, endCursor: null, hasMoreTotalItems: false},
 				}),
-				...getProcessInstancePageHandlers({
-					processInstance,
-					processDefinitions: createQueryProcessDefinitionsResponse({
-						items: [
-							createProcessDefinition({
-								processDefinitionId: 'order-process',
-								processDefinitionKey: isMatching ? processInstance.processDefinitionKey : '999',
-								state: 'DRAINING',
-							}),
-						],
-					}),
+			}),
+			...getProcessInstancePageHandlers({
+				processInstance,
+				processDefinitions: createQueryProcessDefinitionsResponse({
+					items: [
+						createProcessDefinition({
+							processDefinitionId: 'order-process',
+							processDefinitionKey: processInstance.processDefinitionKey,
+							state: 'DRAINING',
+						}),
+					],
 				}),
-			);
+			}),
+		);
 
-			const screen = await renderPage();
+		const screen = await renderPage();
 
-			await expect.element(screen.getByText('3 incidents')).toBeVisible();
-			if (isMatching) {
-				await expect.element(screen.getByTestId('draining-tag')).toBeVisible();
-			} else {
-				await expect.element(screen.getByTestId('draining-tag')).not.toBeInTheDocument();
-			}
-		},
-	);
+		await expect.element(screen.getByText('3 incidents')).toBeVisible();
+		await expect.element(screen.getByTestId('draining-tag')).toBeVisible();
+	});
+
+	it('should not show the draining tag when only another version is draining', async ({worker}) => {
+		const processInstance = createProcessInstance({
+			processInstanceKey: PROCESS_INSTANCE_ID,
+			processDefinitionId: 'order-process',
+			processDefinitionName: 'Order',
+			hasIncident: true,
+		});
+		worker.use(
+			mockQueryProcessInstanceIncidentsEndpoint({
+				successResponse: HttpResponse.json({
+					items: [],
+					page: {totalItems: 3, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+				}),
+			}),
+			...getProcessInstancePageHandlers({
+				processInstance,
+				processDefinitions: createQueryProcessDefinitionsResponse({
+					items: [
+						createProcessDefinition({
+							processDefinitionId: 'order-process',
+							processDefinitionKey: '999',
+							state: 'DRAINING',
+						}),
+					],
+				}),
+			}),
+		);
+
+		const screen = await renderPage();
+
+		await expect.element(screen.getByText('3 incidents')).toBeVisible();
+		await expect.element(screen.getByTestId('draining-tag')).not.toBeInTheDocument();
+	});
 
 	describe('modification mode', () => {
 		const modifyButton = `Modify Instance ${PROCESS_INSTANCE_ID}`;

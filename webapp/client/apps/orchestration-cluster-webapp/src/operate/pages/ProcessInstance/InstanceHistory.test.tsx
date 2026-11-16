@@ -223,76 +223,95 @@ describe('InstanceHistory', () => {
 			expect(get).toHaveBeenCalledTimes(keyed && !placeholder ? 1 : 0);
 		},
 	);
-	it.for([
-		{total: 53, capped: false},
-		{total: 153, capped: false},
-		{total: 153, capped: true},
-	])(
-		'should use replacement windows with 50-offset stride, total=$total capped=$capped',
-		async ({total, capped}, {worker}) => {
-			const offsets: number[] = [];
-			worker.use(
-				http.post('/v2/element-instances/search', async ({request}) => {
-					const body = (await request.json()) as {page: {from: number; limit: number}};
-					offsets.push(body.page.from);
-					expect(body.page.limit).toBe(100);
-					const response = createQueryElementInstancesResponse(
-						Array.from({length: Math.min(100, total - body.page.from)}, (_, index) =>
-							createElementInstance({elementInstanceKey: String(index + body.page.from)}),
-						),
-						capped ? 50 : total,
-					);
-					response.page.hasMoreTotalItems = capped;
-					return HttpResponse.json(response);
-				}),
+	function windowedInstances(offsets: number[], total: number, capped: boolean) {
+		return http.post('/v2/element-instances/search', async ({request}) => {
+			const body = (await request.json()) as {page: {from: number; limit: number}};
+			offsets.push(body.page.from);
+			expect(body.page.limit).toBe(100);
+			const response = createQueryElementInstancesResponse(
+				Array.from({length: Math.min(100, total - body.page.from)}, (_, index) =>
+					createElementInstance({elementInstanceKey: String(index + body.page.from)}),
+				),
+				capped ? 50 : total,
 			);
+			response.page.hasMoreTotalItems = capped;
+			return HttpResponse.json(response);
+		});
+	}
+	it('should not request another window when the total fits in the first one', async ({worker}) => {
+		const offsets: number[] = [];
+		worker.use(windowedInstances(offsets, 53, false));
+		const screen = await renderPage();
+		await expect.element(screen.getByText(/"first":"0"/)).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Next'}));
+
+		await expect.element(screen.getByText(/"from":50,"first":"50"/)).not.toBeInTheDocument();
+		expect(offsets).toEqual([0]);
+	});
+	it.for([false, true])(
+		'should use replacement windows with 50-offset stride, total=153 capped=%s',
+		async (capped, {worker}) => {
+			const offsets: number[] = [];
+			worker.use(windowedInstances(offsets, 153, capped));
 			const screen = await renderPage();
 			await expect.element(screen.getByText(/"first":"0"/)).toBeVisible();
 			await userEvent.click(screen.getByRole('button', {name: 'Next'}));
-			if (total === 153) {
-				await expect.element(screen.getByText(/"from":50,"first":"50"/)).toBeVisible();
-				await userEvent.click(screen.getByRole('button', {name: 'Next'}));
-				await expect.element(screen.getByText(/"from":100,"first":"100"/)).toBeVisible();
-				await userEvent.click(screen.getByRole('button', {name: 'Next'}));
-				await userEvent.click(screen.getByRole('button', {name: 'Previous'}));
-				await expect.element(screen.getByText(/"from":50,"first":"50"/)).toBeVisible();
-				await userEvent.click(screen.getByRole('button', {name: 'Previous'}));
-				await expect.element(screen.getByText(/"from":0,"first":"0"/)).toBeVisible();
-			}
-			expect(offsets).toEqual(total === 53 ? [0] : [0, 50, 100, 50, 0]);
+			await expect.element(screen.getByText(/"from":50,"first":"50"/)).toBeVisible();
+			await userEvent.click(screen.getByRole('button', {name: 'Next'}));
+			await expect.element(screen.getByText(/"from":100,"first":"100"/)).toBeVisible();
+			await userEvent.click(screen.getByRole('button', {name: 'Next'}));
+			await userEvent.click(screen.getByRole('button', {name: 'Previous'}));
+			await expect.element(screen.getByText(/"from":50,"first":"50"/)).toBeVisible();
+			await userEvent.click(screen.getByRole('button', {name: 'Previous'}));
+			await expect.element(screen.getByText(/"from":0,"first":"0"/)).toBeVisible();
+			expect(offsets).toEqual([0, 50, 100, 50, 0]);
 		},
 	);
-	it.for([403, 500])(
-		'should fail closed only for forbidden ad-hoc child-scope reads (%i)',
-		async (status, {worker}) => {
-			vi.useFakeTimers({toFake: ['setInterval', 'clearInterval']});
-			let rootReads = 0;
-			worker.use(
-				http.post('/v2/element-instances/search', async ({request}) => {
-					const {page} = (await request.json()) as {page: {limit: number}};
-					if (page.limit === 1) {
-						return new HttpResponse(null, {status});
-					}
-					rootReads++;
-					return HttpResponse.json(createQueryElementInstancesResponse());
-				}),
-			);
-			const screen = await renderPage();
-			await expect.poll(() => rootReads).toBe(1);
-			await userEvent.click(screen.getByRole('button', {name: 'Select ad-hoc instance'}));
-			if (status === 403) {
-				await expect.element(screen.getByText(/"forbidden":true/)).toBeVisible();
-				await userEvent.click(screen.getByRole('button', {name: 'Next'}));
-				await userEvent.click(screen.getByRole('button', {name: 'Retry'}));
-				await vi.advanceTimersByTimeAsync(15000);
-				expect(rootReads).toBe(1);
-			} else {
-				await expect.poll(() => notificationsStore.notifications.length).toBe(1);
-				await expect.element(screen.getByText(/"forbidden":false/)).toBeVisible();
-			}
-			await expect.element(screen.getByText(/"selected":false/)).toBeVisible();
-		},
-	);
+	it('should fail closed for forbidden ad-hoc child-scope reads', async ({worker}) => {
+		vi.useFakeTimers({toFake: ['setInterval', 'clearInterval']});
+		let rootReads = 0;
+		worker.use(
+			http.post('/v2/element-instances/search', async ({request}) => {
+				const {page} = (await request.json()) as {page: {limit: number}};
+				if (page.limit === 1) {
+					return new HttpResponse(null, {status: 403});
+				}
+				rootReads++;
+				return HttpResponse.json(createQueryElementInstancesResponse());
+			}),
+		);
+		const screen = await renderPage();
+		await expect.poll(() => rootReads).toBe(1);
+		await userEvent.click(screen.getByRole('button', {name: 'Select ad-hoc instance'}));
+		await expect.element(screen.getByText(/"forbidden":true/)).toBeVisible();
+		await userEvent.click(screen.getByRole('button', {name: 'Next'}));
+		await userEvent.click(screen.getByRole('button', {name: 'Retry'}));
+		await vi.advanceTimersByTimeAsync(15000);
+		expect(rootReads).toBe(1);
+		await expect.element(screen.getByText(/"selected":false/)).toBeVisible();
+	});
+	it('should notify instead of failing closed when an ad-hoc child-scope read fails with a server error', async ({
+		worker,
+	}) => {
+		vi.useFakeTimers({toFake: ['setInterval', 'clearInterval']});
+		let rootReads = 0;
+		worker.use(
+			http.post('/v2/element-instances/search', async ({request}) => {
+				const {page} = (await request.json()) as {page: {limit: number}};
+				if (page.limit === 1) {
+					return new HttpResponse(null, {status: 500});
+				}
+				rootReads++;
+				return HttpResponse.json(createQueryElementInstancesResponse());
+			}),
+		);
+		const screen = await renderPage();
+		await expect.poll(() => rootReads).toBe(1);
+		await userEvent.click(screen.getByRole('button', {name: 'Select ad-hoc instance'}));
+		await expect.poll(() => notificationsStore.notifications.length).toBe(1);
+		await expect.element(screen.getByText(/"forbidden":false/)).toBeVisible();
+		await expect.element(screen.getByText(/"selected":false/)).toBeVisible();
+	});
 	it('should re-read a previously forbidden cached instance after returning to it', async ({worker}) => {
 		let denied = true;
 		let reads = 0;
@@ -416,8 +435,8 @@ describe('InstanceHistory', () => {
 			await expect.element(screen.getByRole('treeitem', {name: 'first-child', exact: true})).toBeVisible();
 			if (paged) {
 				await userEvent.click(screen.getByRole('button', {name: 'Page scope'}));
-				await expect.element(screen.getByRole('treeitem', {name: 'child-50', exact: true})).toBeVisible();
 			}
+			await expect.element(screen.getByRole('treeitem', {name: 'child-50', exact: true})).toBeVisible();
 			await userEvent.click(item.getByText('Ad-hoc scope', {exact: true}));
 			await expect
 				.poll(() => processInstanceSearchSchema.parse(screen.router.state.location.search).anchorElementId)

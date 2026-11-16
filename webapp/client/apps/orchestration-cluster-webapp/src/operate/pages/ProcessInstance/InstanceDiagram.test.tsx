@@ -146,6 +146,8 @@ async function renderLoadedPage(props: PageProps = {}, search = '') {
 	return screen;
 }
 
+type LoadedPage = Awaited<ReturnType<typeof renderLoadedPage>>;
+
 async function renderPageWithPendingInstance(loader: Promise<void>, basepath: string) {
 	const queryClient = new QueryClient({defaultOptions: {queries: {retry: false}}});
 	const rootRoute = createRootRouteWithContext<{queryClient: QueryClient}>()({component: () => <Outlet />});
@@ -822,12 +824,42 @@ describe('<InstanceDiagram />', () => {
 	);
 
 	it.for([
-		'changing process instances',
-		'changing process instances with retained selection',
-		'selecting a different element',
-		'navigating to a different selection',
-		'navigating away with unrelated search',
-	] as const)('should ignore a drilldown response after %s', async (action, {worker}) => {
+		{
+			name: 'changing process instances',
+			act: ({router}: LoadedPage) =>
+				router.navigate({
+					to: '/operate/processes/$processInstanceId/details',
+					params: {processInstanceId: 'instance-2'},
+					search: {},
+				}),
+			expectedPathname: '/operate/processes/instance-2/details',
+			expectedSearch: {},
+		},
+		{
+			name: 'changing process instances with retained selection',
+			act: ({router}: LoadedPage) => router.history.push('/operate/processes/instance-2/details?elementId=task_1'),
+			expectedPathname: '/operate/processes/instance-2/details',
+			expectedSearch: {},
+		},
+		{
+			name: 'selecting a different element',
+			act: () => userEvent.click(document.querySelector<SVGElement>('[data-element-id="task_1"]')!),
+			expectedPathname: `/operate/processes/${INSTANCE_ID}/details`,
+			expectedSearch: {elementId: 'task_1'},
+		},
+		{
+			name: 'navigating to a different selection',
+			act: ({router}: LoadedPage) => router.navigate({to: '.', search: {elementId: 'task_1'}}),
+			expectedPathname: `/operate/processes/${INSTANCE_ID}/details`,
+			expectedSearch: {elementId: 'task_1'},
+		},
+		{
+			name: 'navigating away with unrelated search',
+			act: ({router}: LoadedPage) => router.history.push('/operate/missing?isMultiInstanceBody=invalid'),
+			expectedPathname: '/operate/missing',
+			expectedSearch: {isMultiInstanceBody: 'invalid'},
+		},
+	])('should ignore a drilldown response after $name', async ({act, expectedPathname, expectedSearch}, {worker}) => {
 		let release: () => void = () => {};
 		let hasRequested = false;
 		const delayedResponse = new Promise<void>((resolve) => {
@@ -851,25 +883,10 @@ describe('<InstanceDiagram />', () => {
 		await userEvent.dblClick(document.querySelector<SVGElement>('[data-element-id="call_1"]')!);
 		await expect.poll(() => hasRequested).toBe(true);
 
-		if (action === 'changing process instances') {
-			await screen.router.navigate({
-				to: '/operate/processes/$processInstanceId/details',
-				params: {processInstanceId: 'instance-2'},
-				search: {},
-			});
-		} else if (action === 'changing process instances with retained selection') {
-			screen.router.history.push('/operate/processes/instance-2/details?elementId=task_1');
-		} else if (action === 'navigating away with unrelated search') {
-			screen.router.history.push('/operate/missing?isMultiInstanceBody=invalid');
-			await expect.poll(() => screen.router.state.location.pathname).toBe('/operate/missing');
-		} else if (action === 'navigating to a different selection') {
-			await screen.router.navigate({to: '.', search: {elementId: 'task_1'}});
-		} else {
-			await userEvent.click(document.querySelector<SVGElement>('[data-element-id="task_1"]')!);
-			await expect
-				.poll(() => processInstanceSearchSchema.parse(screen.router.state.location.search).elementId)
-				.toBe('task_1');
-		}
+		await act(screen);
+
+		await expect.poll(() => screen.router.state.location.pathname).toBe(expectedPathname);
+		await expect.poll(() => screen.router.state.location.search).toEqual(expectedSearch);
 		release();
 		await expect
 			.poll(
@@ -877,28 +894,8 @@ describe('<InstanceDiagram />', () => {
 			)
 			.toBe('idle');
 		await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-		expect(screen.router.state.location.pathname).toBe(
-			action === 'changing process instances' || action === 'changing process instances with retained selection'
-				? '/operate/processes/instance-2/details'
-				: action === 'navigating away with unrelated search'
-					? '/operate/missing'
-					: `/operate/processes/${INSTANCE_ID}/details`,
-		);
-		if (action === 'navigating away with unrelated search') {
-			expect(screen.router.state.location.search).toMatchObject({isMultiInstanceBody: 'invalid'});
-		} else {
-			expect(processInstanceSearchSchema.parse(screen.router.state.location.search).elementId).toBe(
-				action === 'changing process instances' || action === 'changing process instances with retained selection'
-					? undefined
-					: 'task_1',
-			);
-		}
-		if (
-			action === 'selecting a different element' ||
-			action === 'navigating to a different selection' ||
-			action === 'changing process instances with retained selection'
-		) {
-			expect(screen.queryClient.getQueryData(['instanceDiagramCalledProcess', 'element-1'])).toBeUndefined();
-		}
+		expect(screen.router.state.location.pathname).toBe(expectedPathname);
+		expect(screen.router.state.location.search).toEqual(expectedSearch);
+		expect(screen.queryClient.getQueryData(['instanceDiagramCalledProcess', 'element-1'])).toBeUndefined();
 	});
 });

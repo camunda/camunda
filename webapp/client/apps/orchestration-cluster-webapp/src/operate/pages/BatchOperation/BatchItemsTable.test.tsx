@@ -81,9 +81,8 @@ describe('<BatchItemsTable />', () => {
 	it.for([
 		{state: 'ACTIVE', processInstanceKey: '2251799813685601'},
 		{state: 'FAILED', processInstanceKey: '2251799813685602'},
-		{state: 'COMPLETED', processInstanceKey: '2251799813685603'},
 	] as const)(
-		'should highlight only completed items when the item state is $state and no error message is present',
+		'should not highlight the item when the item state is $state and no error message is present',
 		async ({state, processInstanceKey}, {worker}) => {
 			worker.use(
 				mockQueryBatchOperationItemsEndpoint({
@@ -100,13 +99,32 @@ describe('<BatchItemsTable />', () => {
 			});
 
 			await expect.element(row).toBeVisible();
-			if (state === 'COMPLETED') {
-				await expect.poll(() => getComputedStyle(row.element()).boxShadow).not.toBe('none');
-			} else {
-				await expect.poll(() => getComputedStyle(row.element()).boxShadow).toBe('none');
-			}
+			await expect.poll(() => getComputedStyle(row.element()).boxShadow).toBe('none');
 		},
 	);
+
+	it('should highlight the item when the item state is COMPLETED and no error message is present', async ({worker}) => {
+		worker.use(
+			mockQueryBatchOperationItemsEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryBatchOperationItemsResponse({
+						items: [
+							createBatchOperationItem({
+								state: 'COMPLETED',
+								processInstanceKey: '2251799813685603',
+								errorMessage: null,
+							}),
+						],
+					}),
+				),
+			}),
+		);
+		const screen = await renderBatchItemsTable('MIGRATE_PROCESS_INSTANCE');
+		const row = screen.getByRole('row', {name: /View process instance 2251799813685603/});
+
+		await expect.element(row).toBeVisible();
+		await expect.poll(() => getComputedStyle(row.element()).boxShadow).not.toBe('none');
+	});
 
 	it('should show a skeleton instead of the empty state until the first response arrives', async ({worker}) => {
 		worker.use(

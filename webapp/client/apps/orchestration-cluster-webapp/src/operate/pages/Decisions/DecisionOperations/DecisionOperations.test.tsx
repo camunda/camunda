@@ -109,34 +109,37 @@ describe('<DecisionOperations />', () => {
 			name: 'a forbidden response',
 			response: new HttpResponse(null, {status: 403}),
 			title: "You don't have permission to perform this operation",
-			subtitle: 'Contact the administrator if you need access.',
 		},
 		{
 			name: 'a server error',
 			response: new HttpResponse(null, {status: 500}),
 			title: "Couldn't create operation",
-			subtitle: undefined,
 		},
 		{
 			name: 'a network error',
 			response: HttpResponse.error(),
 			title: "Couldn't create operation",
-			subtitle: undefined,
 		},
-	])('should recover from $name without changing the selection', async ({response, title, subtitle}, {worker}) => {
+	])('should recover from $name without changing the selection', async ({response, title}, {worker}) => {
 		worker.use(mockDeleteResourceEndpoint({successResponse: response}));
 		const screen = await renderOperations();
 		await submit(screen);
 
 		await expect.element(screen.getByText(title, {exact: true})).toBeVisible();
-		if (subtitle !== undefined) {
-			await expect.element(screen.getByText(subtitle)).toBeVisible();
-		}
 		await expect.element(screen.getByRole('button', {name: ACTION_NAME})).toBeEnabled();
 		expect(screen.router.state.location.href).toBe(INITIAL_ENTRY);
 
 		worker.use(mockDeleteResourceEndpoint({successResponse: HttpResponse.json({})}));
 		await submit(screen);
 		await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
+	});
+
+	it('should tell the user how to get access after a forbidden response', async ({worker}) => {
+		worker.use(mockDeleteResourceEndpoint({successResponse: new HttpResponse(null, {status: 403})}));
+		const screen = await renderOperations();
+
+		await submit(screen);
+
+		await expect.element(screen.getByText('Contact the administrator if you need access.')).toBeVisible();
 	});
 });

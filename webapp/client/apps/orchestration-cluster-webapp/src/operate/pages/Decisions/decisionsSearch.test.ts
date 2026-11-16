@@ -21,51 +21,50 @@ describe('validateDecisionsSearch', () => {
 				decisionDefinitionVersion: 'all',
 				tenantId: 'tenant-a',
 			},
-			states: ['EVALUATED'],
 			version: undefined,
+			tenantId: 'tenant-a',
+			filter: {state: {$in: ['EVALUATED']}, decisionDefinitionId: 'invoice', tenantId: 'tenant-a'},
 		},
 		{
 			name: 'failed-only bookmark',
 			search: {failed: true, decisionDefinitionId: 'invoice', decisionDefinitionVersion: 3, tenantId: 'tenant-a'},
-			states: ['FAILED'],
 			version: 3,
+			tenantId: 'tenant-a',
+			filter: {
+				state: {$in: ['FAILED']},
+				decisionDefinitionId: 'invoice',
+				decisionDefinitionVersion: 3,
+				tenantId: 'tenant-a',
+			},
 		},
 		{
 			name: 'no-state bookmark',
 			search: {decisionDefinitionId: 'invoice', decisionDefinitionVersion: 'all', tenantId: 'tenant-a'},
-			states: [],
 			version: undefined,
+			tenantId: 'tenant-a',
+			filter: undefined,
 		},
-		{name: 'bare legacy URL', search: {}, states: [], version: undefined},
+		{name: 'bare legacy URL', search: {}, version: undefined, tenantId: undefined, filter: undefined},
 		{
 			name: 'unified explicit selection',
 			search: {evaluated: true, failed: true, decisionDefinitionId: 'invoice', decisionDefinitionVersion: 3},
-			states: ['EVALUATED', 'FAILED'],
 			version: 3,
+			tenantId: undefined,
+			filter: {state: {$in: ['EVALUATED', 'FAILED']}, decisionDefinitionId: 'invoice', decisionDefinitionVersion: 3},
 		},
 		{
 			name: 'unified explicit false selection',
 			search: {evaluated: false, failed: true, decisionDefinitionId: 'invoice'},
-			states: ['FAILED'],
 			version: undefined,
+			tenantId: undefined,
+			filter: {state: {$in: ['FAILED']}, decisionDefinitionId: 'invoice'},
 		},
-	] as const)('should preserve $name', ({search, states, version}) => {
+	] as const)('should preserve $name', ({search, version, tenantId, filter}) => {
 		const parsed = validateDecisionsSearch(search);
 
 		expect(parsed.decisionDefinitionVersion).toBe(version);
-		if (states.length === 0) {
-			expect(mapDecisionInstancesFilter(parsed)).toBeUndefined();
-		} else {
-			expect(mapDecisionInstancesFilter(parsed)).toMatchObject({
-				state: {$in: states},
-				decisionDefinitionId: 'invoice',
-				decisionDefinitionVersion: version,
-				...('tenantId' in search ? {tenantId: 'tenant-a'} : {}),
-			});
-		}
-		if ('tenantId' in search) {
-			expect(parsed.tenantId).toBe('tenant-a');
-		}
+		expect(parsed.tenantId).toBe(tenantId);
+		expect(mapDecisionInstancesFilter(parsed)).toEqual(filter);
 	});
 
 	it.for([

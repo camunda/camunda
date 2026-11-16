@@ -309,17 +309,32 @@ describe('<VariablesPanel />', () => {
 		}
 	});
 
-	it.for([
-		{name: 'no inputs', evaluatedInputs: []},
-		{name: 'existing inputs', evaluatedInputs: [{inputId: 'failed-in', inputName: 'Age', inputValue: '42'}]},
-	])('should show the failed-evaluation empty states with $name', async ({evaluatedInputs}, {worker}) => {
+	it('should show the failed-evaluation empty states with no inputs', async ({worker}) => {
+		worker.use(
+			mockGetDecisionInstanceEndpoint({
+				successResponse: HttpResponse.json(
+					createDecisionInstance({decisionEvaluationInstanceKey: TABLE_ID, state: 'FAILED', evaluatedInputs: []}),
+				),
+			}),
+		);
+
+		const screen = await renderPanel();
+
+		await expect.element(screen.getByText('No output available because the evaluation failed')).toBeVisible();
+		await expect.element(screen.getByText('No input available because the evaluation failed')).toBeVisible();
+
+		await userEvent.click(screen.getByRole('tab', {name: 'Result'}));
+		await expect.element(screen.getByText('No result available because the evaluation failed')).toBeVisible();
+	});
+
+	it('should keep the evaluated inputs of a failed evaluation', async ({worker}) => {
 		worker.use(
 			mockGetDecisionInstanceEndpoint({
 				successResponse: HttpResponse.json(
 					createDecisionInstance({
 						decisionEvaluationInstanceKey: TABLE_ID,
 						state: 'FAILED',
-						evaluatedInputs,
+						evaluatedInputs: [{inputId: 'failed-in', inputName: 'Age', inputValue: '42'}],
 					}),
 				),
 			}),
@@ -328,14 +343,8 @@ describe('<VariablesPanel />', () => {
 		const screen = await renderPanel();
 
 		await expect.element(screen.getByText('No output available because the evaluation failed')).toBeVisible();
-		if (evaluatedInputs.length === 0) {
-			await expect.element(screen.getByText('No input available because the evaluation failed')).toBeVisible();
-		} else {
-			await expect.element(screen.getByText('Age')).toBeVisible();
-			await expect
-				.element(screen.getByText('No input available because the evaluation failed'))
-				.not.toBeInTheDocument();
-		}
+		await expect.element(screen.getByText('Age')).toBeVisible();
+		await expect.element(screen.getByText('No input available because the evaluation failed')).not.toBeInTheDocument();
 
 		await userEvent.click(screen.getByRole('tab', {name: 'Result'}));
 		await expect.element(screen.getByText('No result available because the evaluation failed')).toBeVisible();

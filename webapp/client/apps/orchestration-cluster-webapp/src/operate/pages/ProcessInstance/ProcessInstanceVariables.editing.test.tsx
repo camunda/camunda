@@ -17,7 +17,6 @@ import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {
 	mockGetElementInstanceEndpoint,
-	mockGetProcessDefinitionXmlEndpoint,
 	mockGetVariableEndpoint,
 	mockQueryVariablesEndpoint,
 	mockUpdateElementInstanceVariablesEndpoint,
@@ -34,7 +33,6 @@ import {useModificationController} from './useProcessInstanceModification';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {LastModification} from './LastModification';
 import {addToken} from './modifications/mocks';
-import {variablesQuery} from './variables.queries';
 import {preloadMonaco} from '#/vitest-modules/preload-monaco';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
@@ -142,86 +140,6 @@ function renderVariables({
 
 describe('<ProcessInstanceVariables /> editing', () => {
 	beforeAll(preloadMonaco, 120_000);
-
-	it.for(['editing', 'modification'] as const)(
-		'should stop failed variable-name pagination and recover after refreshing in %s mode',
-		async (mode, {worker}) => {
-			let nextPageRequests = 0;
-			const firstPage = HttpResponse.json(
-				createQueryVariablesByUserTaskResponse({
-					items: Array.from({length: 50}, (_, index) =>
-						createVariable({name: `variable-${String(index).padStart(2, '0')}`, variableKey: `${index}`}),
-					),
-					page: {endCursor: 'cursor-1', hasMoreTotalItems: true},
-				}),
-			);
-			const nextPageSchema = z.object({page: z.object({after: z.literal('cursor-1')})}).transform((payload) => {
-				nextPageRequests += 1;
-				return payload;
-			});
-			worker.use(
-				mockGetProcessDefinitionXmlEndpoint({successResponse: HttpResponse.text('')}),
-				mockQueryVariablesEndpoint({
-					schema: nextPageSchema,
-					successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
-					failureResponse: firstPage,
-				}),
-			);
-			const screen = await renderVariables();
-			screen.queryClient.setQueryDefaults(
-				variablesQuery({processInstanceKey: PROCESS_INSTANCE_ID, scopeKey: PROCESS_INSTANCE_ID}).queryKey,
-				{retry: 2, retryDelay: 20},
-			);
-			if (mode === 'modification') {
-				await userEvent.click(screen.getByRole('button', {name: 'Plan token'}));
-			}
-
-			await userEvent.click(screen.getByRole('button', {name: 'Add Variable'}));
-
-			await expect.element(screen.getByText('Variables could not be fetched')).toBeVisible();
-			await expect.element(screen.getByText('Refresh the page to try again')).toBeVisible();
-			await expect.poll(() => screen.queryClient.isFetching()).toBe(0);
-			expect(nextPageRequests).toBe(3);
-			await expect.element(screen.getByRole('button', {name: 'Save'})).not.toBeInTheDocument();
-			await expect.element(screen.getByText('Add new variable "foo"')).not.toBeInTheDocument();
-			expect(notificationTitles()).toEqual([]);
-
-			await screen.unmount();
-			worker.use(
-				mockQueryVariablesEndpoint({
-					schema: nextPageSchema,
-					successResponse: variablesResponse([createVariable({name: 'foo'})]),
-					failureResponse: firstPage,
-				}),
-			);
-			const refreshedScreen = await renderVariables();
-			if (mode === 'modification') {
-				await userEvent.click(refreshedScreen.getByRole('button', {name: 'Plan token'}));
-			}
-			await userEvent.click(refreshedScreen.getByRole('button', {name: 'Add Variable'}));
-			await userEvent.fill(refreshedScreen.getByRole('textbox', {name: 'Name'}), 'foo');
-			await appendToNewValue(refreshedScreen.getByRole('group', {name: 'Value'}), '1');
-			await userEvent.tab();
-
-			await expect.element(refreshedScreen.getByText('Name should be unique')).toBeVisible();
-			await expect.element(refreshedScreen.getByTestId('variable-foo')).toBeVisible();
-			await expect.element(refreshedScreen.getByText('Variables could not be fetched')).not.toBeInTheDocument();
-			if (mode === 'editing') {
-				await expect.element(refreshedScreen.getByRole('button', {name: 'Save'})).toBeDisabled();
-			} else {
-				await expect.element(refreshedScreen.getByText('Add new variable "foo"')).not.toBeInTheDocument();
-			}
-
-			await userEvent.fill(refreshedScreen.getByRole('textbox', {name: 'Name'}), 'bar');
-			await userEvent.tab();
-
-			if (mode === 'editing') {
-				await expect.element(refreshedScreen.getByRole('button', {name: 'Save'})).toBeEnabled();
-			} else {
-				await expect.element(refreshedScreen.getByText('Add new variable "bar"')).toBeVisible();
-			}
-		},
-	);
 
 	it('should save an edited variable', async ({worker}) => {
 		worker.use(

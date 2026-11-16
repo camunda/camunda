@@ -289,15 +289,13 @@ describe('<ProcessOperations /> (design system)', () => {
 			name: 'a forbidden response',
 			response: new HttpResponse(null, {status: 403}),
 			title: "You don't have permission to perform this operation",
-			subtitle: 'Contact the administrator if you need access.',
 		},
 		{
 			name: 'a server error',
 			response: new HttpResponse(null, {status: 500}),
 			title: "Couldn't create operation",
-			subtitle: undefined,
 		},
-	])('should notify about $name and allow another attempt', async ({response, title, subtitle}, {worker}) => {
+	])('should notify about $name and allow another attempt', async ({response, title}, {worker}) => {
 		worker.use(
 			mockDrainingDefinitions(),
 			mockRunningInstancesCount(0),
@@ -308,9 +306,6 @@ describe('<ProcessOperations /> (design system)', () => {
 		await confirmDeletion(screen);
 
 		await expect.element(screen.getByText(title, {exact: true})).toBeVisible();
-		if (subtitle !== undefined) {
-			await expect.element(screen.getByText(subtitle, {exact: true})).toBeVisible();
-		}
 		await expect.element(screen.getByText('Operation created', {exact: true})).not.toBeInTheDocument();
 		await expect.element(screen.getByRole('button', {name: ACTION_NAME})).toBeEnabled();
 
@@ -322,5 +317,20 @@ describe('<ProcessOperations /> (design system)', () => {
 		await confirmDeletion(screen);
 
 		await expect.element(screen.getByText('Operation created', {exact: true})).toBeVisible();
+	});
+
+	it('should tell the user how to get access after a forbidden response', async ({worker}) => {
+		worker.use(
+			mockDrainingDefinitions(),
+			mockRunningInstancesCount(0),
+			mockDeleteResourceEndpoint({successResponse: new HttpResponse(null, {status: 403})}),
+		);
+		const screen = await renderOperations();
+
+		await confirmDeletion(screen);
+
+		await expect
+			.element(screen.getByText('Contact the administrator if you need access.', {exact: true}))
+			.toBeVisible();
 	});
 });

@@ -254,17 +254,28 @@ describe('Processes bulk toolbar', () => {
 			await userEvent.click(screen.getByRole('button', {name: action, exact: true}));
 			const modal = screen.getByRole('dialog');
 			await expect.element(modal.getByText(message, {exact: false})).toBeVisible();
-			if (action === 'Cancel') {
-				await expect
-					.element(modal.getByText('In case there are called instances, these will be canceled too.', {exact: false}))
-					.toBeVisible();
-			}
 			await userEvent.click(modal.getByRole('button', {name: action === 'Delete' ? 'Delete' : 'Apply', exact: true}));
 			await expect.element(screen.getByText(`The batch operation "${operationLabel}" has been started`)).toBeVisible();
 			await expect.element(screen.getByRole('button', {name: 'Go to operation details'})).toBeVisible();
 			await expect.element(screen.getByRole('checkbox', {name: 'Select instance 1', exact: true})).not.toBeChecked();
 		},
 	);
+
+	it('should warn that called instances are canceled too before confirming Cancel', async ({worker}) => {
+		worker.use(...list());
+		const screen = await renderTable();
+		await select(screen, '1');
+
+		await userEvent.click(screen.getByRole('button', {name: 'Cancel', exact: true}));
+
+		await expect
+			.element(
+				screen
+					.getByRole('dialog')
+					.getByText('In case there are called instances, these will be canceled too.', {exact: false}),
+			)
+			.toBeVisible();
+	});
 
 	it('should confirm and submit Resume for the checked suspended instance only', async ({worker}) => {
 		worker.use(
