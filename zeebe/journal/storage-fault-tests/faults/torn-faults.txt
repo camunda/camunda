@@ -1,0 +1,11 @@
+tornop-cur-keep1of3|lazyfs::torn-op::file={CUR}::parts=3::persist=1
+tornop-cur-keep2of3|lazyfs::torn-op::file={CUR}::parts=3::persist=2
+tornop-cur-keep3of3|lazyfs::torn-op::file={CUR}::parts=3::persist=3
+tornop-cur-keep1+3of3|lazyfs::torn-op::file={CUR}::parts=3::persist=1,3
+tornop-next-keep1of3|lazyfs::torn-op::file={NEXT}::parts=3::persist=1
+tornop-next-keep3of3|lazyfs::torn-op::file={NEXT}::parts=3::persist=3
+tornseq-cur-keep2nd|lazyfs::torn-seq::file={CUR}::op=write::persist=2
+tornseq-cur-keep3rd|lazyfs::torn-seq::file={CUR}::op=write::persist=3
+tornseq-cur-keep2nd+3rd|lazyfs::torn-seq::file={CUR}::op=write::persist=2,3
+tornop-meta-keephigh|lazyfs::torn-op::file={META}::parts_bytes=4,4::persist=1
+tornop-meta-keeplow|lazyfs::torn-op::file={META}::parts_bytes=4,4::persist=2

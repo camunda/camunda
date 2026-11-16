@@ -1,0 +1,8 @@
+# outputs written by the scripts when this directory is mounted at /work
+logs-*/
+broker/logs-*/
+sweep-keep/
+fsyncgate-logs/
+*.out
+*.log
+hs_err_*.log

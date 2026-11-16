@@ -1,0 +1,8 @@
+<Configuration status="WARN">
+  <Appenders><Console name="c" target="SYSTEM_OUT"><PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %c{1} - %msg%n"/></Console></Appenders>
+  <Loggers>
+    <Logger name="io.camunda.zeebe.journal.file.SegmentWriter" level="TRACE"/>
+    <Logger name="io.camunda.zeebe.journal.file.SegmentsManager" level="DEBUG"/>
+    <Root level="WARN"><AppenderRef ref="c"/></Root>
+  </Loggers>
+</Configuration>

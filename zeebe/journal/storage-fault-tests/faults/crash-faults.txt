@@ -1,0 +1,13 @@
+fsync-before-log|lazyfs::crash::timing=before::op=fsync::from_rgx=journal-
+fsync-after-log|lazyfs::crash::timing=after::op=fsync::from_rgx=journal-
+write-before-log|lazyfs::crash::timing=before::op=write::from_rgx=journal-
+write-after-log|lazyfs::crash::timing=after::op=write::from_rgx=journal-
+write-before-meta|lazyfs::crash::timing=before::op=write::from_rgx=journal.meta
+write-after-meta|lazyfs::crash::timing=after::op=write::from_rgx=journal.meta
+create-before-log|lazyfs::crash::timing=before::op=create::from_rgx=journal-
+create-after-log|lazyfs::crash::timing=after::op=create::from_rgx=journal-
+rename-before|lazyfs::crash::timing=before::op=rename::from_rgx=journal-
+rename-after|lazyfs::crash::timing=after::op=rename::from_rgx=journal-
+unlink-before-log|lazyfs::crash::timing=before::op=unlink::from_rgx=journal-
+unlink-after-log|lazyfs::crash::timing=after::op=unlink::from_rgx=journal-
+truncate-before-log|lazyfs::crash::timing=before::op=truncate::from_rgx=journal-
