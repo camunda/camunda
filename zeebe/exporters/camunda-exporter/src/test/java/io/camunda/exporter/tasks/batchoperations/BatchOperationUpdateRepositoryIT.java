@@ -184,7 +184,12 @@ abstract class BatchOperationUpdateRepositoryIT {
       assertThat(documents)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.list(NotFinishedBatchOperation.class))
-          .containsExactly(new NotFinishedBatchOperation("3", BatchOperationState.ACTIVE, 5));
+          .containsExactly(
+              new NotFinishedBatchOperation(
+                  "3",
+                  batchOperationTemplate.getFullQualifiedName(),
+                  BatchOperationState.ACTIVE,
+                  5));
     }
 
     @Test
@@ -200,7 +205,12 @@ abstract class BatchOperationUpdateRepositoryIT {
       assertThat(documents)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.list(NotFinishedBatchOperation.class))
-          .containsExactly(new NotFinishedBatchOperation("1", BatchOperationState.COMPLETED, 0));
+          .containsExactly(
+              new NotFinishedBatchOperation(
+                  "1",
+                  batchOperationTemplate.getFullQualifiedName(),
+                  BatchOperationState.COMPLETED,
+                  0));
     }
 
     @Test
@@ -353,9 +363,12 @@ abstract class BatchOperationUpdateRepositoryIT {
       final var updated =
           repository.bulkUpdate(
               List.of(
-                  new DocumentUpdate("1", 2, 0, 2, 2),
-                  new DocumentUpdate("2", 2, 0, 2, 2),
-                  new DocumentUpdate("3", 50, 0, 50, 50)));
+                  new DocumentUpdate(
+                      "1", batchOperationTemplate.getFullQualifiedName(), 2, 0, 2, 2),
+                  new DocumentUpdate(
+                      "2", batchOperationTemplate.getFullQualifiedName(), 2, 0, 2, 2),
+                  new DocumentUpdate(
+                      "3", batchOperationTemplate.getFullQualifiedName(), 50, 0, 50, 50)));
 
       // then
       assertThat(updated)
@@ -392,7 +405,11 @@ abstract class BatchOperationUpdateRepositoryIT {
       createBatchOperationEntity("1", 0, BatchOperationState.COMPLETED);
 
       // when
-      final var updated = repository.bulkUpdate(List.of(new DocumentUpdate("1", 0, 0, 0, 0)));
+      final var updated =
+          repository.bulkUpdate(
+              List.of(
+                  new DocumentUpdate(
+                      "1", batchOperationTemplate.getFullQualifiedName(), 0, 0, 0, 0)));
 
       // then
       assertThat(updated)

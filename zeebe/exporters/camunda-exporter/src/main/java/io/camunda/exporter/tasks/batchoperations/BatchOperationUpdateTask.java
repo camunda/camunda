@@ -123,12 +123,13 @@ public class BatchOperationUpdateTask implements BackgroundTask {
         updates.add(
             new DocumentUpdate(
                 batchOperation.id(),
+                batchOperation.index(),
                 counts.getFinishedOperationsCount(),
                 counts.getFailedOperationsCount(),
                 counts.getCompletedOperationsCount(),
                 counts.getTotalOperationsCount()));
       } else if (canBeFinalizedWithoutOperations(batchOperation)) {
-        updates.add(new DocumentUpdate(batchOperation.id(), 0, 0, 0, 0));
+        updates.add(new DocumentUpdate(batchOperation.id(), batchOperation.index(), 0, 0, 0, 0));
       }
     }
 

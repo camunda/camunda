@@ -174,7 +174,7 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
             END_DATE,
             OffsetDateTime.now());
     return new UpdateOperation.Builder<>()
-        .index(batchOperationIndex)
+        .index(update.index())
         .id(update.id())
         .retryOnConflict(RETRY_COUNT)
         .script(getBatchOperationUpdateScript(params))
@@ -210,11 +210,11 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
       final Hit<BatchOperationEntity> hit) {
     final var source = hit.source();
     if (source == null) {
-      return new NotFinishedBatchOperation(hit.id(), null, 0);
+      return new NotFinishedBatchOperation(hit.id(), hit.index(), null, 0);
     }
     final var totalCount = source.getOperationsTotalCount();
     return new NotFinishedBatchOperation(
-        hit.id(), source.getState(), totalCount == null ? 0 : totalCount);
+        hit.id(), hit.index(), source.getState(), totalCount == null ? 0 : totalCount);
   }
 
   private List<OperationsAggData> processAggregations(final SearchResponse<Void> response) {

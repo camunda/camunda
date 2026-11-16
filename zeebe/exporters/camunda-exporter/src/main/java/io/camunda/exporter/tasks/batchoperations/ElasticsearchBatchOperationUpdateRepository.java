@@ -152,11 +152,11 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
       final Hit<BatchOperationEntity> hit) {
     final var source = hit.source();
     if (source == null) {
-      return new NotFinishedBatchOperation(hit.id(), null, 0);
+      return new NotFinishedBatchOperation(hit.id(), hit.index(), null, 0);
     }
     final var totalCount = source.getOperationsTotalCount();
     return new NotFinishedBatchOperation(
-        hit.id(), source.getState(), totalCount == null ? 0 : totalCount);
+        hit.id(), hit.index(), source.getState(), totalCount == null ? 0 : totalCount);
   }
 
   private List<OperationsAggData> processAggregations(final SearchResponse<Void> response) {
@@ -198,7 +198,7 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
 
     logger.trace("ElasticsearchBatchOperationUpdateRepository -> Update params: {}", params);
     return new UpdateOperation.Builder<>()
-        .index(batchOperationIndex)
+        .index(update.index())
         .id(update.id())
         .retryOnConflict(RETRY_COUNT)
         .action(a -> a.script(getBatchOperationUpdateScript(params)))

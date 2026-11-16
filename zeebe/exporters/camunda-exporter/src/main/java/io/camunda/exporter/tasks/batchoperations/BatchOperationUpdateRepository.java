@@ -56,19 +56,23 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
    * decide whether an endDate can be derived for it.
    *
    * @param id the batch operation key
+   * @param index the concrete index the batch operation document was found in; batch operations are
+   *     read across the main and ordinal indices, so updates must target this index
    * @param state the stored state, {@code null} if the document had no readable source
    * @param operationsTotalCount the number of items the engine selected for this batch operation
    */
   record NotFinishedBatchOperation(
-      String id, BatchOperationState state, long operationsTotalCount) {}
+      String id, String index, BatchOperationState state, long operationsTotalCount) {}
 
   /**
    * Represents a specific document store agnostic update to execute.
    *
-   * <p>All fields are expected to be non-null.
+   * <p>All fields are expected to be non-null. {@code index} is the concrete index holding the
+   * batch operation document, as returned in {@link NotFinishedBatchOperation#index()}.
    */
   record DocumentUpdate(
       String id,
+      String index,
       long finishedOperationsCount,
       long failedOperationsCount,
       long completedOperationsCount,
