@@ -283,7 +283,7 @@ test.describe('Operate Process Instance Suspend and Resume', () => {
     // #60873 blocked this outright (fixed by #62745), so the edit is the
     // assertion, not merely an enabled control.
     await operateProcessInstancePage.clickEditVariableButton('approved');
-    await operateProcessInstancePage.clickVariableValueInput();
+    await operateProcessInstancePage.clickVariableValueInput('approved');
     await operateProcessInstancePage.clearVariableValueInput();
     await operateProcessInstancePage.fillVariableValueInput('"yes"');
     await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled({

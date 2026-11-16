@@ -352,7 +352,7 @@ test.describe('Process Instances Table', () => {
     const descendingInstanceIds = [...scrollingInstances]
       .map((instance) => instance.processInstanceKey)
       .sort((a, b) => b - a);
-    const instanceRows = page.getByTestId('data-list').getByRole('row');
+    const instanceRows = operateProcessesPage.processInstancesTable;
 
     await test.step('Select process and sort by instance key DESC', async () => {
       await operateFiltersPanelPage.selectProcess(

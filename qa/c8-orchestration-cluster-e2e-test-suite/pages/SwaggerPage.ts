@@ -109,6 +109,12 @@ export class SwaggerPage {
       .filter({hasText: apiPath})
       .first();
 
+    await expect(async () => {
+      if ((await operation.count()) === 0) {
+        await this.page.mouse.wheel(0, 600);
+      }
+      await expect(operation).toBeAttached({timeout: 500});
+    }).toPass({timeout: 120_000, intervals: [100]});
     await expect(operation).toBeVisible({timeout: 10_000});
 
     return operation;

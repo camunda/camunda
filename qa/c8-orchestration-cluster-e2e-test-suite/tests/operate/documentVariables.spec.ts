@@ -64,9 +64,8 @@ test.describe('Process Instance Document Variables', () => {
   }) => {
     test.slow();
 
-    const documentRow = operateProcessInstancePage.variablesList.getByTestId(
-      `variable-${VARIABLE_NAME}`,
-    );
+    const documentRow =
+      operateProcessInstancePage.getVariableTestId(VARIABLE_NAME);
     const previewButton = documentRow.getByRole('button', {name: 'Preview'});
     const downloadButton = documentRow.getByRole('link', {name: 'Download'});
 

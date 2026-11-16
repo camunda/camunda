@@ -32,15 +32,17 @@ class OperateHomePage {
 
   constructor(page: Page) {
     this.page = page;
-    this.operateBanner = page.getByRole('link', {name: 'Camunda Operate'});
+    this.operateBanner = page.getByRole('link', {
+      name: /^Camunda(?: logo)? Operate$/,
+    });
     this.dashboardLink = page.getByRole('link', {name: 'Dashboard'});
     this.processesTab = page.getByRole('link', {name: 'Processes'}).first();
     this.decisionsTab = page.getByRole('link', {name: 'Decisions'});
     // Matches the toggle before and after @camunda/design-system 0.81, because
     // this suite runs against the published SNAPSHOT image, not the PR build.
-    this.operationsMenuButton = page.getByRole('button', {
-      name: /^(Toggle )?Operations$/,
-    });
+    this.operationsMenuButton = page
+      .getByRole('button', {name: /^(Toggle )?Operations$/})
+      .or(page.getByRole('link', {name: /^Operations$/}));
     this.batchOperationsNavItem = page.getByRole('link', {
       name: 'Batch operations',
     });

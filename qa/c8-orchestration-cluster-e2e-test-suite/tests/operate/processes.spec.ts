@@ -144,9 +144,9 @@ test.describe('Processes', () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(
-            operateProcessesPage.dataList.getByTestId(
-              `INCIDENT-icon-${instanceWithAnIncident.processInstanceKey}`,
-            ),
+            operateProcessesPage
+              .processInstanceRow(instanceWithAnIncident.processInstanceKey)
+              .getByRole('img', {name: 'incident state', exact: true}),
           ).toBeVisible();
         },
         onFailure: async () => {
@@ -155,9 +155,9 @@ test.describe('Processes', () => {
       });
 
       await expect(
-        operateProcessesPage.dataList.getByTestId(
-          `ACTIVE-icon-${instanceWithoutAnIncident.processInstanceKey}`,
-        ),
+        operateProcessesPage
+          .processInstanceRow(instanceWithoutAnIncident.processInstanceKey)
+          .getByRole('img', {name: 'active state', exact: true}),
       ).toBeVisible();
     });
   });
