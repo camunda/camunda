@@ -21,6 +21,7 @@ import io.camunda.application.commons.search.SearchClientConfiguration;
 import io.camunda.application.commons.search.SearchClientReaderConfiguration;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.AnonymousResourceAccessController;
@@ -36,6 +37,8 @@ import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import jakarta.annotation.Resource;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -69,6 +72,27 @@ public class PhysicalTenantSearchClientReadersConfigurationIT {
 
   @Resource(name = "physicalTenantScopedIndexDescriptors")
   private Map<String, IndexDescriptors> tenantDescriptors;
+
+  /**
+   * Simulates an earlier test in the same JVM that ran without secondary storage and left its
+   * legacy {@code none} values in the environment {@link UnifiedConfigurationHelper} holds
+   * statically.
+   */
+  @BeforeAll
+  static void simulateEnvironmentLeftByEarlierTest() {
+    final var leftoverEnvironment = new MockEnvironment();
+    leftoverEnvironment.setProperty("camunda.database.type", "none");
+    leftoverEnvironment.setProperty("camunda.operate.database", "none");
+    leftoverEnvironment.setProperty("camunda.tasklist.database", "none");
+    leftoverEnvironment.setProperty(
+        "zeebe.broker.exporters.camundaexporter.args.connect.type", "none");
+    UnifiedConfigurationHelper.setCustomEnvironment(leftoverEnvironment);
+  }
+
+  @AfterAll
+  static void resetUnifiedConfigurationEnvironment() {
+    UnifiedConfigurationHelper.setCustomEnvironment(null);
+  }
 
   @Test
   void shouldWirePerTenantSearchClientsFromResolver() {
@@ -156,6 +180,10 @@ public class PhysicalTenantSearchClientReadersConfigurationIT {
     @Bean
     @Primary
     PhysicalTenantResolver physicalTenantResolverOverride(final MockEnvironment environment) {
+      // The Camunda getters check legacy properties against the environment that
+      // UnifiedConfigurationHelper holds statically, which an earlier test may still own.
+      // Point it at this test's environment, as the application does with its own.
+      UnifiedConfigurationHelper.setCustomEnvironment(environment);
       return PhysicalTenantResolver.of(environment, new Camunda());
     }
 
