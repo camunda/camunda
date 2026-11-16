@@ -9,8 +9,10 @@ package io.camunda.zeebe.engine.state.asyncrequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.RecordV1s;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
+import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecordV1;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import org.agrona.DirectBuffer;
@@ -38,7 +40,7 @@ final class AsyncRequestMetadataValueSerdeTest {
     // given
     final var v1 = new AsyncRequestMetadataValueV1();
     final var current = new AsyncRequestMetadataValue();
-    v1.wrap(42L, record());
+    v1.wrap(42L, RecordV1s.convert(record(), new AsyncRequestRecordV1()));
     current.wrap(42L, record());
 
     // when
@@ -72,7 +74,7 @@ final class AsyncRequestMetadataValueSerdeTest {
   void shouldReadBytesWrittenByV1() {
     // given
     final var v1 = new AsyncRequestMetadataValueV1();
-    v1.wrap(42L, record());
+    v1.wrap(42L, RecordV1s.convert(record(), new AsyncRequestRecordV1()));
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);
     final var current = new AsyncRequestMetadataValue();

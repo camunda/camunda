@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.state.RecordV1s;
 import io.camunda.zeebe.engine.state.message.MessageSubscription;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -87,7 +88,8 @@ public class DbMigrationStateTest {
         .describedAs("Correlating flag")
         .isFalse();
 
-    assertThaRecordIsPresentInTransientState(migratedSubscriptionInCorrelation.getRecord());
+    assertThaRecordIsPresentInTransientState(
+        RecordV1s.convert(subscriptionInCorrelation.getRecord(), new MessageSubscriptionRecord()));
   }
 
   private MessageSubscription lookupMigratedMessageSubscription(
@@ -194,8 +196,10 @@ public class DbMigrationStateTest {
         .isTrue();
 
     assertThatRecordsArePresentInTransientState(
-        openingProcessMessageSubscription.getRecord(),
-        closingProcessMessageSubscription.getRecord());
+        RecordV1s.convert(
+            openingProcessMessageSubscription.getRecord(), new ProcessMessageSubscriptionRecord()),
+        RecordV1s.convert(
+            closingProcessMessageSubscription.getRecord(), new ProcessMessageSubscriptionRecord()));
   }
 
   private void assertThatRecordsArePresentInTransientState(

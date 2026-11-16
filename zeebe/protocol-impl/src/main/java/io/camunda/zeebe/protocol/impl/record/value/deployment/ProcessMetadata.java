@@ -7,72 +7,71 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
-import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.BPMN_PROCESS_ID_KEY;
-import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.PROCESS_DEFINITION_KEY_KEY;
-import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.VERSION_KEY;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredInt;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * This class is used in the DeploymentRecord, only to send the process meta information back to the
  * user. It is similar to {@link ProcessRecord} except that it doesn't contain the actual resources.
  */
-public final class ProcessMetadata extends UnifiedRecordValue implements ProcessMetadataValue {
-  private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY);
-  private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY);
-  private final LongProperty keyProp = new LongProperty(PROCESS_DEFINITION_KEY_KEY);
-  private final StringProperty resourceNameProp = new StringProperty("resourceName");
-  private final BinaryProperty checksumProp = new BinaryProperty("checksum");
+@MsgpackPojo
+@NullMarked
+public final class ProcessMetadata extends MsgpackBufferValue<ProcessMetadata>
+    implements MsgpackRecordValue, ProcessMetadataValue {
+
+  @Nullable DirectBuffer bpmnProcessId;
+  final RequiredInt version = new RequiredInt();
+  final RequiredLong processDefinitionKey = new RequiredLong();
+  @Nullable DirectBuffer resourceName;
+
+  @MsgpackProperty(binary = true)
+  @Nullable DirectBuffer checksum;
 
   // should be set to true if the process was already deployed - property should not be exported
-  private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
-  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
+  boolean isDuplicate = false;
 
-  public ProcessMetadata() {
-    super(9);
-    declareProperty(bpmnProcessIdProp)
-        .declareProperty(versionProp)
-        .declareProperty(keyProp)
-        .declareProperty(resourceNameProp)
-        .declareProperty(checksumProp)
-        .declareProperty(isDuplicateProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(deploymentKeyProp)
-        .declareProperty(versionTagProp);
-  }
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long deploymentKey = -1L;
+  DirectBuffer versionTag = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+    return bufferAsString(Decoding.required(bpmnProcessId, "bpmnProcessId"));
   }
 
   @Override
   public int getVersion() {
-    return versionProp.getValue();
+    return version.get();
   }
 
   public ProcessMetadata setVersion(final int version) {
-    versionProp.setValue(version);
+    this.version.set(version);
     return this;
   }
 
   @Override
   public String getVersionTag() {
-    return bufferAsString(versionTagProp.getValue());
+    return bufferAsString(versionTag);
   }
 
   @Override
@@ -82,114 +81,112 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
 
   @Override
   public String getResourceName() {
-    return BufferUtil.bufferAsString(resourceNameProp.getValue());
+    return bufferAsString(Decoding.required(resourceName, "resourceName"));
   }
 
   @Override
   public byte[] getChecksum() {
-    return BufferUtil.bufferAsArray(checksumProp.getValue());
+    return BufferUtil.bufferAsArray(Decoding.required(checksum, "checksum"));
   }
 
   public ProcessMetadata setChecksum(final DirectBuffer checksumBuffer) {
-    checksumProp.setValue(checksumBuffer);
+    checksum = new UnsafeBuffer(checksumBuffer, 0, checksumBuffer.capacity());
     return this;
   }
 
   @Override
   public boolean isDuplicate() {
-    return isDuplicateProp.getValue();
+    return isDuplicate;
   }
 
   public ProcessMetadata setDuplicate(final boolean isDuplicate) {
-    isDuplicateProp.setValue(isDuplicate);
+    this.isDuplicate = isDuplicate;
     return this;
   }
 
   @Override
   public long getDeploymentKey() {
-    return deploymentKeyProp.getValue();
+    return deploymentKey;
   }
 
   public ProcessMetadata setDeploymentKey(final long deploymentKey) {
-    deploymentKeyProp.setValue(deploymentKey);
+    this.deploymentKey = deploymentKey;
     return this;
   }
 
   public ProcessMetadata setResourceName(final String resourceName) {
-    resourceNameProp.setValue(resourceName);
+    this.resourceName = BufferUtil.wrapString(resourceName);
     return this;
   }
 
   public ProcessMetadata setResourceName(final DirectBuffer resourceName) {
-    resourceNameProp.setValue(resourceName);
+    this.resourceName = new UnsafeBuffer(resourceName, 0, resourceName.capacity());
     return this;
   }
 
   public ProcessMetadata setVersionTag(final String versionTag) {
-    versionTagProp.setValue(versionTag);
+    this.versionTag = BufferUtil.wrapString(versionTag);
     return this;
   }
 
   public ProcessMetadata setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = BufferUtil.wrapString(bpmnProcessId);
     return this;
   }
 
   public ProcessMetadata setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = new UnsafeBuffer(bpmnProcessId, 0, bpmnProcessId.capacity());
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getChecksumBuffer() {
-    return checksumProp.getValue();
+    return Decoding.required(checksum, "checksum");
   }
 
   @JsonIgnore
   public long getKey() {
-    return keyProp.getValue();
+    return processDefinitionKey.get();
   }
 
   public ProcessMetadata setKey(final long key) {
-    keyProp.setValue(key);
+    processDefinitionKey.set(key);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProp.getValue();
-  }
-
-  @Override
-  @JsonIgnore
-  public int getLength() {
-    return super.getLength();
-  }
-
-  @Override
-  @JsonIgnore
-  public int getEncodedLength() {
-    return super.getEncodedLength();
+    return Decoding.required(bpmnProcessId, "bpmnProcessId");
   }
 
   @JsonIgnore
   public DirectBuffer getResourceNameBuffer() {
-    return resourceNameProp.getValue();
+    return Decoding.required(resourceName, "resourceName");
   }
 
   public ProcessMetadata setBpmnProcessId(
       final DirectBuffer bpmnProcessId, final int offset, final int length) {
-    bpmnProcessIdProp.setValue(bpmnProcessId, offset, length);
+    this.bpmnProcessId = new UnsafeBuffer(bpmnProcessId, offset, length);
     return this;
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public ProcessMetadata setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ProcessMetadata> codec() {
+    return ProcessMetadataCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ProcessMetadata> ops() {
+    return ProcessMetadataOps.INSTANCE;
   }
 }

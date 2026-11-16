@@ -10,43 +10,34 @@ package io.camunda.zeebe.protocol.impl.record.value.tenant;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class TenantRecord extends UnifiedRecordValue implements TenantRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class TenantRecord extends MsgpackBufferValue<TenantRecord>
+    implements MsgpackRecordValue, TenantRecordValue {
   private static final long DEFAULT_KEY = -1;
 
-  // Static StringValue keys to avoid memory waste
-  private static final StringValue TENANT_KEY_KEY = new StringValue("tenantKey");
-  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  private static final StringValue NAME_KEY = new StringValue("name");
-  private static final StringValue DESCRIPTION_KEY = new StringValue("description");
-  private static final StringValue ENTITY_ID_KEY = new StringValue("entityId");
-  private static final StringValue ENTITY_TYPE_KEY = new StringValue("entityType");
-
-  private final LongProperty tenantKeyProp = new LongProperty(TENANT_KEY_KEY, DEFAULT_KEY);
-  private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY);
-  private final StringProperty nameProp = new StringProperty(NAME_KEY, "");
-  private final StringProperty descriptionProp = new StringProperty(DESCRIPTION_KEY, "");
-  private final StringProperty entityIdProp = new StringProperty(ENTITY_ID_KEY, "");
-  private final EnumProperty<EntityType> entityTypeProp =
-      new EnumProperty<>(ENTITY_TYPE_KEY, EntityType.class, EntityType.UNSPECIFIED);
-
-  public TenantRecord() {
-    super(6);
-    declareProperty(tenantKeyProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(nameProp)
-        .declareProperty(descriptionProp)
-        .declareProperty(entityIdProp)
-        .declareProperty(entityTypeProp);
-  }
+  long tenantKey = DEFAULT_KEY;
+  @Nullable DirectBuffer tenantId;
+  DirectBuffer name = Decoding.EMPTY;
+  DirectBuffer description = Decoding.EMPTY;
+  DirectBuffer entityId = Decoding.EMPTY;
+  EntityType entityType = EntityType.UNSPECIFIED;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public TenantRecord copy() {
     final TenantRecord copy = new TenantRecord();
@@ -56,90 +47,100 @@ public final class TenantRecord extends UnifiedRecordValue implements TenantReco
 
   @Override
   public long getTenantKey() {
-    return tenantKeyProp.getValue();
+    return tenantKey;
   }
 
   public TenantRecord setTenantKey(final long tenantKey) {
-    tenantKeyProp.setValue(tenantKey);
+    this.tenantKey = tenantKey;
     return this;
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(Decoding.required(tenantId, "tenantId"));
   }
 
   public TenantRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   public TenantRecord setTenantId(final DirectBuffer tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = tenantId;
     return this;
   }
 
   @Override
   public String getName() {
-    return bufferAsString(nameProp.getValue());
+    return bufferAsString(name);
   }
 
   public TenantRecord setName(final String name) {
-    nameProp.setValue(name);
+    this.name = BufferUtil.wrapString(name);
     return this;
   }
 
   public TenantRecord setName(final DirectBuffer name) {
-    nameProp.setValue(name);
+    this.name = name;
     return this;
   }
 
   @Override
   public String getDescription() {
-    return bufferAsString(descriptionProp.getValue());
+    return bufferAsString(description);
   }
 
   public TenantRecord setDescription(final String description) {
     if (description == null) {
-      descriptionProp.reset();
+      this.description = Decoding.EMPTY;
       return this;
     }
 
-    descriptionProp.setValue(description);
+    this.description = BufferUtil.wrapString(description);
     return this;
   }
 
   @Override
   public String getEntityId() {
-    return bufferAsString(entityIdProp.getValue());
+    return bufferAsString(entityId);
   }
 
   public TenantRecord setEntityId(final String entityId) {
-    entityIdProp.setValue(entityId);
+    this.entityId = BufferUtil.wrapString(entityId);
     return this;
   }
 
   @Override
   public EntityType getEntityType() {
-    return entityTypeProp.getValue();
+    return entityType;
   }
 
   public TenantRecord setEntityType(final EntityType entityType) {
-    entityTypeProp.setValue(entityType);
+    this.entityType = entityType;
     return this;
   }
 
   public boolean hasTenantKey() {
-    return tenantKeyProp.getValue() != -1L;
+    return tenantKey != -1L;
   }
 
   @JsonIgnore
   public DirectBuffer getTenantIdBuffer() {
-    return tenantIdProp.getValue();
+    return Decoding.required(tenantId, "tenantId");
   }
 
   @JsonIgnore
   public DirectBuffer getNameBuffer() {
-    return nameProp.getValue();
+    return name;
+  }
+
+  @Override
+  protected MsgpackCodec<TenantRecord> codec() {
+    return TenantRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<TenantRecord> ops() {
+    return TenantRecordOps.INSTANCE;
   }
 }

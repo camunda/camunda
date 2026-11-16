@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.state.deployment;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecordV1;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -21,19 +21,19 @@ import org.agrona.concurrent.UnsafeBuffer;
  */
 public final class DeploymentRawV1 extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<DeploymentRecord> deploymentRecordProperty =
-      new ObjectProperty<>("deploymentRecord", new DeploymentRecord());
+  private final ObjectProperty<DeploymentRecordV1> deploymentRecordProperty =
+      new ObjectProperty<>("deploymentRecord", new DeploymentRecordV1());
 
   public DeploymentRawV1() {
     super(1);
     declareProperty(deploymentRecordProperty);
   }
 
-  public DeploymentRecord getDeploymentRecord() {
+  public DeploymentRecordV1 getDeploymentRecord() {
     return deploymentRecordProperty.getValue();
   }
 
-  public void setDeploymentRecord(final DeploymentRecord deploymentRecord) {
+  public void setDeploymentRecord(final DeploymentRecordV1 deploymentRecord) {
     final MutableDirectBuffer valueBuffer = new UnsafeBuffer(0, 0);
     final int encodedLength = deploymentRecord.getLength();
     valueBuffer.wrap(new byte[encodedLength]);

@@ -9,8 +9,10 @@ package io.camunda.zeebe.engine.state.globallistener;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.RecordV1s;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecordV1;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import java.nio.charset.StandardCharsets;
@@ -35,7 +37,7 @@ final class PersistedGlobalListenerSerdeTest {
   void shouldWriteTheSameBytesAsV1() {
     // given
     final var v1 = new PersistedGlobalListenerV1();
-    v1.setGlobalListener(populatedRecord());
+    v1.setGlobalListener(RecordV1s.convert(populatedRecord(), new GlobalListenerRecordV1()));
     final var current = new PersistedGlobalListener();
     current.setGlobalListener(populatedRecord());
 
@@ -70,7 +72,7 @@ final class PersistedGlobalListenerSerdeTest {
   void shouldReadBytesWrittenByV1() {
     // given
     final var v1 = new PersistedGlobalListenerV1();
-    v1.setGlobalListener(populatedRecord());
+    v1.setGlobalListener(RecordV1s.convert(populatedRecord(), new GlobalListenerRecordV1()));
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);
     final var current = new PersistedGlobalListener();

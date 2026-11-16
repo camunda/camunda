@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.state.agentdefinition;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.agentdefinition.AgentDefinitionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agentdefinition.AgentDefinitionRecordV1;
 
 /**
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
@@ -18,19 +18,19 @@ import io.camunda.zeebe.protocol.impl.record.value.agentdefinition.AgentDefiniti
  */
 public final class DbAgentDefinitionV1 extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<AgentDefinitionRecord> recordProp =
-      new ObjectProperty<>("agentDefinitionRecord", new AgentDefinitionRecord());
+  private final ObjectProperty<AgentDefinitionRecordV1> recordProp =
+      new ObjectProperty<>("agentDefinitionRecord", new AgentDefinitionRecordV1());
 
   public DbAgentDefinitionV1() {
     super(1);
     declareProperty(recordProp);
   }
 
-  public AgentDefinitionRecord getRecord() {
+  public AgentDefinitionRecordV1 getRecord() {
     return recordProp.getValue();
   }
 
-  public void setRecord(final AgentDefinitionRecord record) {
+  public void setRecord(final AgentDefinitionRecordV1 record) {
     recordProp.getValue().copyFrom(record);
   }
 }

@@ -9,8 +9,10 @@ package io.camunda.zeebe.engine.state.user;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.RecordV1s;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecordV1;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import org.agrona.DirectBuffer;
@@ -31,7 +33,7 @@ final class PersistedUserSerdeTest {
     final var v1 = new PersistedUserV1();
     final var current = new PersistedUser();
     final var user = user("a-user-name-that-is-longer-than-thirty-two-bytes", 4242L);
-    v1.setUser(user);
+    v1.setUser(RecordV1s.convert(user, new UserRecordV1()));
     current.setUser(user);
 
     // when
@@ -50,7 +52,7 @@ final class PersistedUserSerdeTest {
     // given the username, which cannot be written unset, and everything else at its default
     final var v1 = new PersistedUserV1();
     final var current = new PersistedUser();
-    v1.setUser(new UserRecord().setUsername(""));
+    v1.setUser(RecordV1s.convert(new UserRecord().setUsername(""), new UserRecordV1()));
     current.setUser(new UserRecord().setUsername(""));
 
     // when
@@ -67,7 +69,7 @@ final class PersistedUserSerdeTest {
   void shouldReadBytesWrittenByV1() {
     // given
     final var v1 = new PersistedUserV1();
-    v1.setUser(user("user-a", 42L));
+    v1.setUser(RecordV1s.convert(user("user-a", 42L), new UserRecordV1()));
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);
     final var current = new PersistedUser();
@@ -88,7 +90,7 @@ final class PersistedUserSerdeTest {
   void shouldResetTheUserWhenReadFromV1WithDefaults() {
     // given
     final var v1 = new PersistedUserV1();
-    v1.setUser(new UserRecord().setUsername(""));
+    v1.setUser(RecordV1s.convert(new UserRecord().setUsername(""), new UserRecordV1()));
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);
     final var current = new PersistedUser();
@@ -99,7 +101,7 @@ final class PersistedUserSerdeTest {
 
     // then the defaults are back: the same bytes as a fresh V1
     final var fresh = new PersistedUserV1();
-    fresh.setUser(new UserRecord().setUsername(""));
+    fresh.setUser(RecordV1s.convert(new UserRecord().setUsername(""), new UserRecordV1()));
     final var defaults = new ExpandableArrayBuffer();
     final int defaultsLength = fresh.write(defaults, 0);
     final var rewritten = new ExpandableArrayBuffer();

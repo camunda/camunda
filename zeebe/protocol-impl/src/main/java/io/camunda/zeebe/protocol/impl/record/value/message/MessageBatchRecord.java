@@ -7,37 +7,43 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.message;
 
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.value.LongValue;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import org.agrona.collections.LongArrayList;
+import org.jspecify.annotations.NullMarked;
 
-public final class MessageBatchRecord extends UnifiedRecordValue
-    implements MessageBatchRecordValue {
-
-  // Static StringValue key to avoid memory waste
-  private static final StringValue MESSAGE_KEYS_KEY = new StringValue("messageKeys");
+@MsgpackPojo
+@NullMarked
+public final class MessageBatchRecord extends MsgpackBufferValue<MessageBatchRecord>
+    implements MsgpackRecordValue, MessageBatchRecordValue {
 
   // Retained for backwards compatibility: 8.10+ no longer writes message keys onto the batch
   // command (the expiry processor queries the message state directly), but the property is kept so
   // records written by earlier versions still deserialize and the public getMessageKeys() contract
   // holds.
-  private final ArrayProperty<LongValue> messageKeysProp =
-      new ArrayProperty<>(MESSAGE_KEYS_KEY, LongValue::new);
-
-  public MessageBatchRecord() {
-    super(1);
-    declareProperty(messageKeysProp);
-  }
+  final LongArrayList messageKeys = new LongArrayList();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public List<Long> getMessageKeys() {
-    return StreamSupport.stream(messageKeysProp.spliterator(), false)
-        .map(LongValue::getValue)
-        .collect(Collectors.toList());
+    return new ArrayList<>(messageKeys);
+  }
+
+  @Override
+  protected MsgpackCodec<MessageBatchRecord> codec() {
+    return MessageBatchRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<MessageBatchRecord> ops() {
+    return MessageBatchRecordOps.INSTANCE;
   }
 }

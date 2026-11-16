@@ -11,7 +11,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecordV1;
 
 /**
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
@@ -19,9 +19,9 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubs
  */
 public final class MessageStartEventSubscriptionV1 extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<MessageStartEventSubscriptionRecord> recordProp =
+  private final ObjectProperty<MessageStartEventSubscriptionRecordV1> recordProp =
       new ObjectProperty<>(
-          "messageStartEventSubscriptionRecord", new MessageStartEventSubscriptionRecord());
+          "messageStartEventSubscriptionRecord", new MessageStartEventSubscriptionRecordV1());
   private final LongProperty keyProp = new LongProperty("key");
 
   public MessageStartEventSubscriptionV1() {
@@ -29,11 +29,11 @@ public final class MessageStartEventSubscriptionV1 extends UnpackedObject implem
     declareProperty(recordProp).declareProperty(keyProp);
   }
 
-  public MessageStartEventSubscriptionRecord getRecord() {
+  public MessageStartEventSubscriptionRecordV1 getRecord() {
     return recordProp.getValue();
   }
 
-  public void setRecord(final MessageStartEventSubscriptionRecord record) {
+  public void setRecord(final MessageStartEventSubscriptionRecordV1 record) {
     recordProp.getValue().wrap(record);
   }
 

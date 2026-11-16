@@ -11,7 +11,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecordV1;
 
 /**
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
@@ -21,8 +21,8 @@ public final class StoredMessageV1 extends UnpackedObject implements DbValue {
 
   private final LongProperty messageKeyProp = new LongProperty("messageKey");
 
-  private final ObjectProperty<MessageRecord> messageProp =
-      new ObjectProperty<>("message", new MessageRecord());
+  private final ObjectProperty<MessageRecordV1> messageProp =
+      new ObjectProperty<>("message", new MessageRecordV1());
 
   public StoredMessageV1() {
     super(2);
@@ -38,11 +38,11 @@ public final class StoredMessageV1 extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public MessageRecord getMessage() {
+  public MessageRecordV1 getMessage() {
     return messageProp.getValue();
   }
 
-  public StoredMessageV1 setMessage(final MessageRecord record) {
+  public StoredMessageV1 setMessage(final MessageRecordV1 record) {
     messageProp.getValue().wrap(record);
     return this;
   }

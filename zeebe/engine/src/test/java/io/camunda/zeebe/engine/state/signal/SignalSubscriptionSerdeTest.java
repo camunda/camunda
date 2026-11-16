@@ -10,9 +10,11 @@ package io.camunda.zeebe.engine.state.signal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.engine.state.RecordV1s;
 import io.camunda.zeebe.msgpack.MsgpackPropertyException;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecordV1;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import org.agrona.DirectBuffer;
@@ -33,7 +35,7 @@ final class SignalSubscriptionSerdeTest {
     final var v1 = new SignalSubscriptionV1();
     final var current = new SignalSubscription();
     final var record = record("signal-name-that-is-longer-than-thirty-two-bytes");
-    v1.setRecord(record);
+    v1.setRecord(RecordV1s.convert(record, new SignalSubscriptionRecordV1()));
     v1.setKey(4242L);
     current.setRecord(record);
     current.setKey(4242L);
@@ -84,7 +86,7 @@ final class SignalSubscriptionSerdeTest {
   void shouldReadBytesWrittenByV1() {
     // given
     final var v1 = new SignalSubscriptionV1();
-    v1.setRecord(record("signal-a"));
+    v1.setRecord(RecordV1s.convert(record("signal-a"), new SignalSubscriptionRecordV1()));
     v1.setKey(42L);
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);

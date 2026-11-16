@@ -10,9 +10,11 @@ package io.camunda.zeebe.engine.state.message;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.engine.state.RecordV1s;
 import io.camunda.zeebe.msgpack.MsgpackPropertyException;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecordV1;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
@@ -38,7 +40,7 @@ final class MessageStartEventSubscriptionSerdeTest {
             .setMessageName(BufferUtil.wrapString("message-name"))
             .setProcessInstanceKey(5L)
             .setTenantId("tenant-a");
-    v1.setRecord(record);
+    v1.setRecord(RecordV1s.convert(record, new MessageStartEventSubscriptionRecordV1()));
     current.setRecord(record);
     v1.setKey(1L << 40);
     current.setKey(1L << 40);
@@ -70,7 +72,7 @@ final class MessageStartEventSubscriptionSerdeTest {
   void shouldReadBytesWrittenByV1() {
     // given
     final var v1 = new MessageStartEventSubscriptionV1();
-    v1.setRecord(record());
+    v1.setRecord(RecordV1s.convert(record(), new MessageStartEventSubscriptionRecordV1()));
     v1.setKey(42L);
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);

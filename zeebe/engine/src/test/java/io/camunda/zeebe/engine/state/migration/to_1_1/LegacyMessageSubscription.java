@@ -11,12 +11,12 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecordV1;
 
 public final class LegacyMessageSubscription extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<MessageSubscriptionRecord> recordProp =
-      new ObjectProperty<>("record", new MessageSubscriptionRecord());
+  private final ObjectProperty<MessageSubscriptionRecordV1> recordProp =
+      new ObjectProperty<>("record", new MessageSubscriptionRecordV1());
 
   private final LongProperty keyProp = new LongProperty("key");
 
@@ -27,11 +27,11 @@ public final class LegacyMessageSubscription extends UnpackedObject implements D
     declareProperty(recordProp).declareProperty(keyProp).declareProperty(commandSentTimeProp);
   }
 
-  public MessageSubscriptionRecord getRecord() {
+  public MessageSubscriptionRecordV1 getRecord() {
     return recordProp.getValue();
   }
 
-  public LegacyMessageSubscription setRecord(final MessageSubscriptionRecord record) {
+  public LegacyMessageSubscription setRecord(final MessageSubscriptionRecordV1 record) {
     recordProp.getValue().wrap(record);
     return this;
   }

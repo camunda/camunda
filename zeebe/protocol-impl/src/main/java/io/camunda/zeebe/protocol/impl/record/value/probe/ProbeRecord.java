@@ -8,15 +8,18 @@
 package io.camunda.zeebe.protocol.impl.record.value.probe;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobSecretReference;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobSecretReferenceValue;
 import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
@@ -24,125 +27,88 @@ import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
 import io.camunda.zeebe.protocol.record.value.ProbeRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.jspecify.annotations.NullMarked;
 
+@MsgpackPojo
 @NullMarked
-public final class ProbeRecord extends UnifiedRecordValue implements ProbeRecordValue {
+public final class ProbeRecord extends MsgpackBufferValue<ProbeRecord>
+    implements MsgpackRecordValue, ProbeRecordValue {
 
-  // Static StringValue keys to avoid memory waste
-  private static final StringValue PROBE_ID_KEY = new StringValue("probeId");
-  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  private static final StringValue INPUT_EXPRESSION_KEY = new StringValue("inputExpression");
-  private static final StringValue INPUT_KEY = new StringValue("input");
-  private static final StringValue SECRET_REFERENCES_KEY = new StringValue("secretReferences");
-  private static final StringValue REQUEST_TIMEOUT_KEY = new StringValue("requestTimeout");
-  private static final StringValue DEADLINE_KEY = new StringValue("deadline");
-  private static final StringValue WORKER_KEY = new StringValue("worker");
-  private static final StringValue OUTCOME_KEY = new StringValue("outcome");
-  private static final StringValue DATA_KEY = new StringValue("data");
-  private static final StringValue MESSAGE_KEY = new StringValue("message");
-  private static final StringValue END_REASON_KEY = new StringValue("endReason");
+  DirectBuffer probeId = Decoding.EMPTY;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  DirectBuffer inputExpression = Decoding.EMPTY;
 
-  private final StringProperty probeIdProp = new StringProperty(PROBE_ID_KEY, "");
-  private final StringProperty tenantIdProp =
-      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final StringProperty inputExpressionProp = new StringProperty(INPUT_EXPRESSION_KEY, "");
-  private final DocumentProperty inputProp = new DocumentProperty(INPUT_KEY);
-  private final ArrayProperty<JobSecretReference> secretReferencesProp =
-      new ArrayProperty<>(SECRET_REFERENCES_KEY, JobSecretReference::new);
-  private final LongProperty requestTimeoutProp = new LongProperty(REQUEST_TIMEOUT_KEY, 0L);
-  private final LongProperty deadlineProp = new LongProperty(DEADLINE_KEY, -1L);
-  private final StringProperty workerProp = new StringProperty(WORKER_KEY, "");
-  private final EnumProperty<ProbeOutcome> outcomeProp =
-      new EnumProperty<>(OUTCOME_KEY, ProbeOutcome.class, ProbeOutcome.UNSPECIFIED);
-  private final DocumentProperty dataProp = new DocumentProperty(DATA_KEY);
-  private final StringProperty messageProp = new StringProperty(MESSAGE_KEY, "");
-  private final EnumProperty<ProbeEndReason> endReasonProp =
-      new EnumProperty<>(END_REASON_KEY, ProbeEndReason.class, ProbeEndReason.UNSPECIFIED);
+  @MsgpackProperty(document = true)
+  DirectBuffer input = DocumentValue.EMPTY_DOCUMENT;
 
-  public ProbeRecord() {
-    super(12);
-    declareProperty(probeIdProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(inputExpressionProp)
-        .declareProperty(inputProp)
-        .declareProperty(secretReferencesProp)
-        .declareProperty(requestTimeoutProp)
-        .declareProperty(deadlineProp)
-        .declareProperty(workerProp)
-        .declareProperty(outcomeProp)
-        .declareProperty(dataProp)
-        .declareProperty(messageProp)
-        .declareProperty(endReasonProp);
-  }
+  final List<JobSecretReference> secretReferences = new ArrayList<>();
+  long requestTimeout = 0L;
+  long deadline = -1L;
+  DirectBuffer worker = Decoding.EMPTY;
+  ProbeOutcome outcome = ProbeOutcome.UNSPECIFIED;
 
-  /**
-   * Replaces this record's content with a copy of the other record's. Unlike the buffer setters,
-   * which only point at the given buffer, the copy owns its bytes: it stays valid when the other
-   * record is reused, for example when it is backed by a state read.
-   */
-  public ProbeRecord copyFrom(final ProbeRecord record) {
-    final var bytes = new byte[record.getLength()];
-    final var buffer = new UnsafeBuffer(bytes);
-    record.write(buffer, 0);
-    wrap(buffer, 0, bytes.length);
-    return this;
-  }
+  @MsgpackProperty(document = true)
+  DirectBuffer data = DocumentValue.EMPTY_DOCUMENT;
+
+  DirectBuffer message = Decoding.EMPTY;
+  ProbeEndReason endReason = ProbeEndReason.UNSPECIFIED;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getProbeId() {
-    return BufferUtil.bufferAsString(probeIdProp.getValue());
+    return BufferUtil.bufferAsString(probeId);
   }
 
   public ProbeRecord setProbeId(final String probeId) {
-    probeIdProp.setValue(probeId);
+    this.probeId = BufferUtil.wrapString(probeId);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getProbeIdBuffer() {
-    return probeIdProp.getValue();
+    return probeId;
   }
 
   @Override
   public String getInputExpression() {
-    return BufferUtil.bufferAsString(inputExpressionProp.getValue());
+    return BufferUtil.bufferAsString(inputExpression);
   }
 
   public ProbeRecord setInputExpression(final String inputExpression) {
-    inputExpressionProp.setValue(inputExpression);
+    this.inputExpression = BufferUtil.wrapString(inputExpression);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getInputExpressionBuffer() {
-    return inputExpressionProp.getValue();
+    return inputExpression;
   }
 
   @Override
   public Map<String, Object> getInput() {
-    return MsgPackConverter.convertToMap(inputProp.getValue());
+    return MsgPackConverter.convertToMap(input);
   }
 
   public ProbeRecord setInput(final DirectBuffer input) {
-    inputProp.setValue(input);
+    this.input = Decoding.document(input);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getInputBuffer() {
-    return inputProp.getValue();
+    return input;
   }
 
   @Override
   public List<JobSecretReferenceValue> getSecretReferences() {
     // detach copies so the returned list stays valid if this record is reused or reset later
-    return secretReferencesProp.stream()
+    return secretReferences.stream()
         .map(
             element -> {
               final var copy = new JobSecretReference();
@@ -158,82 +124,79 @@ public final class ProbeRecord extends UnifiedRecordValue implements ProbeRecord
    */
   @JsonIgnore
   public ValueArray<JobSecretReference> secretReferences() {
-    return secretReferencesProp;
+    return new SecretReferences(secretReferences);
   }
 
   @JsonIgnore
   public boolean hasSecretReferences() {
-    return !secretReferencesProp.isEmpty();
+    return !secretReferences.isEmpty();
   }
 
   public ProbeRecord addSecretReference(
       final String storeId, final String secretReference, final String path) {
-    secretReferencesProp
-        .add()
-        .setStoreId(storeId)
-        .setSecretReference(secretReference)
-        .setPath(path);
+    final var reference = new JobSecretReference();
+    reference.setStoreId(storeId).setSecretReference(secretReference).setPath(path);
+    secretReferences.add(reference);
     return this;
   }
 
   @Override
   public long getRequestTimeout() {
-    return requestTimeoutProp.getValue();
+    return requestTimeout;
   }
 
   public ProbeRecord setRequestTimeout(final long requestTimeout) {
-    requestTimeoutProp.setValue(requestTimeout);
+    this.requestTimeout = requestTimeout;
     return this;
   }
 
   @Override
   public long getDeadline() {
-    return deadlineProp.getValue();
+    return deadline;
   }
 
   public ProbeRecord setDeadline(final long deadline) {
-    deadlineProp.setValue(deadline);
+    this.deadline = deadline;
     return this;
   }
 
   @Override
   public String getWorker() {
-    return BufferUtil.bufferAsString(workerProp.getValue());
+    return BufferUtil.bufferAsString(worker);
   }
 
   public ProbeRecord setWorker(final String worker) {
-    workerProp.setValue(worker);
+    this.worker = BufferUtil.wrapString(worker);
     return this;
   }
 
   public ProbeRecord setWorker(final DirectBuffer worker) {
-    workerProp.setValue(worker);
+    this.worker = worker;
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getWorkerBuffer() {
-    return workerProp.getValue();
+    return worker;
   }
 
   @Override
   public ProbeOutcome getOutcome() {
-    // never null: the property has a default
-    return Objects.requireNonNull(outcomeProp.getValue());
+    return outcome;
   }
 
   public ProbeRecord setOutcome(final ProbeOutcome outcome) {
-    outcomeProp.setValue(outcome);
+    this.outcome = outcome;
     return this;
   }
 
   @Override
   public Map<String, Object> getData() {
-    return MsgPackConverter.convertToMap(dataProp.getValue());
+    return MsgPackConverter.convertToMap(data);
   }
 
   public ProbeRecord setData(final DirectBuffer data) {
-    dataProp.setValue(data);
+    this.data = Decoding.document(data);
     return this;
   }
 
@@ -242,53 +205,110 @@ public final class ProbeRecord extends UnifiedRecordValue implements ProbeRecord
    * is built from that command must reset it, so the data never reaches an exported event.
    */
   public ProbeRecord resetData() {
-    dataProp.reset();
+    data = DocumentValue.EMPTY_DOCUMENT;
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getDataBuffer() {
-    return dataProp.getValue();
+    return data;
   }
 
   @Override
   public String getMessage() {
-    return BufferUtil.bufferAsString(messageProp.getValue());
+    return BufferUtil.bufferAsString(message);
   }
 
   public ProbeRecord setMessage(final String message) {
-    messageProp.setValue(message);
+    this.message = BufferUtil.wrapString(message);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getMessageBuffer() {
-    return messageProp.getValue();
+    return message;
   }
 
   @Override
   public ProbeEndReason getEndReason() {
-    // never null: the property has a default
-    return Objects.requireNonNull(endReasonProp.getValue());
+    return endReason;
   }
 
   public ProbeRecord setEndReason(final ProbeEndReason endReason) {
-    endReasonProp.setValue(endReason);
+    this.endReason = endReason;
     return this;
   }
 
   @Override
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+    return BufferUtil.bufferAsString(tenantId);
   }
 
   public ProbeRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getTenantIdBuffer() {
-    return tenantIdProp.getValue();
+    return tenantId;
+  }
+
+  @Override
+  protected MsgpackCodec<ProbeRecord> codec() {
+    return ProbeRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ProbeRecord> ops() {
+    return ProbeRecordOps.INSTANCE;
+  }
+
+  private static final class SecretReferences implements ValueArray<JobSecretReference> {
+
+    final List<JobSecretReference> references;
+
+    private SecretReferences(final List<JobSecretReference> references) {
+      this.references = references;
+    }
+
+    @Override
+    public JobSecretReference add() {
+      final var reference = new JobSecretReference();
+      references.add(reference);
+      return reference;
+    }
+
+    @Override
+    public JobSecretReference add(final int index) {
+      final var reference = new JobSecretReference();
+      references.add(index, reference);
+      return reference;
+    }
+
+    @Override
+    public JobSecretReference get(final int index) {
+      return references.get(index);
+    }
+
+    @Override
+    public JobSecretReference remove(final int index) {
+      return references.remove(index);
+    }
+
+    @Override
+    public int size() {
+      return references.size();
+    }
+
+    @Override
+    public Stream<JobSecretReference> stream() {
+      return references.stream();
+    }
+
+    @Override
+    public Iterator<JobSecretReference> iterator() {
+      return references.iterator();
+    }
   }
 }

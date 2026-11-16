@@ -12,7 +12,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecordV1;
 
 /**
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
@@ -20,8 +20,8 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
  */
 public final class ProcessMessageSubscriptionV1 extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<ProcessMessageSubscriptionRecord> recordProp =
-      new ObjectProperty<>("record", new ProcessMessageSubscriptionRecord());
+  private final ObjectProperty<ProcessMessageSubscriptionRecordV1> recordProp =
+      new ObjectProperty<>("record", new ProcessMessageSubscriptionRecordV1());
   private final EnumProperty<State> stateProp =
       new EnumProperty<>("state", State.class, State.STATE_OPENING);
   private final LongProperty keyProp = new LongProperty("key");
@@ -31,11 +31,11 @@ public final class ProcessMessageSubscriptionV1 extends UnpackedObject implement
     declareProperty(recordProp).declareProperty(stateProp).declareProperty(keyProp);
   }
 
-  public ProcessMessageSubscriptionRecord getRecord() {
+  public ProcessMessageSubscriptionRecordV1 getRecord() {
     return recordProp.getValue();
   }
 
-  public ProcessMessageSubscriptionV1 setRecord(final ProcessMessageSubscriptionRecord record) {
+  public ProcessMessageSubscriptionV1 setRecord(final ProcessMessageSubscriptionRecordV1 record) {
     recordProp.getValue().wrap(record);
     return this;
   }

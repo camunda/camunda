@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.state.user;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecordV1;
 
 /**
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
@@ -18,8 +18,8 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
  */
 public final class PersistedUserV1 extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<UserRecord> userProp =
-      new ObjectProperty<>("user", new UserRecord());
+  private final ObjectProperty<UserRecordV1> userProp =
+      new ObjectProperty<>("user", new UserRecordV1());
 
   public PersistedUserV1() {
     super(1);
@@ -32,11 +32,11 @@ public final class PersistedUserV1 extends UnpackedObject implements DbValue {
     return copy;
   }
 
-  public UserRecord getUser() {
+  public UserRecordV1 getUser() {
     return userProp.getValue();
   }
 
-  public void setUser(final UserRecord record) {
+  public void setUser(final UserRecordV1 record) {
     userProp.getValue().copyFrom(record);
   }
 

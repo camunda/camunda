@@ -12,7 +12,7 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecordV1;
 import java.util.Objects;
 
 /**
@@ -23,7 +23,7 @@ import java.util.Objects;
  * as `COMPLETE`, `UPDATE`, `ASSIGN` etc. mainly when task listeners are defined for these
  * operations.
  *
- * <p>The intermediate state includes a {@link UserTaskRecord} that captures the state of the user
+ * <p>The intermediate state includes a {@link UserTaskRecordV1} that captures the state of the user
  * task as it was when the command (e.g., COMPLETE, ASSIGN) was invoked. It also tracks the {@link
  * LifecycleState} of the task, representing the current state in its lifecycle (e.g., COMPLETING,
  * ASSIGNING).
@@ -42,8 +42,8 @@ import java.util.Objects;
  */
 public final class UserTaskIntermediateStateValueV1 extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<UserTaskRecord> recordProp =
-      new ObjectProperty<>("userTaskRecord", new UserTaskRecord());
+  private final ObjectProperty<UserTaskRecordV1> recordProp =
+      new ObjectProperty<>("userTaskRecord", new UserTaskRecordV1());
 
   private final EnumProperty<LifecycleState> lifecycleStateProp =
       new EnumProperty<>("lifecycleState", LifecycleState.class);
@@ -53,11 +53,11 @@ public final class UserTaskIntermediateStateValueV1 extends UnpackedObject imple
     declareProperty(recordProp).declareProperty(lifecycleStateProp);
   }
 
-  public UserTaskRecord getRecord() {
+  public UserTaskRecordV1 getRecord() {
     return recordProp.getValue();
   }
 
-  public void setRecord(final UserTaskRecord record) {
+  public void setRecord(final UserTaskRecordV1 record) {
     recordProp.getValue().wrap(record);
   }
 

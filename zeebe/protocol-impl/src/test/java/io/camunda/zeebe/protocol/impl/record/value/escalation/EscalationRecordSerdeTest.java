@@ -25,21 +25,17 @@ import org.junit.jupiter.api.Test;
  */
 final class EscalationRecordSerdeTest {
 
+  private static final String CODE = "an escalation code that is longer than forty bytes";
+  private static final String THROW_ID = "throwElement";
+  private static final String CATCH_ID = "catchElement";
+
   @Test
   void shouldWriteTheSameBytesAsV1() {
     // given
     final var v1 = new EscalationRecordV1();
     final var current = new EscalationRecord();
-    v1.setProcessInstanceKey(4_294_967_296L);
-    current.setProcessInstanceKey(4_294_967_296L);
-    v1.setEscalationCode("an-escalation-code-that-is-longer-than-32-bytes");
-    current.setEscalationCode("an-escalation-code-that-is-longer-than-32-bytes");
-    v1.setThrowElementId(utf8("throw-element"));
-    current.setThrowElementId(utf8("throw-element"));
-    v1.setCatchElementId(utf8("catch-element"));
-    current.setCatchElementId(utf8("catch-element"));
-    v1.setStorageOrdinal(300);
-    current.setStorageOrdinal(300);
+    setAllProperties(v1);
+    setAllProperties(current);
 
     // when
     final var v1Bytes = new ExpandableArrayBuffer();
@@ -54,7 +50,7 @@ final class EscalationRecordSerdeTest {
 
   @Test
   void shouldWriteTheSameBytesAsV1WithDefaults() {
-    // given
+    // given everything stays default
     final var v1 = new EscalationRecordV1();
     final var current = new EscalationRecord();
 
@@ -72,65 +68,45 @@ final class EscalationRecordSerdeTest {
   void shouldReadBytesWrittenByV1() {
     // given
     final var v1 = new EscalationRecordV1();
-    v1.setProcessInstanceKey(42L);
-    v1.setEscalationCode("code-a");
-    v1.setThrowElementId(utf8("throw-a"));
-    v1.setCatchElementId(utf8("catch-a"));
-    v1.setStorageOrdinal(300);
+    setAllProperties(v1);
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);
     final var current = new EscalationRecord();
-    current.setProcessInstanceKey(7L);
-    current.setEscalationCode("code-b");
-    current.setThrowElementId(utf8("throw-b"));
-    current.setCatchElementId(utf8("catch-b"));
-    current.setStorageOrdinal(5);
+    current
+        .setProcessInstanceKey(7L)
+        .setEscalationCode("dirty")
+        .setThrowElementId(utf8("dirty"))
+        .setCatchElementId(utf8("dirty"))
+        .setStorageOrdinal(5);
 
     // when
     current.wrap(bytes, 0, length);
 
     // then
-    assertThat(current.getProcessInstanceKey()).isEqualTo(42L);
-    assertThat(current.getEscalationCode()).isEqualTo("code-a");
-    assertThat(current.getThrowElementId()).isEqualTo("throw-a");
-    assertThat(current.getCatchElementId()).isEqualTo("catch-a");
-    assertThat(current.getStorageOrdinal()).isEqualTo(300);
+    assertAllProperties(current);
   }
 
   @Test
   void shouldRestoreDefaultsWhenReadingBytesWrittenByV1WithDefaults() {
-    // given
+    // given a value with defaults everywhere
     final var v1 = new EscalationRecordV1();
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);
     final var current = new EscalationRecord();
-    current.setProcessInstanceKey(7L);
-    current.setEscalationCode("code-b");
-    current.setThrowElementId(utf8("throw-b"));
-    current.setCatchElementId(utf8("catch-b"));
-    current.setStorageOrdinal(5);
+    setAllProperties(current);
 
     // when
     current.wrap(bytes, 0, length);
 
     // then
-    final var defaults = new EscalationRecordV1();
-    assertThat(current.getProcessInstanceKey()).isEqualTo(defaults.getProcessInstanceKey());
-    assertThat(current.getEscalationCode()).isEqualTo(defaults.getEscalationCode());
-    assertThat(current.getThrowElementId()).isEqualTo(defaults.getThrowElementId());
-    assertThat(current.getCatchElementId()).isEqualTo(defaults.getCatchElementId());
-    assertThat(current.getStorageOrdinal()).isEqualTo(defaults.getStorageOrdinal());
+    assertDefaultsOf(new EscalationRecordV1(), current);
   }
 
   @Test
   void shouldBeReadByV1() {
     // given
     final var current = new EscalationRecord();
-    current.setProcessInstanceKey(42L);
-    current.setEscalationCode("code-a");
-    current.setThrowElementId(utf8("throw-a"));
-    current.setCatchElementId(utf8("catch-a"));
-    current.setStorageOrdinal(300);
+    setAllProperties(current);
     final var bytes = new ExpandableArrayBuffer();
     final int length = current.write(bytes, 0);
 
@@ -139,18 +115,14 @@ final class EscalationRecordSerdeTest {
     v1.wrap(bytes, 0, length);
 
     // then
-    assertThat(v1.getProcessInstanceKey()).isEqualTo(42L);
-    assertThat(v1.getEscalationCode()).isEqualTo("code-a");
-    assertThat(v1.getThrowElementId()).isEqualTo("throw-a");
-    assertThat(v1.getCatchElementId()).isEqualTo("catch-a");
-    assertThat(v1.getStorageOrdinal()).isEqualTo(300);
+    assertAllProperties(v1);
   }
 
   @Test
   void shouldKeepUnknownPropertiesOfNewerVersions() {
     // given a value that carries a property this version does not know
     final var source = new EscalationRecord();
-    source.setProcessInstanceKey(42L);
+    setAllProperties(source);
     final var stored = new ExpandableArrayBuffer();
     final int storedLength = source.write(stored, 0);
     final var future = new ExpandableArrayBuffer();
@@ -164,7 +136,7 @@ final class EscalationRecordSerdeTest {
     // when read, modified and written again
     final var instance = new EscalationRecord();
     instance.wrap(stored, 0, storedLength + futureLength);
-    instance.setStorageOrdinal(9);
+    instance.setEscalationCode("modified");
     final var rewritten = new ExpandableArrayBuffer();
     final int rewrittenLength = instance.write(rewritten, 0);
 
@@ -178,16 +150,8 @@ final class EscalationRecordSerdeTest {
     // given
     final var v1 = new EscalationRecordV1();
     final var current = new EscalationRecord();
-    v1.setProcessInstanceKey(42L);
-    current.setProcessInstanceKey(42L);
-    v1.setEscalationCode("code-a");
-    current.setEscalationCode("code-a");
-    v1.setThrowElementId(utf8("throw-a"));
-    current.setThrowElementId(utf8("throw-a"));
-    v1.setCatchElementId(utf8("catch-a"));
-    current.setCatchElementId(utf8("catch-a"));
-    v1.setStorageOrdinal(300);
-    current.setStorageOrdinal(300);
+    setAllProperties(v1);
+    setAllProperties(current);
 
     // when
     final var v1Json = v1.toJson();
@@ -197,6 +161,49 @@ final class EscalationRecordSerdeTest {
     // of the properties and it differs between the old and the new class
     final var mapper = new ObjectMapper();
     assertThat(mapper.readTree(currentJson)).isEqualTo(mapper.readTree(v1Json));
+  }
+
+  private static void setAllProperties(final EscalationRecordV1 record) {
+    record
+        .setProcessInstanceKey(42L)
+        .setEscalationCode(CODE)
+        .setThrowElementId(utf8(THROW_ID))
+        .setCatchElementId(utf8(CATCH_ID))
+        .setStorageOrdinal(3);
+  }
+
+  private static void setAllProperties(final EscalationRecord record) {
+    record
+        .setProcessInstanceKey(42L)
+        .setEscalationCode(CODE)
+        .setThrowElementId(utf8(THROW_ID))
+        .setCatchElementId(utf8(CATCH_ID))
+        .setStorageOrdinal(3);
+  }
+
+  private static void assertAllProperties(final EscalationRecordV1 record) {
+    assertThat(record.getProcessInstanceKey()).isEqualTo(42L);
+    assertThat(record.getEscalationCode()).isEqualTo(CODE);
+    assertThat(record.getThrowElementId()).isEqualTo(THROW_ID);
+    assertThat(record.getCatchElementId()).isEqualTo(CATCH_ID);
+    assertThat(record.getStorageOrdinal()).isEqualTo(3);
+  }
+
+  private static void assertAllProperties(final EscalationRecord record) {
+    assertThat(record.getProcessInstanceKey()).isEqualTo(42L);
+    assertThat(record.getEscalationCode()).isEqualTo(CODE);
+    assertThat(record.getThrowElementId()).isEqualTo(THROW_ID);
+    assertThat(record.getCatchElementId()).isEqualTo(CATCH_ID);
+    assertThat(record.getStorageOrdinal()).isEqualTo(3);
+  }
+
+  private static void assertDefaultsOf(
+      final EscalationRecordV1 defaults, final EscalationRecord record) {
+    assertThat(record.getProcessInstanceKey()).isEqualTo(defaults.getProcessInstanceKey());
+    assertThat(record.getEscalationCode()).isEqualTo(defaults.getEscalationCode());
+    assertThat(record.getThrowElementId()).isEqualTo(defaults.getThrowElementId());
+    assertThat(record.getCatchElementId()).isEqualTo(defaults.getCatchElementId());
+    assertThat(record.getStorageOrdinal()).isEqualTo(defaults.getStorageOrdinal());
   }
 
   private static DirectBuffer utf8(final String s) {

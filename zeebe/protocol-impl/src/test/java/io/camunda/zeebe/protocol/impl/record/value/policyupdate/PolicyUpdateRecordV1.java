@@ -15,8 +15,8 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecordV1;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecordV1;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecordV1;
-import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
-import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecordV1;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecordV1;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
@@ -52,12 +52,12 @@ public final class PolicyUpdateRecordV1 extends UnifiedRecordValue
   private final IntegerProperty chunkIndexProp = new IntegerProperty("chunkIndex", -1);
   private final IntegerProperty chunkCountProp = new IntegerProperty("chunkCount", -1);
 
-  private final ArrayProperty<TenantRecord> tenantsProp =
-      new ArrayProperty<>("tenants", TenantRecord::new);
+  private final ArrayProperty<TenantRecordV1> tenantsProp =
+      new ArrayProperty<>("tenants", TenantRecordV1::new);
   private final ArrayProperty<RoleRecordV1> rolesProp =
       new ArrayProperty<>("roles", RoleRecordV1::new);
-  private final ArrayProperty<GroupRecord> groupsProp =
-      new ArrayProperty<>("groups", GroupRecord::new);
+  private final ArrayProperty<GroupRecordV1> groupsProp =
+      new ArrayProperty<>("groups", GroupRecordV1::new);
   private final ArrayProperty<MappingRuleRecordV1> mappingRulesProp =
       new ArrayProperty<>("mappingRules", MappingRuleRecordV1::new);
   private final ArrayProperty<PolicyMembershipEntry> membershipsProp =
@@ -278,7 +278,7 @@ public final class PolicyUpdateRecordV1 extends UnifiedRecordValue
     return this;
   }
 
-  private static void copyTenant(final TenantRecord target, final TenantRecordValue source) {
+  private static void copyTenant(final TenantRecordV1 target, final TenantRecordValue source) {
     target
         .setTenantKey(source.getTenantKey())
         .setTenantId(source.getTenantId())
@@ -298,7 +298,7 @@ public final class PolicyUpdateRecordV1 extends UnifiedRecordValue
         .setEntityType(source.getEntityType());
   }
 
-  private static void copyGroup(final GroupRecord target, final GroupRecordValue source) {
+  private static void copyGroup(final GroupRecordV1 target, final GroupRecordValue source) {
     target
         .setGroupKey(source.getGroupKey())
         .setGroupId(source.getGroupId())

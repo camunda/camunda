@@ -10,66 +10,45 @@ package io.camunda.zeebe.protocol.impl.record.value.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class MessageCorrelationRecord extends UnifiedRecordValue
-    implements MessageCorrelationRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class MessageCorrelationRecord extends MsgpackBufferValue<MessageCorrelationRecord>
+    implements MsgpackRecordValue, MessageCorrelationRecordValue {
 
-  // Static StringValue keys to avoid memory waste
-  private static final StringValue NAME_KEY = new StringValue("name");
-  private static final StringValue CORRELATION_KEY_KEY = new StringValue("correlationKey");
-  private static final StringValue VARIABLES_KEY = new StringValue("variables");
-  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  private static final StringValue MESSAGE_KEY_KEY = new StringValue("messageKey");
-  private static final StringValue REQUEST_ID_KEY = new StringValue("requestId");
-  private static final StringValue REQUEST_STREAM_ID_KEY = new StringValue("requestStreamId");
-  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
-  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
-      new StringValue("processDefinitionKey");
-  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
-  private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
+  @Nullable DirectBuffer name;
+  @Nullable DirectBuffer correlationKey;
 
-  private final StringProperty nameProp = new StringProperty(NAME_KEY);
-  private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY);
-  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
-  private final StringProperty tenantIdProp =
-      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  @MsgpackProperty(document = true)
+  DirectBuffer variables = DocumentValue.EMPTY_DOCUMENT;
 
-  private final LongProperty messageKey = new LongProperty(MESSAGE_KEY_KEY, -1L);
-  private final LongProperty requestIdProp = new LongProperty(REQUEST_ID_KEY, -1L);
-  private final IntegerProperty requestStreamIdProp =
-      new IntegerProperty(REQUEST_STREAM_ID_KEY, -1);
-  private final LongProperty processInstanceKeyProp =
-      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
-  private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
-
-  public MessageCorrelationRecord() {
-    super(11);
-    declareProperty(nameProp)
-        .declareProperty(correlationKeyProp)
-        .declareProperty(variablesProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(messageKey)
-        .declareProperty(requestIdProp)
-        .declareProperty(requestStreamIdProp)
-        .declareProperty(processInstanceKeyProp)
-        .declareProperty(processDefinitionKeyProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(businessIdProp);
-  }
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long messageKey = -1L;
+  long requestId = -1L;
+  int requestStreamId = -1;
+  long processInstanceKey = -1L;
+  long processDefinitionKey = -1L;
+  int storageOrdinal = 0;
+  DirectBuffer businessId = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public void wrap(final MessageCorrelationRecord record) {
     setName(record.getName());
@@ -83,136 +62,146 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
 
   @Override
   public String getName() {
-    return bufferAsString(nameProp.getValue());
+    return bufferAsString(Decoding.required(name, "name"));
   }
 
   @Override
   public String getCorrelationKey() {
-    return bufferAsString(correlationKeyProp.getValue());
+    return bufferAsString(Decoding.required(correlationKey, "correlationKey"));
   }
 
   public MessageCorrelationRecord setCorrelationKey(final String correlationKey) {
-    correlationKeyProp.setValue(correlationKey);
+    this.correlationKey = BufferUtil.wrapString(correlationKey);
     return this;
   }
 
   @Override
   public long getMessageKey() {
-    return messageKey.getValue();
+    return messageKey;
   }
 
   @Override
   public long getRequestId() {
-    return requestIdProp.getValue();
+    return requestId;
   }
 
   @Override
   public int getRequestStreamId() {
-    return requestStreamIdProp.getValue();
+    return requestStreamId;
   }
 
   public MessageCorrelationRecord setRequestStreamId(final int requestStreamId) {
-    requestStreamIdProp.setValue(requestStreamId);
+    this.requestStreamId = requestStreamId;
     return this;
   }
 
   @Override
   public String getBusinessId() {
-    return bufferAsString(businessIdProp.getValue());
+    return bufferAsString(businessId);
   }
 
   public MessageCorrelationRecord setBusinessId(final String businessId) {
-    businessIdProp.setValue(businessId);
+    this.businessId = BufferUtil.wrapString(businessId);
     return this;
   }
 
   public MessageCorrelationRecord setBusinessId(final DirectBuffer businessId) {
-    businessIdProp.setValue(businessId);
+    this.businessId = businessId;
     return this;
   }
 
   public MessageCorrelationRecord setRequestId(final long requestId) {
-    requestIdProp.setValue(requestId);
+    this.requestId = requestId;
     return this;
   }
 
   public MessageCorrelationRecord setMessageKey(final long messageKey) {
-    this.messageKey.setValue(messageKey);
+    this.messageKey = messageKey;
     return this;
   }
 
   public MessageCorrelationRecord setName(final String name) {
-    nameProp.setValue(name);
+    this.name = BufferUtil.wrapString(name);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getNameBuffer() {
-    return nameProp.getValue();
+    return Decoding.required(name, "name");
   }
 
   @JsonIgnore
   public DirectBuffer getCorrelationKeyBuffer() {
-    return correlationKeyProp.getValue();
+    return Decoding.required(correlationKey, "correlationKey");
   }
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProp.getValue());
+    return MsgPackConverter.convertToMap(variables);
   }
 
   public MessageCorrelationRecord setVariables(final DirectBuffer variables) {
-    variablesProp.setValue(variables);
+    this.variables = Decoding.document(variables);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProp.getValue();
+    return variables;
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public MessageCorrelationRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey;
   }
 
   public MessageCorrelationRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey;
   }
 
   public MessageCorrelationRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProp.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getBusinessIdBuffer() {
-    return businessIdProp.getValue();
+    return businessId;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public MessageCorrelationRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<MessageCorrelationRecord> codec() {
+    return MessageCorrelationRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<MessageCorrelationRecord> ops() {
+    return MessageCorrelationRecordOps.INSTANCE;
   }
 }

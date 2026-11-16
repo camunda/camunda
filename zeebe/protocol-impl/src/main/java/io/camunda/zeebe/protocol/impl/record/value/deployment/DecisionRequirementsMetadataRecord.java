@@ -11,178 +11,179 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public class DecisionRequirementsMetadataRecord extends UnifiedRecordValue
-    implements DecisionRequirementsMetadataValue {
+@MsgpackPojo
+@NullMarked
+public final class DecisionRequirementsMetadataRecord
+    extends MsgpackBufferValue<DecisionRequirementsMetadataRecord>
+    implements MsgpackRecordValue, DecisionRequirementsMetadataValue {
 
-  private final StringProperty decisionRequirementsIdProp =
-      new StringProperty("decisionRequirementsId", "");
-  private final StringProperty decisionRequirementsNameProp =
-      new StringProperty("decisionRequirementsName", "");
-  private final IntegerProperty decisionRequirementsVersionProp =
-      new IntegerProperty("decisionRequirementsVersion", -1);
-  private final LongProperty decisionRequirementsKeyProp =
-      new LongProperty("decisionRequirementsKey", -1);
-  private final StringProperty namespaceProp = new StringProperty("namespace", "");
+  DirectBuffer decisionRequirementsId = Decoding.EMPTY;
+  DirectBuffer decisionRequirementsName = Decoding.EMPTY;
+  int decisionRequirementsVersion = -1;
+  long decisionRequirementsKey = -1L;
+  DirectBuffer namespace = Decoding.EMPTY;
+  DirectBuffer resourceName = Decoding.EMPTY;
 
-  private final StringProperty resourceNameProp = new StringProperty("resourceName", "");
-  private final BinaryProperty checksumProp = new BinaryProperty("checksum", new UnsafeBuffer());
+  @MsgpackProperty(binary = true)
+  DirectBuffer checksum = Decoding.EMPTY;
 
-  private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
-
-  public DecisionRequirementsMetadataRecord() {
-    super(10);
-    declareProperty(decisionRequirementsIdProp)
-        .declareProperty(decisionRequirementsNameProp)
-        .declareProperty(decisionRequirementsVersionProp)
-        .declareProperty(decisionRequirementsKeyProp)
-        .declareProperty(namespaceProp)
-        .declareProperty(resourceNameProp)
-        .declareProperty(checksumProp)
-        .declareProperty(isDuplicateProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(deploymentKeyProp);
-  }
+  boolean isDuplicate = false;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long deploymentKey = -1L;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getDecisionRequirementsId() {
-    return bufferAsString(decisionRequirementsIdProp.getValue());
+    return bufferAsString(decisionRequirementsId);
   }
 
   @Override
   public String getDecisionRequirementsName() {
-    return bufferAsString(decisionRequirementsNameProp.getValue());
+    return bufferAsString(decisionRequirementsName);
   }
 
   @Override
   public int getDecisionRequirementsVersion() {
-    return decisionRequirementsVersionProp.getValue();
+    return decisionRequirementsVersion;
   }
 
   @Override
   public long getDecisionRequirementsKey() {
-    return decisionRequirementsKeyProp.getValue();
+    return decisionRequirementsKey;
   }
 
   @Override
   public String getNamespace() {
-    return bufferAsString(namespaceProp.getValue());
+    return bufferAsString(namespace);
   }
 
   @Override
   public String getResourceName() {
-    return bufferAsString(resourceNameProp.getValue());
+    return bufferAsString(resourceName);
   }
 
   @Override
   public byte[] getChecksum() {
-    return bufferAsArray(checksumProp.getValue());
+    return bufferAsArray(checksum);
   }
 
   @Override
   public boolean isDuplicate() {
-    return isDuplicateProp.getValue();
+    return isDuplicate;
   }
 
   public DecisionRequirementsMetadataRecord setDuplicate(final boolean duplicate) {
-    isDuplicateProp.setValue(duplicate);
+    isDuplicate = duplicate;
     return this;
   }
 
   public DecisionRequirementsMetadataRecord setChecksum(final DirectBuffer checksum) {
-    checksumProp.setValue(checksum);
+    this.checksum = new UnsafeBuffer(checksum, 0, checksum.capacity());
     return this;
   }
 
   public DecisionRequirementsMetadataRecord setResourceName(final String resourceName) {
-    resourceNameProp.setValue(resourceName);
+    this.resourceName = BufferUtil.wrapString(resourceName);
     return this;
   }
 
   public DecisionRequirementsMetadataRecord setNamespace(final String namespace) {
-    namespaceProp.setValue(namespace);
+    this.namespace = BufferUtil.wrapString(namespace);
     return this;
   }
 
   public DecisionRequirementsMetadataRecord setDecisionRequirementsKey(
       final long decisionRequirementsKey) {
-    decisionRequirementsKeyProp.setValue(decisionRequirementsKey);
+    this.decisionRequirementsKey = decisionRequirementsKey;
     return this;
   }
 
   public DecisionRequirementsMetadataRecord setDecisionRequirementsVersion(
       final int decisionRequirementsVersion) {
-    decisionRequirementsVersionProp.setValue(decisionRequirementsVersion);
+    this.decisionRequirementsVersion = decisionRequirementsVersion;
     return this;
   }
 
   public DecisionRequirementsMetadataRecord setDecisionRequirementsName(
       final String decisionRequirementsName) {
-    decisionRequirementsNameProp.setValue(decisionRequirementsName);
+    this.decisionRequirementsName = BufferUtil.wrapString(decisionRequirementsName);
     return this;
   }
 
   public DecisionRequirementsMetadataRecord setDecisionRequirementsId(
       final String decisionRequirementsId) {
-    decisionRequirementsIdProp.setValue(decisionRequirementsId);
+    this.decisionRequirementsId = BufferUtil.wrapString(decisionRequirementsId);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getDecisionRequirementsIdBuffer() {
-    return decisionRequirementsIdProp.getValue();
+    return decisionRequirementsId;
   }
 
   @JsonIgnore
   public DirectBuffer getDecisionRequirementsNameBuffer() {
-    return decisionRequirementsNameProp.getValue();
+    return decisionRequirementsName;
   }
 
   @JsonIgnore
   public DirectBuffer getNamespaceBuffer() {
-    return namespaceProp.getValue();
+    return namespace;
   }
 
   @JsonIgnore
   public DirectBuffer getResourceNameBuffer() {
-    return resourceNameProp.getValue();
+    return resourceName;
   }
 
   @JsonIgnore
   public DirectBuffer getChecksumBuffer() {
-    return checksumProp.getValue();
+    return checksum;
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public DecisionRequirementsMetadataRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @Override
   public long getDeploymentKey() {
-    return deploymentKeyProp.getValue();
+    return deploymentKey;
   }
 
   public DecisionRequirementsMetadataRecord setDeploymentKey(final long deploymentKey) {
-    deploymentKeyProp.setValue(deploymentKey);
+    this.deploymentKey = deploymentKey;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<DecisionRequirementsMetadataRecord> codec() {
+    return DecisionRequirementsMetadataRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<DecisionRequirementsMetadataRecord> ops() {
+    return DecisionRequirementsMetadataRecordOps.INSTANCE;
   }
 }

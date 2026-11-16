@@ -12,8 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecordV1;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecordV1;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecordV1;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -65,7 +68,7 @@ final class IdentitySetupRecordSerdeTest {
     // given
     final var v1 = new IdentitySetupRecordV1();
     final var current = new IdentitySetupRecord();
-    v1.setDefaultTenant(tenant());
+    v1.setDefaultTenant(tenantV1());
     current.setDefaultTenant(tenant());
 
     // when
@@ -175,21 +178,21 @@ final class IdentitySetupRecordSerdeTest {
     current.addRole(role());
     v1.addRoleMember(roleV1());
     current.addRoleMember(role());
-    v1.addUser(user());
+    v1.addUser(userV1());
     current.addUser(user());
-    v1.setDefaultTenant(tenant());
+    v1.setDefaultTenant(tenantV1());
     current.setDefaultTenant(tenant());
-    v1.addTenant(tenant());
+    v1.addTenant(tenantV1());
     current.addTenant(tenant());
-    v1.addTenantMember(tenant());
+    v1.addTenantMember(tenantV1());
     current.addTenantMember(tenant());
     v1.addMappingRule(mappingRuleV1());
     current.addMappingRule(mappingRule());
     v1.addAuthorization(authorizationV1());
     current.addAuthorization(authorization());
-    v1.addGroup(group());
+    v1.addGroup(groupV1());
     current.addGroup(group());
-    v1.addGroupMember(group());
+    v1.addGroupMember(groupV1());
     current.addGroupMember(group());
   }
 
@@ -262,8 +265,37 @@ final class IdentitySetupRecordSerdeTest {
         .setEntityType(EntityType.USER);
   }
 
+  private static UserRecordV1 userV1() {
+    return new UserRecordV1()
+        .setUserKey(7L)
+        .setUsername("username")
+        .setName("name")
+        .setEmail("email@example.com")
+        .setPassword("password");
+  }
+
+  private static TenantRecordV1 tenantV1() {
+    return new TenantRecordV1()
+        .setTenantKey(3L)
+        .setTenantId(TENANT_ID)
+        .setName("tenant")
+        .setDescription("description")
+        .setEntityId("entity")
+        .setEntityType(EntityType.USER);
+  }
+
   private static GroupRecord group() {
     return new GroupRecord()
+        .setGroupKey(5L)
+        .setGroupId("group")
+        .setName("group")
+        .setDescription("description")
+        .setEntityId("entity")
+        .setEntityType(EntityType.GROUP);
+  }
+
+  private static GroupRecordV1 groupV1() {
+    return new GroupRecordV1()
         .setGroupKey(5L)
         .setGroupId("group")
         .setName("group")

@@ -7,103 +7,103 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.scaling;
 
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.IntegerValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.util.Collection;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.agrona.collections.IntArrayList;
+import org.jspecify.annotations.NullMarked;
 
-public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue {
-  private final IntegerProperty desiredPartitionCountProp =
-      new IntegerProperty("desiredPartitionCount", -1);
+@MsgpackPojo
+@NullMarked
+public final class ScaleRecord extends MsgpackBufferValue<ScaleRecord>
+    implements MsgpackRecordValue, ScaleRecordValue {
+
+  int desiredPartitionCount = -1;
 
   // partitions that have been activated because of this scale up operation
   // activated = completed redistribution
-  private final ArrayProperty<IntegerValue> redistributedPartitions =
-      new ArrayProperty<>("redistributedPartitions", IntegerValue::new);
+  final IntArrayList redistributedPartitions = new IntArrayList();
+
   // partitions that are ready to take part of processing completely:
   // ready = completed relocation
-  private final ArrayProperty<IntegerValue> relocatedPartitions =
-      new ArrayProperty<>("relocatedPartitions", IntegerValue::new);
-
-  private final LongProperty scalingPosition = new LongProperty("scalingPosition", -1L);
+  final IntArrayList relocatedPartitions = new IntArrayList();
 
   /**
    * Represent the number of partitions that participate in message correlation. The set of
    * partitions is in the range [1, messageCorrelationPartitions]
    */
-  private final IntegerProperty messageCorrelationPartitions =
-      new IntegerProperty("messageCorrelationPartitions", -1);
+  int messageCorrelationPartitions = -1;
 
-  public ScaleRecord() {
-    super(5);
-    declareProperty(desiredPartitionCountProp)
-        .declareProperty(redistributedPartitions)
-        .declareProperty(relocatedPartitions)
-        .declareProperty(messageCorrelationPartitions)
-        .declareProperty(scalingPosition);
-  }
+  long scalingPosition = -1L;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public int getDesiredPartitionCount() {
-    return desiredPartitionCountProp.getValue();
+    return desiredPartitionCount;
   }
 
   public ScaleRecord setDesiredPartitionCount(final int desiredPartitionCount) {
-    desiredPartitionCountProp.setValue(desiredPartitionCount);
+    this.desiredPartitionCount = desiredPartitionCount;
     return this;
   }
 
   @Override
   public SortedSet<Integer> getRedistributedPartitions() {
-    return redistributedPartitions.stream()
-        .map(IntegerValue::getValue)
+    return IntStream.range(0, redistributedPartitions.size())
+        .mapToObj(redistributedPartitions::getInt)
         .collect(Collectors.toCollection(TreeSet::new));
   }
 
   @Override
   public Collection<Integer> getRelocatedPartitions() {
-    return relocatedPartitions.stream().map(IntegerValue::getValue).toList();
+    return IntStream.range(0, relocatedPartitions.size())
+        .mapToObj(relocatedPartitions::getInt)
+        .toList();
   }
 
   public ScaleRecord setRelocatedPartitions(final Collection<Integer> partitions) {
-    relocatedPartitions.reset();
+    relocatedPartitions.clear();
     for (final int partition : partitions) {
-      relocatedPartitions.add().setValue(partition);
+      relocatedPartitions.addInt(partition);
     }
     return this;
   }
 
   @Override
   public int getMessageCorrelationPartitions() {
-    return messageCorrelationPartitions.getValue();
+    return messageCorrelationPartitions;
   }
 
   @Override
   public long getScalingPosition() {
-    return scalingPosition.getValue();
+    return scalingPosition;
   }
 
   public ScaleRecord setScalingPosition(final long position) {
-    scalingPosition.setValue(position);
+    scalingPosition = position;
     return this;
   }
 
   public ScaleRecord setMessageCorrelationPartitions(final int messageCorrelationPartitions) {
-    this.messageCorrelationPartitions.setValue(messageCorrelationPartitions);
+    this.messageCorrelationPartitions = messageCorrelationPartitions;
     return this;
   }
 
   public ScaleRecord setRedistributedPartitions(final Collection<Integer> partitions) {
-    redistributedPartitions.reset();
+    redistributedPartitions.clear();
     for (final int partition : partitions) {
-      redistributedPartitions.add().setValue(partition);
+      redistributedPartitions.addInt(partition);
     }
     return this;
   }
@@ -133,5 +133,15 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
   public ScaleRecord markPartitionBootstrapped(final int partitionBootstrapped) {
     setRedistributedPartitions(List.of(partitionBootstrapped));
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ScaleRecord> codec() {
+    return ScaleRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ScaleRecord> ops() {
+    return ScaleRecordOps.INSTANCE;
   }
 }

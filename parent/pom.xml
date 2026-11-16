@@ -1446,6 +1446,14 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-protocol-impl</artifactId>
+        <version>${project.version}</version>
+        <classifier>tests</classifier>
+        <type>test-jar</type>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>camunda-cluster</artifactId>
         <version>${project.version}</version>
       </dependency>

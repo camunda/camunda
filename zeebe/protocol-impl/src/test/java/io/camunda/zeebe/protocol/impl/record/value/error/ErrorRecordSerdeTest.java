@@ -8,8 +8,11 @@
 package io.camunda.zeebe.protocol.impl.record.value.error;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.msgpack.MsgpackPropertyException;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
@@ -25,21 +28,16 @@ import org.junit.jupiter.api.Test;
  */
 final class ErrorRecordSerdeTest {
 
-  // the same throwable for both classes, so that the stack traces are identical
   private static final Throwable THROWABLE =
-      new IllegalStateException("an exception message that is longer than thirty two bytes");
+      new IllegalStateException("an exception message that is longer than forty bytes");
 
   @Test
   void shouldWriteTheSameBytesAsV1() {
     // given
     final var v1 = new ErrorRecordV1();
     final var current = new ErrorRecord();
-    v1.initErrorRecord(THROWABLE, 4_294_967_296L);
-    current.initErrorRecord(THROWABLE, 4_294_967_296L);
-    v1.setProcessInstanceKey(4_294_967_297L);
-    current.setProcessInstanceKey(4_294_967_297L);
-    v1.setStorageOrdinal(300);
-    current.setStorageOrdinal(300);
+    setAllProperties(v1);
+    setAllProperties(current);
 
     // when
     final var v1Bytes = new ExpandableArrayBuffer();
@@ -54,11 +52,11 @@ final class ErrorRecordSerdeTest {
 
   @Test
   void shouldWriteTheSameBytesAsV1WithDefaults() {
-    // given only what cannot be written unset, everything else stays default
+    // given only the properties without a default are set, everything else stays default
     final var v1 = new ErrorRecordV1();
     final var current = new ErrorRecord();
-    v1.initErrorRecord(THROWABLE, 0L);
-    current.initErrorRecord(THROWABLE, 0L);
+    setRequiredProperties(v1);
+    setRequiredProperties(current);
 
     // when
     final var v1Bytes = new ExpandableArrayBuffer();
@@ -71,59 +69,74 @@ final class ErrorRecordSerdeTest {
   }
 
   @Test
+  void shouldFailToWriteWhileUnsetLikeV1() {
+    // given
+    final var v1 = new ErrorRecordV1();
+    final var current = new ErrorRecord();
+
+    // when / then
+    assertThatThrownBy(() -> v1.write(new ExpandableArrayBuffer(), 0))
+        .isInstanceOf(MsgpackPropertyException.class);
+    assertThatThrownBy(() -> current.write(new ExpandableArrayBuffer(), 0))
+        .isInstanceOf(MsgpackPropertyException.class);
+  }
+
+  @Test
   void shouldReadBytesWrittenByV1() {
     // given
     final var v1 = new ErrorRecordV1();
-    v1.initErrorRecord(THROWABLE, 42L);
-    v1.setProcessInstanceKey(300L);
-    v1.setStorageOrdinal(300);
+    setAllProperties(v1);
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);
     final var current = new ErrorRecord();
-    current.initErrorRecord(new IllegalStateException("other"), 7L);
-    current.setProcessInstanceKey(7L);
-    current.setStorageOrdinal(5);
+    current.initErrorRecord(new IllegalArgumentException("dirty"), 99L);
+    current.setProcessInstanceKey(9L).setStorageOrdinal(5);
 
     // when
     current.wrap(bytes, 0, length);
 
     // then
-    assertThat(current.getExceptionMessage())
-        .isEqualTo("an exception message that is longer than thirty two bytes");
-    assertThat(current.getStacktrace()).isEqualTo(v1.getStacktrace());
-    assertThat(current.getErrorEventPosition()).isEqualTo(42L);
-    assertThat(current.getProcessInstanceKey()).isEqualTo(300L);
-    assertThat(current.getStorageOrdinal()).isEqualTo(300);
+    assertAllProperties(current);
   }
 
   @Test
   void shouldRestoreDefaultsWhenReadingBytesWrittenByV1WithDefaults() {
-    // given
+    // given a value with defaults everywhere except the properties without a default
     final var v1 = new ErrorRecordV1();
-    v1.initErrorRecord(THROWABLE, 0L);
+    setRequiredProperties(v1);
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);
     final var current = new ErrorRecord();
-    current.initErrorRecord(new IllegalStateException("other"), 7L);
-    current.setProcessInstanceKey(7L);
-    current.setStorageOrdinal(5);
+    setAllProperties(current);
 
     // when
     current.wrap(bytes, 0, length);
 
     // then
     final var defaults = new ErrorRecordV1();
-    assertThat(current.getProcessInstanceKey()).isEqualTo(defaults.getProcessInstanceKey());
-    assertThat(current.getStorageOrdinal()).isEqualTo(defaults.getStorageOrdinal());
+    setRequiredProperties(defaults);
+    assertDefaultsOf(defaults, current);
+  }
+
+  @Test
+  void shouldFailToReadWithoutTheKeysLikeV1() {
+    // given an empty map
+    final var bytes = new ExpandableArrayBuffer(1);
+    bytes.putByte(0, (byte) 0x80);
+
+    // when
+    final var v1Failure = catchThrowable(() -> new ErrorRecordV1().wrap(bytes, 0, 1));
+    final var failure = catchThrowable(() -> new ErrorRecord().wrap(bytes, 0, 1));
+
+    // then the same failure as V1
+    assertThat(failure.getCause()).isExactlyInstanceOf(v1Failure.getCause().getClass());
   }
 
   @Test
   void shouldBeReadByV1() {
     // given
     final var current = new ErrorRecord();
-    current.initErrorRecord(THROWABLE, 42L);
-    current.setProcessInstanceKey(300L);
-    current.setStorageOrdinal(300);
+    setAllProperties(current);
     final var bytes = new ExpandableArrayBuffer();
     final int length = current.write(bytes, 0);
 
@@ -132,19 +145,14 @@ final class ErrorRecordSerdeTest {
     v1.wrap(bytes, 0, length);
 
     // then
-    assertThat(v1.getExceptionMessage())
-        .isEqualTo("an exception message that is longer than thirty two bytes");
-    assertThat(v1.getStacktrace()).isEqualTo(current.getStacktrace());
-    assertThat(v1.getErrorEventPosition()).isEqualTo(42L);
-    assertThat(v1.getProcessInstanceKey()).isEqualTo(300L);
-    assertThat(v1.getStorageOrdinal()).isEqualTo(300);
+    assertAllProperties(v1);
   }
 
   @Test
   void shouldKeepUnknownPropertiesOfNewerVersions() {
     // given a value that carries a property this version does not know
     final var source = new ErrorRecord();
-    source.initErrorRecord(THROWABLE, 42L);
+    setAllProperties(source);
     final var stored = new ExpandableArrayBuffer();
     final int storedLength = source.write(stored, 0);
     final var future = new ExpandableArrayBuffer();
@@ -172,12 +180,8 @@ final class ErrorRecordSerdeTest {
     // given
     final var v1 = new ErrorRecordV1();
     final var current = new ErrorRecord();
-    v1.initErrorRecord(THROWABLE, 42L);
-    current.initErrorRecord(THROWABLE, 42L);
-    v1.setProcessInstanceKey(300L);
-    current.setProcessInstanceKey(300L);
-    v1.setStorageOrdinal(300);
-    current.setStorageOrdinal(300);
+    setAllProperties(v1);
+    setAllProperties(current);
 
     // when
     final var v1Json = v1.toJson();
@@ -187,6 +191,50 @@ final class ErrorRecordSerdeTest {
     // of the properties and it differs between the old and the new class
     final var mapper = new ObjectMapper();
     assertThat(mapper.readTree(currentJson)).isEqualTo(mapper.readTree(v1Json));
+  }
+
+  private static void setAllProperties(final ErrorRecordV1 record) {
+    record.initErrorRecord(THROWABLE, 42L);
+    record.setProcessInstanceKey(7L).setStorageOrdinal(3);
+  }
+
+  private static void setAllProperties(final ErrorRecord record) {
+    record.initErrorRecord(THROWABLE, 42L);
+    record.setProcessInstanceKey(7L).setStorageOrdinal(3);
+  }
+
+  private static void setRequiredProperties(final ErrorRecordV1 record) {
+    record.initErrorRecord(THROWABLE, 42L);
+  }
+
+  private static void setRequiredProperties(final ErrorRecord record) {
+    record.initErrorRecord(THROWABLE, 42L);
+  }
+
+  private static void assertAllProperties(final ErrorRecordV1 record) {
+    assertThat(record.getExceptionMessage())
+        .isEqualTo("an exception message that is longer than forty bytes");
+    assertThat(record.getStacktrace()).startsWith(THROWABLE.toString());
+    assertThat(record.getErrorEventPosition()).isEqualTo(42L);
+    assertThat(record.getProcessInstanceKey()).isEqualTo(7L);
+    assertThat(record.getStorageOrdinal()).isEqualTo(3);
+  }
+
+  private static void assertAllProperties(final ErrorRecord record) {
+    assertThat(record.getExceptionMessage())
+        .isEqualTo("an exception message that is longer than forty bytes");
+    assertThat(record.getStacktrace()).startsWith(THROWABLE.toString());
+    assertThat(record.getErrorEventPosition()).isEqualTo(42L);
+    assertThat(record.getProcessInstanceKey()).isEqualTo(7L);
+    assertThat(record.getStorageOrdinal()).isEqualTo(3);
+  }
+
+  private static void assertDefaultsOf(final ErrorRecordV1 defaults, final ErrorRecord record) {
+    assertThat(record.getExceptionMessage()).isEqualTo(defaults.getExceptionMessage());
+    assertThat(record.getStacktrace()).isEqualTo(defaults.getStacktrace());
+    assertThat(record.getErrorEventPosition()).isEqualTo(defaults.getErrorEventPosition());
+    assertThat(record.getProcessInstanceKey()).isEqualTo(defaults.getProcessInstanceKey());
+    assertThat(record.getStorageOrdinal()).isEqualTo(defaults.getStorageOrdinal());
   }
 
   private static DirectBuffer utf8(final String s) {

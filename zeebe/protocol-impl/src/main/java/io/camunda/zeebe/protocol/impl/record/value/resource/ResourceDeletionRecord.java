@@ -7,140 +7,129 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.resource;
 
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public class ResourceDeletionRecord extends UnifiedRecordValue
-    implements ResourceDeletionRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class ResourceDeletionRecord extends MsgpackBufferValue<ResourceDeletionRecord>
+    implements MsgpackRecordValue, ResourceDeletionRecordValue {
 
-  // Static StringValue keys to avoid memory waste
-  private static final StringValue RESOURCE_KEY_KEY = new StringValue("resourceKey");
-  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  private static final StringValue DELETE_HISTORY_KEY = new StringValue("deleteHistory");
-  private static final StringValue BATCH_OPERATION_KEY = new StringValue("batchOperationKey");
-  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
-  private static final StringValue BATCH_OPERATION_TYPE = new StringValue("batchOperationType");
-  private static final StringValue RESOURCE_TYPE = new StringValue("resourceType");
-  private static final StringValue RESOURCE_ID = new StringValue("resourceId");
-
-  private final LongProperty resourceKeyProp = new LongProperty(RESOURCE_KEY_KEY);
-  private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY, "");
-  private final BooleanProperty deleteHistoryProp = new BooleanProperty(DELETE_HISTORY_KEY, false);
-  private final LongProperty batchOperationKeyProp = new LongProperty(BATCH_OPERATION_KEY, -1);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
-  private final EnumProperty<BatchOperationType> batchOperationTypeProp =
-      new EnumProperty<>(
-          BATCH_OPERATION_TYPE,
-          BatchOperationType.class,
-          BatchOperationType.DELETE_PROCESS_INSTANCE);
-  private final EnumProperty<ResourceType> resourceTypeProp =
-      new EnumProperty<>(RESOURCE_TYPE, ResourceType.class, ResourceType.UNKNOWN);
-  private final StringProperty resourceIdProp = new StringProperty(RESOURCE_ID, "");
-
-  public ResourceDeletionRecord() {
-    super(8);
-    declareProperty(resourceKeyProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(deleteHistoryProp)
-        .declareProperty(batchOperationKeyProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(batchOperationTypeProp)
-        .declareProperty(resourceTypeProp)
-        .declareProperty(resourceIdProp);
-  }
+  final RequiredLong resourceKey = new RequiredLong();
+  DirectBuffer tenantId = Decoding.EMPTY;
+  boolean deleteHistory = false;
+  long batchOperationKey = -1L;
+  int storageOrdinal = 0;
+  BatchOperationType batchOperationType = BatchOperationType.DELETE_PROCESS_INSTANCE;
+  ResourceType resourceType = ResourceType.UNKNOWN;
+  DirectBuffer resourceId = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getResourceKey() {
-    return resourceKeyProp.getValue();
+    return resourceKey.get();
   }
 
   public ResourceDeletionRecord setResourceKey(final long resourceKey) {
-    resourceKeyProp.setValue(resourceKey);
+    this.resourceKey.set(resourceKey);
     return this;
   }
 
   @Override
   public boolean isDeleteHistory() {
-    return deleteHistoryProp.getValue();
+    return deleteHistory;
   }
 
   public ResourceDeletionRecord setDeleteHistory(final boolean deleteHistory) {
-    deleteHistoryProp.setValue(deleteHistory);
+    this.deleteHistory = deleteHistory;
     return this;
   }
 
   @Override
   public BatchOperationType getBatchOperationType() {
-    return batchOperationTypeProp.getValue();
+    return batchOperationType;
   }
 
   public ResourceDeletionRecord setBatchOperationType(final BatchOperationType batchOperationType) {
-    batchOperationTypeProp.setValue(batchOperationType);
+    this.batchOperationType = batchOperationType;
     return this;
   }
 
   @Override
   public ResourceType getResourceType() {
-    return resourceTypeProp.getValue();
+    return resourceType;
   }
 
   public ResourceDeletionRecord setResourceType(final ResourceType resourceType) {
-    resourceTypeProp.setValue(resourceType);
+    this.resourceType = resourceType;
     return this;
   }
 
   @Override
   public String getResourceId() {
-    return BufferUtil.bufferAsString(resourceIdProp.getValue());
+    return BufferUtil.bufferAsString(resourceId);
   }
 
   public ResourceDeletionRecord setResourceId(final String resourceId) {
-    resourceIdProp.setValue(resourceId);
+    this.resourceId = BufferUtil.wrapString(resourceId);
     return this;
   }
 
   public ResourceDeletionRecord setResourceId(final DirectBuffer resourceId) {
-    resourceIdProp.setValue(resourceId);
+    this.resourceId = resourceId;
     return this;
   }
 
   @Override
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+    return BufferUtil.bufferAsString(tenantId);
   }
 
   public ResourceDeletionRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @Override
   public long getBatchOperationKey() {
-    return batchOperationKeyProp.getValue();
+    return batchOperationKey;
   }
 
   public ResourceDeletionRecord setBatchOperationKey(final long batchOperationKey) {
-    batchOperationKeyProp.setValue(batchOperationKey);
+    this.batchOperationKey = batchOperationKey;
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public ResourceDeletionRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ResourceDeletionRecord> codec() {
+    return ResourceDeletionRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ResourceDeletionRecord> ops() {
+    return ResourceDeletionRecordOps.INSTANCE;
   }
 }

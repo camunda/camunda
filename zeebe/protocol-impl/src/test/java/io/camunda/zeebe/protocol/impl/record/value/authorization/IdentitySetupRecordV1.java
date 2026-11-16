@@ -10,9 +10,9 @@ package io.camunda.zeebe.protocol.impl.record.value.authorization;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
-import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
-import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecordV1;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecordV1;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecordV1;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
@@ -35,21 +35,22 @@ public final class IdentitySetupRecordV1 extends UnifiedRecordValue
       new ArrayProperty<>("roles", RoleRecordV1::new);
   private final ArrayProperty<RoleRecordV1> roleMembersProp =
       new ArrayProperty<>("roleMembers", RoleRecordV1::new);
-  private final ArrayProperty<UserRecord> usersProp = new ArrayProperty<>("users", UserRecord::new);
-  private final ObjectProperty<TenantRecord> defaultTenantProp =
-      new ObjectProperty<>("defaultTenant", new TenantRecord());
-  private final ArrayProperty<TenantRecord> tenantsProp =
-      new ArrayProperty<>("tenants", TenantRecord::new);
-  private final ArrayProperty<TenantRecord> tenantMembersProp =
-      new ArrayProperty<>("tenantMembers", TenantRecord::new);
+  private final ArrayProperty<UserRecordV1> usersProp =
+      new ArrayProperty<>("users", UserRecordV1::new);
+  private final ObjectProperty<TenantRecordV1> defaultTenantProp =
+      new ObjectProperty<>("defaultTenant", new TenantRecordV1());
+  private final ArrayProperty<TenantRecordV1> tenantsProp =
+      new ArrayProperty<>("tenants", TenantRecordV1::new);
+  private final ArrayProperty<TenantRecordV1> tenantMembersProp =
+      new ArrayProperty<>("tenantMembers", TenantRecordV1::new);
   private final ArrayProperty<MappingRuleRecordV1> mappingRulesProp =
       new ArrayProperty<>("mappingRules", MappingRuleRecordV1::new);
   private final ArrayProperty<AuthorizationRecordV1> authorizationsProp =
       new ArrayProperty<>("authorizations", AuthorizationRecordV1::new);
-  private final ArrayProperty<GroupRecord> groupsProp =
-      new ArrayProperty<>("groups", GroupRecord::new);
-  private final ArrayProperty<GroupRecord> groupMembersProp =
-      new ArrayProperty<>("groupMembers", GroupRecord::new);
+  private final ArrayProperty<GroupRecordV1> groupsProp =
+      new ArrayProperty<>("groups", GroupRecordV1::new);
+  private final ArrayProperty<GroupRecordV1> groupMembersProp =
+      new ArrayProperty<>("groupMembers", GroupRecordV1::new);
 
   public IdentitySetupRecordV1() {
     super(10);
@@ -81,7 +82,7 @@ public final class IdentitySetupRecordV1 extends UnifiedRecordValue
   }
 
   @Override
-  public TenantRecord getDefaultTenant() {
+  public TenantRecordV1 getDefaultTenant() {
     return defaultTenantProp.getValue();
   }
 
@@ -119,17 +120,17 @@ public final class IdentitySetupRecordV1 extends UnifiedRecordValue
     return groupMembersProp.stream().map(GroupRecordValue.class::cast).collect(Collectors.toList());
   }
 
-  public IdentitySetupRecordV1 setDefaultTenant(final TenantRecord tenant) {
+  public IdentitySetupRecordV1 setDefaultTenant(final TenantRecordV1 tenant) {
     defaultTenantProp.getValue().copyFrom(tenant);
     return this;
   }
 
-  public IdentitySetupRecordV1 addTenant(final TenantRecord tenant) {
+  public IdentitySetupRecordV1 addTenant(final TenantRecordV1 tenant) {
     tenantsProp.add().copyFrom(tenant);
     return this;
   }
 
-  public IdentitySetupRecordV1 addTenantMember(final TenantRecord tenant) {
+  public IdentitySetupRecordV1 addTenantMember(final TenantRecordV1 tenant) {
     tenantMembersProp.add().copyFrom(tenant);
     return this;
   }
@@ -144,7 +145,7 @@ public final class IdentitySetupRecordV1 extends UnifiedRecordValue
     return this;
   }
 
-  public IdentitySetupRecordV1 addUser(final UserRecord user) {
+  public IdentitySetupRecordV1 addUser(final UserRecordV1 user) {
     usersProp.add().copyFrom(user);
     return this;
   }
@@ -159,12 +160,12 @@ public final class IdentitySetupRecordV1 extends UnifiedRecordValue
     return this;
   }
 
-  public IdentitySetupRecordV1 addGroup(final GroupRecord group) {
+  public IdentitySetupRecordV1 addGroup(final GroupRecordV1 group) {
     groupsProp.add().copyFrom(group);
     return this;
   }
 
-  public IdentitySetupRecordV1 addGroupMember(final GroupRecord groupMember) {
+  public IdentitySetupRecordV1 addGroupMember(final GroupRecordV1 groupMember) {
     groupMembersProp.add().copyFrom(groupMember);
     return this;
   }

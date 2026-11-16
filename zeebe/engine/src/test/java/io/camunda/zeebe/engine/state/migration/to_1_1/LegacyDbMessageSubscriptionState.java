@@ -15,7 +15,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecordV1;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
@@ -88,7 +88,7 @@ final class LegacyDbMessageSubscriptionState {
     return subscriptionColumnFamily.get(elementKeyAndMessageName);
   }
 
-  public void put(final long key, final MessageSubscriptionRecord record) {
+  public void put(final long key, final MessageSubscriptionRecordV1 record) {
     elementInstanceKey.wrapLong(record.getElementInstanceKey());
     messageName.wrapBuffer(record.getMessageNameBuffer());
 
@@ -102,7 +102,7 @@ final class LegacyDbMessageSubscriptionState {
   }
 
   public void updateToCorrelatingState(
-      final MessageSubscriptionRecord record, final long sentTime) {
+      final MessageSubscriptionRecordV1 record, final long sentTime) {
     final var messageKey = record.getMessageKey();
     var messageVariables = record.getVariablesBuffer();
     if (record == messageSubscription.getRecord()) {

@@ -9,8 +9,10 @@ package io.camunda.zeebe.engine.state.globallistener;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.RecordV1s;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecordV1;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
@@ -36,7 +38,7 @@ final class PersistedGlobalListenersConfigSerdeTest {
   void shouldWriteTheSameBytesAsV1() {
     // given
     final var v1 = new PersistedGlobalListenersConfigV1();
-    v1.setGlobalListeners(populatedBatch());
+    v1.setGlobalListeners(RecordV1s.convert(populatedBatch(), new GlobalListenerBatchRecordV1()));
     final var current = new PersistedGlobalListenersConfig();
     current.setGlobalListeners(populatedBatch());
 
@@ -71,7 +73,7 @@ final class PersistedGlobalListenersConfigSerdeTest {
   void shouldReadBytesWrittenByV1() {
     // given
     final var v1 = new PersistedGlobalListenersConfigV1();
-    v1.setGlobalListeners(populatedBatch());
+    v1.setGlobalListeners(RecordV1s.convert(populatedBatch(), new GlobalListenerBatchRecordV1()));
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);
     final var current = new PersistedGlobalListenersConfig();

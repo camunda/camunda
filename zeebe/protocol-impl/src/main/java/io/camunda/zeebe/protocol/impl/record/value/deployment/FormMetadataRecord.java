@@ -11,144 +11,156 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredInt;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public class FormMetadataRecord extends UnifiedRecordValue implements FormMetadataValue {
+@MsgpackPojo
+@NullMarked
+public final class FormMetadataRecord extends MsgpackBufferValue<FormMetadataRecord>
+    implements MsgpackRecordValue, FormMetadataValue {
 
-  private final StringProperty formIdProp = new StringProperty("formId");
-  private final IntegerProperty versionProp = new IntegerProperty("version");
-  private final LongProperty formKeyProp = new LongProperty("formKey");
-  private final StringProperty resourceNameProp = new StringProperty("resourceName");
-  private final BinaryProperty checksumProp = new BinaryProperty("checksum");
-  private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
-  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
+  @Nullable DirectBuffer formId;
+  final RequiredInt version = new RequiredInt();
+  final RequiredLong formKey = new RequiredLong();
+  @Nullable DirectBuffer resourceName;
 
-  public FormMetadataRecord() {
-    super(9);
-    declareProperty(formIdProp)
-        .declareProperty(versionProp)
-        .declareProperty(formKeyProp)
-        .declareProperty(resourceNameProp)
-        .declareProperty(checksumProp)
-        .declareProperty(isDuplicateProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(deploymentKeyProp)
-        .declareProperty(versionTagProp);
-  }
+  @MsgpackProperty(binary = true)
+  @Nullable DirectBuffer checksum;
+
+  boolean isDuplicate = false;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long deploymentKey = -1L;
+  DirectBuffer versionTag = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getFormId() {
-    return bufferAsString(formIdProp.getValue());
+    return bufferAsString(Decoding.required(formId, "formId"));
   }
 
   public FormMetadataRecord setFormId(final String formId) {
-    formIdProp.setValue(formId);
+    this.formId = BufferUtil.wrapString(formId);
     return this;
   }
 
   @Override
   public int getVersion() {
-    return versionProp.getValue();
+    return version.get();
   }
 
   public FormMetadataRecord setVersion(final int formVersion) {
-    versionProp.setValue(formVersion);
+    version.set(formVersion);
     return this;
   }
 
   @Override
   public String getVersionTag() {
-    return bufferAsString(versionTagProp.getValue());
+    return bufferAsString(versionTag);
   }
 
   public FormMetadataRecord setVersionTag(final String versionTag) {
-    versionTagProp.setValue(versionTag);
+    this.versionTag = BufferUtil.wrapString(versionTag);
     return this;
   }
 
   @Override
   public long getFormKey() {
-    return formKeyProp.getValue();
+    return formKey.get();
   }
 
   public FormMetadataRecord setFormKey(final long formKey) {
-    formKeyProp.setValue(formKey);
+    this.formKey.set(formKey);
     return this;
   }
 
   @Override
   public String getResourceName() {
-    return bufferAsString(resourceNameProp.getValue());
+    return bufferAsString(Decoding.required(resourceName, "resourceName"));
   }
 
   public FormMetadataRecord setResourceName(final String resourceName) {
-    resourceNameProp.setValue(resourceName);
+    this.resourceName = BufferUtil.wrapString(resourceName);
     return this;
   }
 
   @Override
   public byte[] getChecksum() {
-    return bufferAsArray(checksumProp.getValue());
+    return bufferAsArray(Decoding.required(checksum, "checksum"));
   }
 
   public FormMetadataRecord setChecksum(final DirectBuffer checksum) {
-    checksumProp.setValue(checksum);
+    this.checksum = new UnsafeBuffer(checksum, 0, checksum.capacity());
     return this;
   }
 
   @Override
   public boolean isDuplicate() {
-    return isDuplicateProp.getValue();
+    return isDuplicate;
   }
 
   public FormMetadataRecord setDuplicate(final boolean isDuplicate) {
-    isDuplicateProp.setValue(isDuplicate);
+    this.isDuplicate = isDuplicate;
     return this;
   }
 
   @Override
   public long getDeploymentKey() {
-    return deploymentKeyProp.getValue();
+    return deploymentKey;
   }
 
   public FormMetadataRecord setDeploymentKey(final long deploymentKey) {
-    deploymentKeyProp.setValue(deploymentKey);
+    this.deploymentKey = deploymentKey;
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getFormIdBuffer() {
-    return formIdProp.getValue();
+    return Decoding.required(formId, "formId");
   }
 
   @JsonIgnore
   public DirectBuffer getResourceNameBuffer() {
-    return resourceNameProp.getValue();
+    return Decoding.required(resourceName, "resourceName");
   }
 
   @JsonIgnore
   public DirectBuffer getChecksumBuffer() {
-    return checksumProp.getValue();
+    return Decoding.required(checksum, "checksum");
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public FormMetadataRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<FormMetadataRecord> codec() {
+    return FormMetadataRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<FormMetadataRecord> ops() {
+    return FormMetadataRecordOps.INSTANCE;
   }
 }

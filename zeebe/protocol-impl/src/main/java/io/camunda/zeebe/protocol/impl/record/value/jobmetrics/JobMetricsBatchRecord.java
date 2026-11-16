@@ -7,26 +7,29 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.jobmetrics;
 
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class JobMetricsBatchRecord extends UnifiedRecordValue
-    implements JobMetricsBatchRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class JobMetricsBatchRecord extends MsgpackBufferValue<JobMetricsBatchRecord>
+    implements MsgpackRecordValue, JobMetricsBatchRecordValue {
 
-  private final LongProperty batchStartTimeProperty = new LongProperty("batchStartTime", -1L);
-  private final LongProperty batchEndTimeProperty = new LongProperty("batchEndTime", -1L);
-
-  private final BooleanProperty recordSizeLimitExceededProperty =
-      new BooleanProperty("recordSizeLimitExceeded", false);
+  long batchStartTime = -1L;
+  long batchEndTime = -1L;
+  boolean recordSizeLimitExceeded = false;
 
   /**
    * A pool of strings used to reduce record size by deduplication. Instead of storing the same
@@ -44,78 +47,76 @@ public final class JobMetricsBatchRecord extends UnifiedRecordValue
    * <p>For example, if "my-job-type" is at index 0 in encodedStrings, a JobMetrics entry can
    * reference it by storing 0 as its jobType index, avoiding string duplication.
    */
-  private final ArrayProperty<StringValue> encodedStringsProperty =
-      new ArrayProperty<>("encodedStrings", StringValue::new);
+  final List<DirectBuffer> encodedStrings = new ArrayList<>();
 
-  private final ArrayProperty<JobMetrics> jobMetricsProperty =
-      new ArrayProperty<>("jobMetrics", JobMetrics::new);
-
-  public JobMetricsBatchRecord() {
-    super(5);
-    declareProperty(batchStartTimeProperty);
-    declareProperty(batchEndTimeProperty);
-    declareProperty(recordSizeLimitExceededProperty);
-    declareProperty(encodedStringsProperty);
-    declareProperty(jobMetricsProperty);
-  }
+  final List<JobMetrics> jobMetrics = new ArrayList<>();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getBatchStartTime() {
-    return batchStartTimeProperty.getValue();
+    return batchStartTime;
   }
 
   public JobMetricsBatchRecord setBatchStartTime(final long batchStartTime) {
-    batchStartTimeProperty.setValue(batchStartTime);
+    this.batchStartTime = batchStartTime;
     return this;
   }
 
   @Override
   public long getBatchEndTime() {
-    return batchEndTimeProperty.getValue();
+    return batchEndTime;
   }
 
   public JobMetricsBatchRecord setBatchEndTime(final long batchEndTime) {
-    batchEndTimeProperty.setValue(batchEndTime);
+    this.batchEndTime = batchEndTime;
     return this;
   }
 
   @Override
   public boolean getRecordSizeLimitExceeded() {
-    return recordSizeLimitExceededProperty.getValue();
+    return recordSizeLimitExceeded;
   }
 
   public JobMetricsBatchRecord setRecordSizeLimitExceeded(final boolean recordSizeLimitExceeded) {
-    recordSizeLimitExceededProperty.setValue(recordSizeLimitExceeded);
+    this.recordSizeLimitExceeded = recordSizeLimitExceeded;
     return this;
   }
 
   @Override
   public List<String> getEncodedStrings() {
-    return StreamSupport.stream(encodedStringsProperty.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .toList();
+    return encodedStrings.stream().map(BufferUtil::bufferAsString).toList();
   }
 
   @Override
   public List<JobMetricsValue> getJobMetrics() {
-    return jobMetricsProperty.stream().collect(Collectors.toList());
+    return new ArrayList<>(jobMetrics);
   }
 
   public JobMetricsBatchRecord setJobMetrics(final Collection<JobMetricsValue> jobMetrics) {
-    jobMetricsProperty.reset();
-    jobMetrics.forEach(jm -> jobMetricsProperty.add().wrap(jm));
+    final var copies = jobMetrics.stream().map(jm -> new JobMetrics().wrap(jm)).toList();
+    this.jobMetrics.clear();
+    this.jobMetrics.addAll(copies);
     return this;
   }
 
   public JobMetricsBatchRecord setEncodedStrings(final List<String> encodedStrings) {
-    encodedStringsProperty.reset();
-    encodedStrings.forEach(str -> encodedStringsProperty.add().wrap(BufferUtil.wrapString(str)));
+    this.encodedStrings.clear();
+    encodedStrings.forEach(str -> this.encodedStrings.add(BufferUtil.wrapString(str)));
     return this;
   }
 
   public JobMetricsBatchRecord addJobMetrics(final JobMetricsValue jobMetrics) {
-    jobMetricsProperty.add().wrap(jobMetrics);
+    this.jobMetrics.add(new JobMetrics().wrap(jobMetrics));
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<JobMetricsBatchRecord> codec() {
+    return JobMetricsBatchRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<JobMetricsBatchRecord> ops() {
+    return JobMetricsBatchRecordOps.INSTANCE;
   }
 }

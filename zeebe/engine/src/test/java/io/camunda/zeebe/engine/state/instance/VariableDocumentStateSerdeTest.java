@@ -9,8 +9,10 @@ package io.camunda.zeebe.engine.state.instance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.RecordV1s;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecordV1;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import org.agrona.DirectBuffer;
@@ -29,7 +31,7 @@ final class VariableDocumentStateSerdeTest {
   void shouldWriteTheSameBytesAsV1() {
     // given
     final var v1 = new VariableDocumentStateV1();
-    v1.setKey(42L).setRecord(populatedRecord());
+    v1.setKey(42L).setRecord(RecordV1s.convert(populatedRecord(), new VariableDocumentRecordV1()));
     final var current = new VariableDocumentState();
     current.setKey(42L).setRecord(populatedRecord());
 
@@ -48,7 +50,9 @@ final class VariableDocumentStateSerdeTest {
   void shouldWriteTheSameBytesAsV1WithDefaults() {
     // given only the record's scope key, which has no default and cannot be written unset
     final var v1 = new VariableDocumentStateV1();
-    v1.setRecord(new VariableDocumentRecord().setScopeKey(0L));
+    v1.setRecord(
+        RecordV1s.convert(
+            new VariableDocumentRecord().setScopeKey(0L), new VariableDocumentRecordV1()));
     final var current = new VariableDocumentState();
     current.setRecord(new VariableDocumentRecord().setScopeKey(0L));
 
@@ -66,7 +70,7 @@ final class VariableDocumentStateSerdeTest {
   void shouldReadBytesWrittenByV1() {
     // given
     final var v1 = new VariableDocumentStateV1();
-    v1.setKey(42L).setRecord(populatedRecord());
+    v1.setKey(42L).setRecord(RecordV1s.convert(populatedRecord(), new VariableDocumentRecordV1()));
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);
     final var current = new VariableDocumentState();
@@ -86,7 +90,9 @@ final class VariableDocumentStateSerdeTest {
     // given
     final var bytes = new ExpandableArrayBuffer();
     final var v1 = new VariableDocumentStateV1();
-    v1.setRecord(new VariableDocumentRecord().setScopeKey(0L));
+    v1.setRecord(
+        RecordV1s.convert(
+            new VariableDocumentRecord().setScopeKey(0L), new VariableDocumentRecordV1()));
     final int length = v1.write(bytes, 0);
     final var current = new VariableDocumentState();
     current.setKey(7L);

@@ -9,8 +9,10 @@ package io.camunda.zeebe.engine.state.instance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.RecordV1s;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecordV1;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import org.agrona.DirectBuffer;
@@ -33,7 +35,7 @@ final class UserTaskRecordValueSerdeTest {
   void shouldWriteTheSameBytesAsV1() {
     // given
     final var v1 = new UserTaskRecordValueV1();
-    v1.setRecord(populatedRecord());
+    v1.setRecord(RecordV1s.convert(populatedRecord(), new UserTaskRecordV1()));
     final var current = new UserTaskRecordValue();
     current.setRecord(populatedRecord());
 
@@ -68,7 +70,7 @@ final class UserTaskRecordValueSerdeTest {
   void shouldReadBytesWrittenByV1() {
     // given
     final var v1 = new UserTaskRecordValueV1();
-    v1.setRecord(populatedRecord());
+    v1.setRecord(RecordV1s.convert(populatedRecord(), new UserTaskRecordV1()));
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);
     final var current = new UserTaskRecordValue();

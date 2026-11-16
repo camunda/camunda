@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.state.globallistener;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecordV1;
 
 /**
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
@@ -18,19 +18,19 @@ import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListener
  */
 public final class PersistedGlobalListenerV1 extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<GlobalListenerRecord> globalListener =
-      new ObjectProperty<>("globalListener", new GlobalListenerRecord());
+  private final ObjectProperty<GlobalListenerRecordV1> globalListener =
+      new ObjectProperty<>("globalListener", new GlobalListenerRecordV1());
 
   public PersistedGlobalListenerV1() {
     super(1);
     declareProperty(globalListener);
   }
 
-  public GlobalListenerRecord getGlobalListener() {
+  public GlobalListenerRecordV1 getGlobalListener() {
     return globalListener.getValue();
   }
 
-  public void setGlobalListener(final GlobalListenerRecord record) {
+  public void setGlobalListener(final GlobalListenerRecordV1 record) {
     globalListener.getValue().copyFrom(record);
   }
 }

@@ -15,7 +15,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecordV1;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
@@ -63,7 +63,7 @@ public final class LegacyDbProcessMessageSubscriptionState {
   }
 
   public void put(
-      final long key, final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
+      final long key, final ProcessMessageSubscriptionRecordV1 record, final long commandSentTime) {
     wrapSubscriptionKeys(record.getElementInstanceKey(), record.getMessageNameBuffer());
 
     processMessageSubscription.reset();
@@ -75,12 +75,12 @@ public final class LegacyDbProcessMessageSubscriptionState {
     sentTimeColumnFamily.upsert(sentTimeCompositeKey, DbNil.INSTANCE);
   }
 
-  public void updateToOpenedState(final ProcessMessageSubscriptionRecord record) {
+  public void updateToOpenedState(final ProcessMessageSubscriptionRecordV1 record) {
     update(record, s -> s.setRecord(record).setCommandSentTime(0).setOpened());
   }
 
   public void updateToClosingState(
-      final ProcessMessageSubscriptionRecord record, final long commandSentTime) {
+      final ProcessMessageSubscriptionRecordV1 record, final long commandSentTime) {
     update(record, s -> s.setRecord(record).setCommandSentTime(commandSentTime).setClosing());
   }
 
@@ -145,7 +145,7 @@ public final class LegacyDbProcessMessageSubscriptionState {
   }
 
   private void update(
-      final ProcessMessageSubscriptionRecord record,
+      final ProcessMessageSubscriptionRecordV1 record,
       final Consumer<LegacyProcessMessageSubscription> modifier) {
     final LegacyProcessMessageSubscription subscription =
         getSubscription(record.getElementInstanceKey(), record.getMessageNameBuffer());

@@ -8,74 +8,73 @@
 package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @SuppressWarnings("java:S2160")
-public final class ProcessEventRecord extends UnifiedRecordValue
-    implements ProcessEventRecordValue {
-  private final LongProperty scopeKeyProperty = new LongProperty("scopeKey");
-  private final StringProperty targetElementIdProperty = new StringProperty("targetElementId");
-  private final DocumentProperty variablesProperty = new DocumentProperty("variables");
-  private final LongProperty processDefinitionKeyProperty =
-      new LongProperty("processDefinitionKey", -1);
-  private final LongProperty processInstanceKeyProperty =
-      new LongProperty("processInstanceKey", -1);
+@MsgpackPojo
+@NullMarked
+public final class ProcessEventRecord extends MsgpackBufferValue<ProcessEventRecord>
+    implements MsgpackRecordValue, ProcessEventRecordValue {
 
-  private final StringProperty tenantIdProperty =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  final RequiredLong scopeKey = new RequiredLong();
+  @Nullable DirectBuffer targetElementId;
 
-  private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
+  @MsgpackProperty(document = true)
+  DirectBuffer variables = DocumentValue.EMPTY_DOCUMENT;
 
-  public ProcessEventRecord() {
-    super(7);
-    declareProperty(scopeKeyProperty)
-        .declareProperty(targetElementIdProperty)
-        .declareProperty(variablesProperty)
-        .declareProperty(processDefinitionKeyProperty)
-        .declareProperty(processInstanceKeyProperty)
-        .declareProperty(tenantIdProperty)
-        .declareProperty(storageOrdinalProperty);
-  }
+  long processDefinitionKey = -1L;
+  long processInstanceKey = -1L;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  int storageOrdinal = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public ProcessEventRecord wrap(final ProcessEventRecord record) {
-    scopeKeyProperty.setValue(record.getScopeKey());
-    targetElementIdProperty.setValue(record.getTargetElementIdBuffer());
-    variablesProperty.setValue(record.getVariablesBuffer());
-    processDefinitionKeyProperty.setValue(record.getProcessDefinitionKey());
-    processInstanceKeyProperty.setValue(record.getProcessInstanceKey());
-    tenantIdProperty.setValue(record.getTenantId());
-    storageOrdinalProperty.setValue(record.getStorageOrdinal());
+    scopeKey.set(record.getScopeKey());
+    targetElementId = record.getTargetElementIdBuffer();
+    variables = Decoding.document(record.getVariablesBuffer());
+    processDefinitionKey = record.getProcessDefinitionKey();
+    processInstanceKey = record.getProcessInstanceKey();
+    tenantId = BufferUtil.wrapString(record.getTenantId());
+    storageOrdinal = record.getStorageOrdinal();
 
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getTargetElementIdBuffer() {
-    return targetElementIdProperty.getValue();
+    return Decoding.required(targetElementId, "targetElementId");
   }
 
   public ProcessEventRecord setTargetElementIdBuffer(final DirectBuffer targetElementIdBuffer) {
-    targetElementIdProperty.setValue(targetElementIdBuffer);
+    targetElementId = targetElementIdBuffer;
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProperty.getValue();
+    return variables;
   }
 
   public ProcessEventRecord setVariablesBuffer(final DirectBuffer variablesBuffer) {
-    variablesProperty.setValue(variablesBuffer);
+    variables = Decoding.document(variablesBuffer);
     return this;
   }
 
@@ -86,11 +85,11 @@ public final class ProcessEventRecord extends UnifiedRecordValue
 
   @Override
   public long getScopeKey() {
-    return scopeKeyProperty.getValue();
+    return scopeKey.get();
   }
 
   public ProcessEventRecord setScopeKey(final long scopeKey) {
-    scopeKeyProperty.setValue(scopeKey);
+    this.scopeKey.set(scopeKey);
     return this;
   }
 
@@ -101,41 +100,51 @@ public final class ProcessEventRecord extends UnifiedRecordValue
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProperty.getValue();
+    return processDefinitionKey;
   }
 
   public ProcessEventRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProperty.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProperty.getValue();
+    return processInstanceKey;
   }
 
   public ProcessEventRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProperty.setValue(processInstanceKey);
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
   @Override
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProperty.getValue());
+    return BufferUtil.bufferAsString(tenantId);
   }
 
   public ProcessEventRecord setTenantId(final String tenantId) {
-    tenantIdProperty.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProperty.getValue();
+    return storageOrdinal;
   }
 
   public ProcessEventRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProperty.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ProcessEventRecord> codec() {
+    return ProcessEventRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ProcessEventRecord> ops() {
+    return ProcessEventRecordOps.INSTANCE;
   }
 }

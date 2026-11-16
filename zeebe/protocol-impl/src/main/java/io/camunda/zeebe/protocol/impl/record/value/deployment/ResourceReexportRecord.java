@@ -7,39 +7,55 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ResourceReexportRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public class ResourceReexportRecord extends UnifiedRecordValue
-    implements ResourceReexportRecordValue {
-  private final LongProperty resourceKeyProp = new LongProperty("resourceKey", -1L);
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+@MsgpackPojo
+@NullMarked
+public final class ResourceReexportRecord extends MsgpackBufferValue<ResourceReexportRecord>
+    implements MsgpackRecordValue, ResourceReexportRecordValue {
 
-  public ResourceReexportRecord() {
-    super(2);
-    declareProperty(resourceKeyProp).declareProperty(tenantIdProp);
-  }
+  long resourceKey = -1L;
+  DirectBuffer tenantId = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getResourceKey() {
-    return resourceKeyProp.getValue();
+    return resourceKey;
   }
 
   public ResourceReexportRecord setResourceKey(final long resourceKey) {
-    resourceKeyProp.setValue(resourceKey);
+    this.resourceKey = resourceKey;
     return this;
   }
 
   @Override
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+    return BufferUtil.bufferAsString(tenantId);
   }
 
   public ResourceReexportRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ResourceReexportRecord> codec() {
+    return ResourceReexportRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ResourceReexportRecord> ops() {
+    return ResourceReexportRecordOps.INSTANCE;
   }
 }

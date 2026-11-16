@@ -8,11 +8,10 @@
 package io.camunda.zeebe.engine.state.policy;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.engine.state.RecordObjectValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecord;
+import io.camunda.zeebe.protocol.impl.record.value.policyupdate.PolicyUpdateRecordV1;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -25,8 +24,8 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public final class PersistedPolicyUpdateV1 extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<RecordObjectValue<PolicyUpdateRecord>> updateProp =
-      new ObjectProperty<>("update", new RecordObjectValue<>(new PolicyUpdateRecord()));
+  private final ObjectProperty<PolicyUpdateRecordV1> updateProp =
+      new ObjectProperty<>("update", new PolicyUpdateRecordV1());
   private final IntegerProperty bufferedChunkCountProp =
       new IntegerProperty("bufferedChunkCount", 0);
 
@@ -36,14 +35,13 @@ public final class PersistedPolicyUpdateV1 extends UnpackedObject implements DbV
   }
 
   /** The identifiers of the update; its sections are empty. */
-  public PolicyUpdateRecord getUpdate() {
-    return updateProp.getValue().get();
+  public PolicyUpdateRecordV1 getUpdate() {
+    return updateProp.getValue();
   }
 
-  public PersistedPolicyUpdateV1 setUpdate(final PolicyUpdateRecord chunk) {
+  public PersistedPolicyUpdateV1 setUpdate(final PolicyUpdateRecordV1 chunk) {
     updateProp
         .getValue()
-        .get()
         .setPolicyId(chunk.getPolicyId())
         .setPolicyVersion(chunk.getPolicyVersion())
         .setBasePolicyVersion(chunk.getBasePolicyVersion())

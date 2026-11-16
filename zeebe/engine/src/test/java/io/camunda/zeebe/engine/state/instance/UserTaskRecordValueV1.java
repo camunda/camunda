@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.state.instance;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecordV1;
 
 /**
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
@@ -18,23 +18,23 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
  */
 public final class UserTaskRecordValueV1 extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<UserTaskRecord> recordProp =
-      new ObjectProperty<>("userTaskRecord", new UserTaskRecord());
+  private final ObjectProperty<UserTaskRecordV1> recordProp =
+      new ObjectProperty<>("userTaskRecord", new UserTaskRecordV1());
 
   public UserTaskRecordValueV1() {
     super(1);
     declareProperty(recordProp);
   }
 
-  public UserTaskRecord getRecord() {
+  public UserTaskRecordV1 getRecord() {
     return recordProp.getValue();
   }
 
-  public void setRecordWithoutVariables(final UserTaskRecord record) {
+  public void setRecordWithoutVariables(final UserTaskRecordV1 record) {
     recordProp.getValue().wrapWithoutVariables(record);
   }
 
-  public void setRecord(final UserTaskRecord record) {
+  public void setRecord(final UserTaskRecordV1 record) {
     recordProp.getValue().wrap(record);
   }
 }

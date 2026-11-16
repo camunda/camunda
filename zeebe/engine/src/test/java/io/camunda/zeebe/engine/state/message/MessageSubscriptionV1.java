@@ -12,7 +12,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecordV1;
 
 /**
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
@@ -20,8 +20,8 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRe
  */
 public final class MessageSubscriptionV1 extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<MessageSubscriptionRecord> recordProp =
-      new ObjectProperty<>("record", new MessageSubscriptionRecord());
+  private final ObjectProperty<MessageSubscriptionRecordV1> recordProp =
+      new ObjectProperty<>("record", new MessageSubscriptionRecordV1());
 
   private final LongProperty keyProp = new LongProperty("key");
 
@@ -32,11 +32,11 @@ public final class MessageSubscriptionV1 extends UnpackedObject implements DbVal
     declareProperty(recordProp).declareProperty(keyProp).declareProperty(correlatingProp);
   }
 
-  public MessageSubscriptionRecord getRecord() {
+  public MessageSubscriptionRecordV1 getRecord() {
     return recordProp.getValue();
   }
 
-  public MessageSubscriptionV1 setRecord(final MessageSubscriptionRecord record) {
+  public MessageSubscriptionV1 setRecord(final MessageSubscriptionRecordV1 record) {
     recordProp.getValue().wrap(record);
     return this;
   }

@@ -10,9 +10,11 @@ package io.camunda.zeebe.engine.state.compensation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.engine.state.RecordV1s;
 import io.camunda.zeebe.msgpack.MsgpackPropertyException;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecordV1;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import org.agrona.DirectBuffer;
@@ -33,7 +35,7 @@ final class CompensationSubscriptionSerdeTest {
     final var record = populatedRecord();
     final var v1 = new CompensationSubscriptionV1();
     final var current = new CompensationSubscription();
-    v1.setRecord(record);
+    v1.setRecord(RecordV1s.convert(record, new CompensationSubscriptionRecordV1()));
     v1.setKey(42L);
     current.setRecord(record);
     current.setKey(42L);
@@ -54,7 +56,7 @@ final class CompensationSubscriptionSerdeTest {
     // given the key is not set
     final var v1 = new CompensationSubscriptionV1();
     final var current = new CompensationSubscription();
-    v1.setRecord(populatedRecord());
+    v1.setRecord(RecordV1s.convert(populatedRecord(), new CompensationSubscriptionRecordV1()));
     current.setRecord(populatedRecord());
 
     // then
@@ -68,7 +70,7 @@ final class CompensationSubscriptionSerdeTest {
   void shouldReadBytesWrittenByV1() {
     // given
     final var v1 = new CompensationSubscriptionV1();
-    v1.setRecord(populatedRecord());
+    v1.setRecord(RecordV1s.convert(populatedRecord(), new CompensationSubscriptionRecordV1()));
     v1.setKey(42L);
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);

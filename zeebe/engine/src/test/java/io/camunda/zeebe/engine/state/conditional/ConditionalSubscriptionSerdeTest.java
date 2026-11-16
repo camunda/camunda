@@ -10,9 +10,11 @@ package io.camunda.zeebe.engine.state.conditional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.engine.state.RecordV1s;
 import io.camunda.zeebe.msgpack.MsgpackPropertyException;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecordV1;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
@@ -34,7 +36,7 @@ final class ConditionalSubscriptionSerdeTest {
     final var record = populatedRecord();
     final var v1 = new ConditionalSubscriptionV1();
     final var current = new ConditionalSubscription();
-    v1.setRecord(record);
+    v1.setRecord(RecordV1s.convert(record, new ConditionalSubscriptionRecordV1()));
     v1.setKey(42L);
     current.setRecord(record);
     current.setKey(42L);
@@ -55,7 +57,7 @@ final class ConditionalSubscriptionSerdeTest {
     // given the key is not set
     final var v1 = new ConditionalSubscriptionV1();
     final var current = new ConditionalSubscription();
-    v1.setRecord(populatedRecord());
+    v1.setRecord(RecordV1s.convert(populatedRecord(), new ConditionalSubscriptionRecordV1()));
     current.setRecord(populatedRecord());
 
     // then
@@ -69,7 +71,7 @@ final class ConditionalSubscriptionSerdeTest {
   void shouldReadBytesWrittenByV1() {
     // given
     final var v1 = new ConditionalSubscriptionV1();
-    v1.setRecord(populatedRecord());
+    v1.setRecord(RecordV1s.convert(populatedRecord(), new ConditionalSubscriptionRecordV1()));
     v1.setKey(42L);
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);

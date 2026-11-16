@@ -7,36 +7,41 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.usertask;
 
-import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.BPMN_PROCESS_ID_KEY;
-import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.PROCESS_INSTANCE_KEY_KEY;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.PackedProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class UserTaskRecord extends UnifiedRecordValue implements UserTaskRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class UserTaskRecord extends MsgpackBufferValue<UserTaskRecord>
+    implements MsgpackRecordValue, UserTaskRecordValue {
 
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
@@ -47,18 +52,6 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   public static final String FOLLOW_UP_DATE = "followUpDate";
   public static final String PRIORITY = "priority";
   public static final String VARIABLES = "variables";
-
-  private static final String EMPTY_STRING = "";
-  private static final StringValue ASSIGNEE_VALUE = new StringValue(ASSIGNEE);
-  private static final StringValue CANDIDATE_GROUPS_VALUE = new StringValue(CANDIDATE_GROUPS);
-  private static final StringValue CANDIDATE_USERS_VALUE = new StringValue(CANDIDATE_USERS);
-  private static final StringValue DUE_DATE_VALUE = new StringValue(DUE_DATE);
-  private static final StringValue FOLLOW_UP_DATE_VALUE = new StringValue(FOLLOW_UP_DATE);
-  private static final StringValue PRIORITY_VALUE = new StringValue(PRIORITY);
-  private static final StringValue VARIABLES_VALUE = new StringValue(VARIABLES);
-  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_VALUE =
-      new StringValue("rootProcessInstanceKey");
-  private static final StringValue STORAGE_ORDINAL_VALUE = new StringValue("storageOrdinal");
 
   /**
    * Defines the mapping between names of attributes that may be modified (updated or corrected) and
@@ -83,37 +76,28 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
           PRIORITY, UserTaskRecord::getPriority,
           VARIABLES, UserTaskRecord::getVariablesBuffer);
 
-  private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1);
-  private final StringProperty assigneeProp = new StringProperty(ASSIGNEE, EMPTY_STRING);
-  private final ArrayProperty<StringValue> candidateGroupsListProp =
-      new ArrayProperty<>(CANDIDATE_GROUPS, StringValue::new);
-  private final ArrayProperty<StringValue> candidateUsersListProp =
-      new ArrayProperty<>(CANDIDATE_USERS, StringValue::new);
-  private final StringProperty dueDateProp = new StringProperty(DUE_DATE, EMPTY_STRING);
-  private final StringProperty followUpDateProp = new StringProperty(FOLLOW_UP_DATE, EMPTY_STRING);
-  private final LongProperty formKeyProp = new LongProperty("formKey", -1);
-  private final StringProperty externalFormReferenceProp =
-      new StringProperty("externalFormReference", EMPTY_STRING);
+  long userTaskKey = -1;
+  DirectBuffer assignee = Decoding.EMPTY;
+  final List<DirectBuffer> candidateGroupsList = new ArrayList<>();
+  final List<DirectBuffer> candidateUsersList = new ArrayList<>();
+  DirectBuffer dueDate = Decoding.EMPTY;
+  DirectBuffer followUpDate = Decoding.EMPTY;
+  long formKey = -1;
+  DirectBuffer externalFormReference = Decoding.EMPTY;
 
-  private final DocumentProperty variableProp = new DocumentProperty("variables");
-  private final PackedProperty customHeadersProp = new PackedProperty("customHeaders", NO_HEADERS);
+  @MsgpackProperty(document = true)
+  DirectBuffer variables = DocumentValue.EMPTY_DOCUMENT;
 
-  private final LongProperty processInstanceKeyProp =
-      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final StringProperty bpmnProcessIdProp =
-      new StringProperty(BPMN_PROCESS_ID_KEY, EMPTY_STRING);
-  private final IntegerProperty processDefinitionVersionProp =
-      new IntegerProperty("processDefinitionVersion", -1);
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty("processDefinitionKey", -1L);
-  private final StringProperty elementIdProp = new StringProperty("elementId", EMPTY_STRING);
-  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty rootProcessInstanceKeyProp =
-      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_VALUE, -1L);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_VALUE, 0);
-  private final StringProperty businessIdProp = new StringProperty("businessId", EMPTY_STRING);
+  @MsgpackProperty(raw = true)
+  DirectBuffer customHeaders = NO_HEADERS;
+
+  DirectBuffer bpmnProcessId = Decoding.EMPTY;
+  int processDefinitionVersion = -1;
+  long processDefinitionKey = -1L;
+  long processInstanceKey = -1L;
+  DirectBuffer elementId = Decoding.EMPTY;
+  long elementInstanceKey = -1L;
+  DirectBuffer tenantId = wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   /**
    * Tracks the names of user task attributes that are intended to be modified (e.g. on `UPDATE`),
@@ -147,76 +131,47 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
    * @see #wrapChangedAttributesIfValueChanged(UserTaskRecord)
    * @see #correctAttributes(List, JobResultCorrections)
    */
-  private final ArrayProperty<StringValue> changedAttributesProp =
-      new ArrayProperty<>("changedAttributes", StringValue::new);
+  final List<DirectBuffer> changedAttributes = new ArrayList<>();
 
-  private final StringProperty actionProp = new StringProperty("action", EMPTY_STRING);
-  private final LongProperty creationTimestampProp = new LongProperty("creationTimestamp", -1L);
-  private final IntegerProperty priorityProp = new IntegerProperty(PRIORITY, 50);
-  private final StringProperty deniedReasonProp = new StringProperty("deniedReason", EMPTY_STRING);
-  private final ArrayProperty<StringValue> tagsProp = new ArrayProperty<>("tags", StringValue::new);
-  private final LongProperty listenersConfigKeyProp = new LongProperty("listenersConfigKey", -1L);
-
-  public UserTaskRecord() {
-    super(27);
-    declareProperty(userTaskKeyProp)
-        .declareProperty(assigneeProp)
-        .declareProperty(candidateGroupsListProp)
-        .declareProperty(candidateUsersListProp)
-        .declareProperty(dueDateProp)
-        .declareProperty(followUpDateProp)
-        .declareProperty(formKeyProp)
-        .declareProperty(externalFormReferenceProp)
-        .declareProperty(variableProp)
-        .declareProperty(customHeadersProp)
-        .declareProperty(bpmnProcessIdProp)
-        .declareProperty(processDefinitionVersionProp)
-        .declareProperty(processDefinitionKeyProp)
-        .declareProperty(processInstanceKeyProp)
-        .declareProperty(elementIdProp)
-        .declareProperty(elementInstanceKeyProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(changedAttributesProp)
-        .declareProperty(actionProp)
-        .declareProperty(creationTimestampProp)
-        .declareProperty(priorityProp)
-        .declareProperty(deniedReasonProp)
-        .declareProperty(tagsProp)
-        .declareProperty(listenersConfigKeyProp)
-        .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(businessIdProp);
-  }
+  DirectBuffer action = Decoding.EMPTY;
+  long creationTimestamp = -1L;
+  int priority = 50;
+  DirectBuffer deniedReason = Decoding.EMPTY;
+  final List<DirectBuffer> tags = new ArrayList<>();
+  long listenersConfigKey = -1L;
+  long rootProcessInstanceKey = -1L;
+  int storageOrdinal = 0;
+  DirectBuffer businessId = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   /** Like {@link #wrap(UserTaskRecord)} but does not set the variables. */
   public void wrapWithoutVariables(final UserTaskRecord record) {
-    userTaskKeyProp.setValue(record.getUserTaskKey());
-    assigneeProp.setValue(record.getAssigneeBuffer());
+    userTaskKey = record.getUserTaskKey();
+    assignee = record.getAssigneeBuffer();
     setCandidateGroupsList(record.getCandidateGroupsList());
     setCandidateUsersList(record.getCandidateUsersList());
-    dueDateProp.setValue(record.getDueDateBuffer());
-    followUpDateProp.setValue(record.getFollowUpDateBuffer());
-    formKeyProp.setValue(record.getFormKey());
-    externalFormReferenceProp.setValue(record.getExternalFormReferenceBuffer());
-    final DirectBuffer customHeaders = record.getCustomHeadersBuffer();
-    customHeadersProp.setValue(customHeaders, 0, customHeaders.capacity());
-    bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
-    processDefinitionVersionProp.setValue(record.getProcessDefinitionVersion());
-    processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
-    processInstanceKeyProp.setValue(record.getProcessInstanceKey());
-    elementIdProp.setValue(record.getElementIdBuffer());
-    elementInstanceKeyProp.setValue(record.getElementInstanceKey());
-    tenantIdProp.setValue(record.getTenantIdBuffer());
-    creationTimestampProp.setValue(record.getCreationTimestamp());
+    dueDate = record.getDueDateBuffer();
+    followUpDate = record.getFollowUpDateBuffer();
+    formKey = record.getFormKey();
+    externalFormReference = record.getExternalFormReferenceBuffer();
+    customHeaders = record.getCustomHeadersBuffer();
+    bpmnProcessId = record.getBpmnProcessIdBuffer();
+    processDefinitionVersion = record.getProcessDefinitionVersion();
+    processDefinitionKey = record.getProcessDefinitionKey();
+    processInstanceKey = record.getProcessInstanceKey();
+    elementId = record.getElementIdBuffer();
+    elementInstanceKey = record.getElementInstanceKey();
+    tenantId = record.getTenantIdBuffer();
+    creationTimestamp = record.getCreationTimestamp();
     setChangedAttributesProp(record.getChangedAttributesProp());
-    actionProp.setValue(record.getActionBuffer());
-    priorityProp.setValue(record.getPriority());
-    deniedReasonProp.setValue(record.getDeniedReason());
+    action = record.getActionBuffer();
+    priority = record.getPriority();
+    deniedReason = wrapString(record.getDeniedReason());
     setTags(record.getTags());
-    listenersConfigKeyProp.setValue(record.getListenersConfigKey());
-    rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
-    storageOrdinalProp.setValue(record.getStorageOrdinal());
-    businessIdProp.setValue(record.getBusinessIdBuffer());
+    listenersConfigKey = record.getListenersConfigKey();
+    rootProcessInstanceKey = record.getRootProcessInstanceKey();
+    storageOrdinal = record.getStorageOrdinal();
+    businessId = record.getBusinessIdBuffer();
   }
 
   /**
@@ -227,7 +182,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
    */
   public void wrap(final UserTaskRecord record) {
     wrapWithoutVariables(record);
-    variableProp.setValue(record.getVariablesBuffer());
+    variables = record.getVariablesBuffer();
   }
 
   /** Returns a full copy of the record. */
@@ -241,8 +196,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
    * Updates the attributes of this {@link UserTaskRecord} based on the given record.
    *
    * @apiNote If {@code includeTrackingProperties} is {@code true}, all attributes in the given
-   *     record's `changedAttributes` list will be added to this record's `changedAttributesProp`,
-   *     even if their values match the existing values. To update attributes and track only truly
+   *     record's `changedAttributes` list will be added to this record's `changedAttributes`, even
+   *     if their values match the existing values. To update attributes and track only truly
    *     changed attributes, use the {@link #wrapChangedAttributesIfValueChanged} method instead.
    * @param record the record containing the changed attributes list and new attribute values
    * @param includeTrackingProperties whether to include all changed attributes in the tracking list
@@ -250,7 +205,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   public void wrapChangedAttributes(
       final UserTaskRecord record, final boolean includeTrackingProperties) {
     if (includeTrackingProperties) {
-      changedAttributesProp.reset();
+      changedAttributes.clear();
     }
 
     record
@@ -266,12 +221,12 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   /**
    * Updates the attributes of this {@link UserTaskRecord} based on the given record and adds the
-   * attribute to `changedAttributesProp` only if its value was actually changed.
+   * attribute to `changedAttributes` only if its value was actually changed.
    *
    * @param record the record containing the changed attributes list and new attribute values
    */
   public void wrapChangedAttributesIfValueChanged(final UserTaskRecord record) {
-    changedAttributesProp.reset();
+    changedAttributes.clear();
 
     record.getChangedAttributes().stream()
         .filter(attribute -> isAttributeValueChanged(attribute, record))
@@ -294,13 +249,13 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         setCandidateUsersList(record.getCandidateUsersList());
         break;
       case DUE_DATE:
-        dueDateProp.setValue(record.getDueDateBuffer());
+        dueDate = record.getDueDateBuffer();
         break;
       case FOLLOW_UP_DATE:
-        followUpDateProp.setValue(record.getFollowUpDateBuffer());
+        followUpDate = record.getFollowUpDateBuffer();
         break;
       case PRIORITY:
-        priorityProp.setValue(record.getPriority());
+        priority = record.getPriority();
         break;
       default:
         break;
@@ -317,7 +272,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
    */
   public void correctAttributes(
       final List<String> correctedAttributes, final JobResultCorrections corrections) {
-    changedAttributesProp.reset();
+    changedAttributes.clear();
 
     correctedAttributes.forEach(
         attribute -> {
@@ -337,376 +292,354 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   @Override
   public long getUserTaskKey() {
-    return userTaskKeyProp.getValue();
+    return userTaskKey;
   }
 
   @Override
   public String getAssignee() {
-    return bufferAsString(assigneeProp.getValue());
+    return bufferAsString(assignee);
   }
 
   @Override
   public List<String> getCandidateGroupsList() {
-    return StreamSupport.stream(candidateGroupsListProp.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .collect(Collectors.toList());
+    return toStringList(candidateGroupsList);
   }
 
   @Override
   public List<String> getCandidateUsersList() {
-    return StreamSupport.stream(candidateUsersListProp.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .collect(Collectors.toList());
+    return toStringList(candidateUsersList);
   }
 
   @Override
   public String getDueDate() {
-    return bufferAsString(dueDateProp.getValue());
+    return bufferAsString(dueDate);
   }
 
   @Override
   public String getFollowUpDate() {
-    return bufferAsString(followUpDateProp.getValue());
+    return bufferAsString(followUpDate);
   }
 
   @Override
   public long getFormKey() {
-    return formKeyProp.getValue();
+    return formKey;
   }
 
   @Override
   public List<String> getChangedAttributes() {
-    return StreamSupport.stream(changedAttributesProp.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .collect(Collectors.toList());
+    return toStringList(changedAttributes);
   }
 
   @Override
   public String getAction() {
-    return bufferAsString(actionProp.getValue());
+    return bufferAsString(action);
   }
 
   @Override
   public String getExternalFormReference() {
-    return bufferAsString(externalFormReferenceProp.getValue());
+    return bufferAsString(externalFormReference);
   }
 
   @Override
   public Map<String, String> getCustomHeaders() {
-    return MsgPackConverter.convertToStringMap(customHeadersProp.getValue());
+    return MsgPackConverter.convertToStringMap(customHeaders);
   }
 
   @Override
   public long getCreationTimestamp() {
-    return creationTimestampProp.getValue();
+    return creationTimestamp;
   }
 
   @Override
   public String getElementId() {
-    return bufferAsString(elementIdProp.getValue());
+    return bufferAsString(elementId);
   }
 
   @Override
   public long getElementInstanceKey() {
-    return elementInstanceKeyProp.getValue();
+    return elementInstanceKey;
   }
 
   @Override
   public String getBpmnProcessId() {
-    return bufferAsString(bpmnProcessIdProp.getValue());
+    return bufferAsString(bpmnProcessId);
   }
 
   @Override
   public int getProcessDefinitionVersion() {
-    return processDefinitionVersionProp.getValue();
+    return processDefinitionVersion;
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey;
   }
 
   public UserTaskRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProp.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
   @Override
   public int getPriority() {
-    return priorityProp.getValue();
+    return priority;
   }
 
   public UserTaskRecord setPriority(final int priority) {
-    priorityProp.setValue(priority);
+    this.priority = priority;
     return this;
   }
 
   @Override
   public Set<String> getTags() {
-    return StreamSupport.stream(tagsProp.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .collect(Collectors.toSet());
+    return tags.stream().map(BufferUtil::bufferAsString).collect(Collectors.toSet());
   }
 
   public UserTaskRecord setTags(final Set<String> tags) {
-    tagsProp.reset();
+    this.tags.clear();
     if (tags != null) {
-      tags.forEach(tag -> tagsProp.add().wrap(BufferUtil.wrapString(tag)));
+      tags.forEach(tag -> this.tags.add(wrapString(tag)));
     }
     return this;
   }
 
   @Override
   public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
+    return rootProcessInstanceKey;
   }
 
   public UserTaskRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
   }
 
   @Override
   public String getBusinessId() {
-    return bufferAsString(businessIdProp.getValue());
+    return bufferAsString(businessId);
   }
 
   public UserTaskRecord setBusinessId(final String businessId) {
-    businessIdProp.setValue(businessId);
+    this.businessId = wrapString(businessId);
     return this;
   }
 
   public UserTaskRecord setBusinessId(final DirectBuffer businessId) {
-    businessIdProp.setValue(businessId);
+    this.businessId = businessId;
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getBusinessIdBuffer() {
-    return businessIdProp.getValue();
+    return businessId;
   }
 
   public UserTaskRecord setProcessDefinitionVersion(final int version) {
-    processDefinitionVersionProp.setValue(version);
+    processDefinitionVersion = version;
     return this;
   }
 
   public UserTaskRecord setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = wrapString(bpmnProcessId);
     return this;
   }
 
   public UserTaskRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
   public UserTaskRecord setElementInstanceKey(final long elementInstanceKey) {
-    elementInstanceKeyProp.setValue(elementInstanceKey);
+    this.elementInstanceKey = elementInstanceKey;
     return this;
   }
 
   public UserTaskRecord setElementId(final String elementId) {
-    elementIdProp.setValue(elementId);
+    this.elementId = wrapString(elementId);
     return this;
   }
 
   public UserTaskRecord setElementId(final DirectBuffer elementId) {
-    elementIdProp.setValue(elementId);
+    this.elementId = elementId;
     return this;
   }
 
   public UserTaskRecord setCreationTimestamp(final long creationTimestamp) {
-    creationTimestampProp.setValue(creationTimestamp);
+    this.creationTimestamp = creationTimestamp;
     return this;
   }
 
   public UserTaskRecord setCustomHeaders(final DirectBuffer buffer) {
-    customHeadersProp.setValue(buffer, 0, buffer.capacity());
+    customHeaders = buffer;
     return this;
   }
 
   public UserTaskRecord setExternalFormReference(final DirectBuffer externalFormReference) {
-    externalFormReferenceProp.setValue(externalFormReference);
+    this.externalFormReference = externalFormReference;
     return this;
   }
 
   public UserTaskRecord setExternalFormReference(final String externalFormReference) {
-    externalFormReferenceProp.setValue(externalFormReference);
+    this.externalFormReference = wrapString(externalFormReference);
     return this;
   }
 
   public UserTaskRecord setAction(final String action) {
-    actionProp.setValue(action);
+    this.action = wrapString(action);
     return this;
   }
 
   public UserTaskRecord setAction(final DirectBuffer action) {
-    actionProp.setValue(action);
+    this.action = action;
     return this;
   }
 
   public UserTaskRecord setChangedAttributes(final List<String> changedAttributes) {
-    changedAttributesProp.reset();
+    this.changedAttributes.clear();
     changedAttributes.forEach(this::addChangedAttribute);
     return this;
   }
 
   public UserTaskRecord setFormKey(final long formKey) {
-    formKeyProp.setValue(formKey);
+    this.formKey = formKey;
     return this;
   }
 
   public UserTaskRecord setFollowUpDate(final String followUpDate) {
-    followUpDateProp.setValue(followUpDate);
+    this.followUpDate = wrapString(followUpDate);
     return this;
   }
 
   public UserTaskRecord setFollowUpDate(final DirectBuffer followUpDate) {
-    followUpDateProp.setValue(followUpDate);
+    this.followUpDate = followUpDate;
     return this;
   }
 
   public UserTaskRecord setDueDate(final String dueDate) {
-    dueDateProp.setValue(dueDate);
+    this.dueDate = wrapString(dueDate);
     return this;
   }
 
   public UserTaskRecord setDueDate(final DirectBuffer dueDate) {
-    dueDateProp.setValue(dueDate);
+    this.dueDate = dueDate;
     return this;
   }
 
   public UserTaskRecord setCandidateUsersList(final List<String> candidateUsers) {
-    candidateUsersListProp.reset();
-    candidateUsers.forEach(
-        tenantId -> candidateUsersListProp.add().wrap(BufferUtil.wrapString(tenantId)));
+    candidateUsersList.clear();
+    candidateUsers.forEach(user -> candidateUsersList.add(wrapString(user)));
     return this;
   }
 
   public UserTaskRecord setCandidateGroupsList(final List<String> candidateGroups) {
-    candidateGroupsListProp.reset();
-    candidateGroups.forEach(
-        tenantId -> candidateGroupsListProp.add().wrap(BufferUtil.wrapString(tenantId)));
+    candidateGroupsList.clear();
+    candidateGroups.forEach(group -> candidateGroupsList.add(wrapString(group)));
     return this;
   }
 
   public UserTaskRecord setAssignee(final String assignee) {
-    assigneeProp.setValue(assignee);
+    this.assignee = wrapString(assignee);
     return this;
   }
 
   public UserTaskRecord setAssignee(final DirectBuffer assignee) {
-    assigneeProp.setValue(assignee);
+    this.assignee = assignee;
     return this;
   }
 
   public UserTaskRecord setUserTaskKey(final long userTaskKey) {
-    userTaskKeyProp.setValue(userTaskKey);
+    this.userTaskKey = userTaskKey;
     return this;
   }
 
   public long getListenersConfigKey() {
-    return listenersConfigKeyProp.getValue();
+    return listenersConfigKey;
   }
 
   public UserTaskRecord setListenersConfigKey(final long listenersConfigKey) {
-    listenersConfigKeyProp.setValue(listenersConfigKey);
+    this.listenersConfigKey = listenersConfigKey;
     return this;
   }
 
   public String getDeniedReason() {
-    return bufferAsString(deniedReasonProp.getValue());
+    return bufferAsString(deniedReason);
   }
 
   public UserTaskRecord setDeniedReason(final String deniedReason) {
-    deniedReasonProp.setValue(deniedReason);
+    this.deniedReason = wrapString(deniedReason);
     return this;
   }
 
   public UserTaskRecord setAssigneeChanged() {
-    changedAttributesProp.add().wrap(ASSIGNEE_VALUE);
-    return this;
+    return addChangedAttribute(ASSIGNEE);
   }
 
   public UserTaskRecord setCandidateGroupsChanged() {
-    changedAttributesProp.add().wrap(CANDIDATE_GROUPS_VALUE);
-    return this;
+    return addChangedAttribute(CANDIDATE_GROUPS);
   }
 
   public UserTaskRecord setCandidateUsersChanged() {
-    changedAttributesProp.add().wrap(CANDIDATE_USERS_VALUE);
-    return this;
+    return addChangedAttribute(CANDIDATE_USERS);
   }
 
   public UserTaskRecord setDueDateChanged() {
-    changedAttributesProp.add().wrap(DUE_DATE_VALUE);
-    return this;
+    return addChangedAttribute(DUE_DATE);
   }
 
   public UserTaskRecord setFollowUpDateChanged() {
-    changedAttributesProp.add().wrap(FOLLOW_UP_DATE_VALUE);
-    return this;
+    return addChangedAttribute(FOLLOW_UP_DATE);
   }
 
   public UserTaskRecord setPriorityChanged() {
-    changedAttributesProp.add().wrap(PRIORITY_VALUE);
-    return this;
+    return addChangedAttribute(PRIORITY);
   }
 
   public UserTaskRecord setVariablesChanged() {
-    changedAttributesProp.add().wrap(VARIABLES_VALUE);
-    return this;
+    return addChangedAttribute(VARIABLES);
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public UserTaskRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = wrapString(tenantId);
     return this;
   }
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variableProp.getValue());
+    return MsgPackConverter.convertToMap(variables);
   }
 
   public UserTaskRecord setVariables(final DirectBuffer variables) {
-    variableProp.setValue(variables);
+    this.variables = Decoding.document(variables);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getCustomHeadersBuffer() {
-    return customHeadersProp.getValue();
+    return customHeaders;
   }
 
   @JsonIgnore
-  public ArrayProperty<StringValue> getChangedAttributesProp() {
-    return changedAttributesProp;
+  public List<DirectBuffer> getChangedAttributesProp() {
+    return changedAttributes;
   }
 
-  public UserTaskRecord setChangedAttributesProp(
-      final ArrayProperty<StringValue> changedAttributes) {
-    changedAttributesProp.reset();
-    changedAttributes.forEach(attribute -> changedAttributesProp.add().wrap(attribute));
+  public UserTaskRecord setChangedAttributesProp(final List<DirectBuffer> changedAttributes) {
+    this.changedAttributes.clear();
+    this.changedAttributes.addAll(changedAttributes);
     return this;
   }
 
   public UserTaskRecord addChangedAttribute(final String attribute) {
-    changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute));
+    changedAttributes.add(wrapString(attribute));
     return this;
   }
 
   public void setDiffAsChangedAttributes(final UserTaskRecord other) {
-    changedAttributesProp.reset();
+    changedAttributes.clear();
     determineChangedAttributes(other).forEach(this::addChangedAttribute);
   }
 
@@ -730,7 +663,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   }
 
   public boolean hasChangedAttributes() {
-    return !changedAttributesProp.isEmpty();
+    return !changedAttributes.isEmpty();
   }
 
   private boolean isAttributeValueChanged(final String attribute, final UserTaskRecord other) {
@@ -746,85 +679,99 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   @JsonIgnore
   public DirectBuffer getAssigneeBuffer() {
-    return assigneeProp.getValue();
+    return assignee;
   }
 
   @JsonIgnore
   public DirectBuffer getDueDateBuffer() {
-    return dueDateProp.getValue();
+    return dueDate;
   }
 
   @JsonIgnore
   public DirectBuffer getFollowUpDateBuffer() {
-    return followUpDateProp.getValue();
+    return followUpDate;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variableProp.getValue();
+    return variables;
   }
 
   @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProp.getValue();
+    return bpmnProcessId;
   }
 
   @JsonIgnore
   public DirectBuffer getElementIdBuffer() {
-    return elementIdProp.getValue();
+    return elementId;
   }
 
   @JsonIgnore
   public DirectBuffer getExternalFormReferenceBuffer() {
-    return externalFormReferenceProp.getValue();
+    return externalFormReference;
   }
 
   @JsonIgnore
   public DirectBuffer getTenantIdBuffer() {
-    return tenantIdProp.getValue();
+    return tenantId;
   }
 
   @JsonIgnore
   public DirectBuffer getActionBuffer() {
-    return actionProp.getValue();
+    return action;
   }
 
   @JsonIgnore
   public String getActionOrDefault(final String defaultAction) {
-    final String action = bufferAsString(actionProp.getValue());
-    return action.isEmpty() ? defaultAction : action;
+    final String actionString = bufferAsString(action);
+    return actionString.isEmpty() ? defaultAction : actionString;
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey;
   }
 
   public UserTaskRecord setProcessInstanceKey(final long key) {
-    processInstanceKeyProp.setValue(key);
+    processInstanceKey = key;
     return this;
   }
 
   public UserTaskRecord unsetAssignee() {
-    assigneeProp.setValue(EMPTY_STRING);
-    final var changedAttributes = getChangedAttributes();
-    changedAttributes.remove(ASSIGNEE);
-    setChangedAttributes(changedAttributes);
+    assignee = Decoding.EMPTY;
+    final var changedAttributeNames = getChangedAttributes();
+    changedAttributeNames.remove(ASSIGNEE);
+    setChangedAttributes(changedAttributeNames);
     return this;
   }
 
   public UserTaskRecord resetChangedAttributes() {
-    changedAttributesProp.reset();
+    changedAttributes.clear();
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public UserTaskRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  private static List<String> toStringList(final List<DirectBuffer> buffers) {
+    return buffers.stream().map(BufferUtil::bufferAsString).collect(Collectors.toList());
+  }
+
+  @Override
+  protected MsgpackCodec<UserTaskRecord> codec() {
+    return UserTaskRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<UserTaskRecord> ops() {
+    return UserTaskRecordOps.INSTANCE;
   }
 }

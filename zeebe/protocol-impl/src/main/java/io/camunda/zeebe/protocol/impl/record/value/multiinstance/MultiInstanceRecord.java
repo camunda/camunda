@@ -8,33 +8,34 @@
 package io.camunda.zeebe.protocol.impl.record.value.multiinstance;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.msgpack.value.BinaryValue;
-import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public class MultiInstanceRecord extends UnifiedRecordValue implements MultiInstanceRecordValue {
-  private static final StringValue INPUT_COLLECTION = new StringValue("inputCollection");
-  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
+@MsgpackPojo
+@NullMarked
+public final class MultiInstanceRecord extends MsgpackBufferValue<MultiInstanceRecord>
+    implements MsgpackRecordValue, MultiInstanceRecordValue {
 
-  private final ArrayProperty<BinaryValue> inputCollectionProperty =
-      new ArrayProperty<>(INPUT_COLLECTION, BinaryValue::new);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
-
-  public MultiInstanceRecord() {
-    super(2);
-    declareProperty(inputCollectionProperty).declareProperty(storageOrdinalProp);
-  }
+  final List<BinaryValue> inputCollection = new ArrayList<>();
+  int storageOrdinal = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @JsonIgnore
   public List<DirectBuffer> getInputCollectionBuffers() {
-    return inputCollectionProperty.stream().map(BinaryValue::getValue).collect(Collectors.toList());
+    return inputCollection.stream().map(BinaryValue::getValue).collect(Collectors.toList());
   }
 
   @Override
@@ -45,18 +46,30 @@ public class MultiInstanceRecord extends UnifiedRecordValue implements MultiInst
   public MultiInstanceRecord setInputCollection(final List<DirectBuffer> inputCollection) {
     inputCollection.forEach(
         inputElement -> {
-          inputCollectionProperty.add().wrap(inputElement, 0, inputElement.capacity());
+          final var element = new BinaryValue();
+          element.wrap(inputElement, 0, inputElement.capacity());
+          this.inputCollection.add(element);
         });
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public MultiInstanceRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<MultiInstanceRecord> codec() {
+    return MultiInstanceRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<MultiInstanceRecord> ops() {
+    return MultiInstanceRecordOps.INSTANCE;
   }
 }

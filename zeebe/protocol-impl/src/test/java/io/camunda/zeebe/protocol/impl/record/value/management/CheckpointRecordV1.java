@@ -1,0 +1,95 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.protocol.impl.record.value.management;
+
+import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
+ * codec of the current class keeps the stored format. Do not modify.
+ */
+public final class CheckpointRecordV1 extends UnifiedRecordValue implements CheckpointRecordValue {
+
+  private static final String CHECKPOINT_ID_KEY = "id";
+  private static final String CHECKPOINT_POSITION_KEY = "position";
+  private static final String CHECKPOINT_TYPE_KEY = "type";
+
+  private final LongProperty checkpointIdProperty = new LongProperty(CHECKPOINT_ID_KEY, -1L);
+  private final LongProperty checkpointPositionProperty =
+      new LongProperty(CHECKPOINT_POSITION_KEY, -1L);
+  private final EnumProperty<CheckpointType> checkpointTypeProperty =
+      new EnumProperty<>(CHECKPOINT_TYPE_KEY, CheckpointType.class, CheckpointType.MANUAL_BACKUP);
+  private final LongProperty firstLogPositionProperty = new LongProperty("firstLogPosition", -1L);
+  private final StringProperty snapshotIdProperty = new StringProperty("snapshotId", "");
+
+  public CheckpointRecordV1() {
+    super(5);
+    declareProperty(checkpointIdProperty)
+        .declareProperty(checkpointPositionProperty)
+        .declareProperty(checkpointTypeProperty)
+        .declareProperty(firstLogPositionProperty)
+        .declareProperty(snapshotIdProperty);
+  }
+
+  @Override
+  public long getCheckpointId() {
+    return checkpointIdProperty.getValue();
+  }
+
+  @Override
+  public long getCheckpointPosition() {
+    return checkpointPositionProperty.getValue();
+  }
+
+  @Override
+  public CheckpointType getCheckpointType() {
+    return checkpointTypeProperty.getValue();
+  }
+
+  @Override
+  public long getFirstLogPosition() {
+    return firstLogPositionProperty.getValue();
+  }
+
+  @Override
+  public String getSnapshotId() {
+    return BufferUtil.bufferAsString(snapshotIdProperty.getValue());
+  }
+
+  public CheckpointRecordV1 setSnapshotId(final String snapshotId) {
+    snapshotIdProperty.setValue(snapshotId);
+    return this;
+  }
+
+  public CheckpointRecordV1 setFirstLogPosition(final long firstLogPosition) {
+    firstLogPositionProperty.setValue(firstLogPosition);
+    return this;
+  }
+
+  public CheckpointRecordV1 setCheckpointType(@Nullable final CheckpointType checkpointType) {
+    checkpointTypeProperty.setValue(checkpointType);
+    return this;
+  }
+
+  public CheckpointRecordV1 setCheckpointPosition(final long checkpointPosition) {
+    checkpointPositionProperty.setValue(checkpointPosition);
+    return this;
+  }
+
+  public CheckpointRecordV1 setCheckpointId(final long checkpointId) {
+    checkpointIdProperty.setValue(checkpointId);
+    return this;
+  }
+}

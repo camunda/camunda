@@ -10,9 +10,11 @@ package io.camunda.zeebe.engine.state.message;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.engine.state.RecordV1s;
 import io.camunda.zeebe.msgpack.MsgpackPropertyException;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecordV1;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
@@ -39,7 +41,7 @@ final class StoredMessageSerdeTest {
             .setCorrelationKey("correlation-key")
             .setTimeToLive(1000L)
             .setTenantId("tenant-a");
-    v1.setMessage(record);
+    v1.setMessage(RecordV1s.convert(record, new MessageRecordV1()));
     current.setMessage(record);
     v1.setMessageKey(1L << 40);
     current.setMessageKey(1L << 40);
@@ -71,7 +73,7 @@ final class StoredMessageSerdeTest {
   void shouldReadBytesWrittenByV1() {
     // given
     final var v1 = new StoredMessageV1();
-    v1.setMessage(record());
+    v1.setMessage(RecordV1s.convert(record(), new MessageRecordV1()));
     v1.setMessageKey(42L);
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);

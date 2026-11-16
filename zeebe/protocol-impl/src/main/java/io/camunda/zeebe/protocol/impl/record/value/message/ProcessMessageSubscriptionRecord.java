@@ -7,95 +7,59 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.message;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredInt;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
 @SuppressWarnings("java:S2160")
-public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
-    implements ProcessMessageSubscriptionRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class ProcessMessageSubscriptionRecord
+    extends MsgpackBufferValue<ProcessMessageSubscriptionRecord>
+    implements MsgpackRecordValue, ProcessMessageSubscriptionRecordValue {
 
-  // Static StringValue keys for property names
-  private static final StringValue SUBSCRIPTION_PARTITION_ID_KEY =
-      new StringValue("subscriptionPartitionId");
-  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
-  private static final StringValue ELEMENT_INSTANCE_KEY_KEY = new StringValue("elementInstanceKey");
-  private static final StringValue PROCESS_DEFINITION_KEY = new StringValue("processDefinitionKey");
-  private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
-  private static final StringValue MESSAGE_KEY_KEY = new StringValue("messageKey");
-  private static final StringValue MESSAGE_NAME_KEY = new StringValue("messageName");
-  private static final StringValue VARIABLES_KEY = new StringValue("variables");
-  private static final StringValue INTERRUPTING_KEY = new StringValue("interrupting");
-  private static final StringValue CORRELATION_KEY_KEY = new StringValue("correlationKey");
-  private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
-  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
-      new StringValue("rootProcessInstanceKey");
-  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
-  private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
-  private static final StringValue ELEMENT_TYPE_KEY = new StringValue("elementType");
-  private static final StringValue SUBSCRIPTION_KEY_KEY = new StringValue("subscriptionKey");
-  private static final StringValue CLOSED_FOR_SUSPEND_KEY = new StringValue("closedForSuspend");
+  final RequiredInt subscriptionPartitionId = new RequiredInt();
+  final RequiredLong processInstanceKey = new RequiredLong();
+  final RequiredLong elementInstanceKey = new RequiredLong();
+  long processDefinitionKey = -1L;
+  long messageKey = -1L;
+  DirectBuffer messageName = Decoding.EMPTY;
 
-  private final IntegerProperty subscriptionPartitionIdProp =
-      new IntegerProperty(SUBSCRIPTION_PARTITION_ID_KEY);
-  private final LongProperty processInstanceKeyProp = new LongProperty(PROCESS_INSTANCE_KEY_KEY);
-  private final LongProperty elementInstanceKeyProp = new LongProperty(ELEMENT_INSTANCE_KEY_KEY);
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty(PROCESS_DEFINITION_KEY, -1);
-  private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
-  private final LongProperty messageKeyProp = new LongProperty(MESSAGE_KEY_KEY, -1L);
-  private final StringProperty messageNameProp = new StringProperty(MESSAGE_NAME_KEY, "");
-  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
-  private final BooleanProperty interruptingProp = new BooleanProperty(INTERRUPTING_KEY, true);
-  private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY, "");
-  private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, "");
-  private final StringProperty tenantIdProp =
-      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty rootProcessInstanceKeyProp =
-      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
-  private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
-  private final EnumProperty<BpmnElementType> elementTypeProp =
-      new EnumProperty<>(ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
-  private final LongProperty subscriptionKeyProp = new LongProperty(SUBSCRIPTION_KEY_KEY, -1L);
-  private final BooleanProperty closedForSuspendProp =
-      new BooleanProperty(CLOSED_FOR_SUSPEND_KEY, false);
+  @MsgpackProperty(document = true)
+  DirectBuffer variables = DocumentValue.EMPTY_DOCUMENT;
 
-  public ProcessMessageSubscriptionRecord() {
-    super(18);
-    declareProperty(subscriptionPartitionIdProp)
-        .declareProperty(processInstanceKeyProp)
-        .declareProperty(elementInstanceKeyProp)
-        .declareProperty(processDefinitionKeyProp)
-        .declareProperty(messageKeyProp)
-        .declareProperty(messageNameProp)
-        .declareProperty(variablesProp)
-        .declareProperty(interruptingProp)
-        .declareProperty(bpmnProcessIdProp)
-        .declareProperty(correlationKeyProp)
-        .declareProperty(elementIdProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(businessIdProp)
-        .declareProperty(elementTypeProp)
-        .declareProperty(subscriptionKeyProp)
-        .declareProperty(closedForSuspendProp);
-  }
+  boolean interrupting = true;
+  DirectBuffer bpmnProcessId = Decoding.EMPTY;
+  DirectBuffer correlationKey = Decoding.EMPTY;
+  DirectBuffer elementId = Decoding.EMPTY;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long rootProcessInstanceKey = -1L;
+  int storageOrdinal = 0;
+  DirectBuffer businessId = Decoding.EMPTY;
+  BpmnElementType elementType = BpmnElementType.UNSPECIFIED;
+  long subscriptionKey = -1L;
+  boolean closedForSuspend = false;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public void wrap(final ProcessMessageSubscriptionRecord record) {
     setSubscriptionPartitionId(record.getSubscriptionPartitionId());
@@ -120,216 +84,226 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
 
   @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProp.getValue();
+    return bpmnProcessId;
   }
 
   @JsonIgnore
   public DirectBuffer getMessageNameBuffer() {
-    return messageNameProp.getValue();
+    return messageName;
   }
 
   @JsonIgnore
   public int getSubscriptionPartitionId() {
-    return subscriptionPartitionIdProp.getValue();
+    return subscriptionPartitionId.get();
   }
 
   public ProcessMessageSubscriptionRecord setSubscriptionPartitionId(final int partitionId) {
-    subscriptionPartitionIdProp.setValue(partitionId);
+    subscriptionPartitionId.set(partitionId);
     return this;
   }
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProp.getValue());
+    return MsgPackConverter.convertToMap(variables);
   }
 
   public ProcessMessageSubscriptionRecord setVariables(final DirectBuffer variables) {
-    variablesProp.setValue(variables);
+    this.variables = Decoding.document(variables);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProp.getValue();
+    return variables;
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey.get();
   }
 
   @Override
   public long getElementInstanceKey() {
-    return elementInstanceKeyProp.getValue();
+    return elementInstanceKey.get();
   }
 
   public ProcessMessageSubscriptionRecord setElementInstanceKey(final long key) {
-    elementInstanceKeyProp.setValue(key);
+    this.elementInstanceKey.set(key);
     return this;
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey;
   }
 
   public ProcessMessageSubscriptionRecord setProcessDefinitionKey(final long key) {
-    processDefinitionKeyProp.setValue(key);
+    this.processDefinitionKey = key;
     return this;
   }
 
   @Override
   public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+    return bufferAsString(bpmnProcessId);
   }
 
   public ProcessMessageSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
   @Override
   public long getMessageKey() {
-    return messageKeyProp.getValue();
+    return messageKey;
   }
 
   @Override
   public String getMessageName() {
-    return BufferUtil.bufferAsString(messageNameProp.getValue());
+    return bufferAsString(messageName);
   }
 
   @Override
   public String getCorrelationKey() {
-    return BufferUtil.bufferAsString(correlationKeyProp.getValue());
+    return bufferAsString(correlationKey);
   }
 
   public ProcessMessageSubscriptionRecord setCorrelationKey(final DirectBuffer correlationKey) {
-    correlationKeyProp.setValue(correlationKey);
+    this.correlationKey = correlationKey;
     return this;
   }
 
   @Override
   public String getElementId() {
-    return BufferUtil.bufferAsString(getElementIdBuffer());
+    return bufferAsString(elementId);
   }
 
   @Override
   public boolean isInterrupting() {
-    return interruptingProp.getValue();
+    return interrupting;
   }
 
   public ProcessMessageSubscriptionRecord setInterrupting(final boolean interrupting) {
-    interruptingProp.setValue(interrupting);
+    this.interrupting = interrupting;
     return this;
   }
 
   @Override
   public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
+    return rootProcessInstanceKey;
   }
 
   public ProcessMessageSubscriptionRecord setRootProcessInstanceKey(final long key) {
-    rootProcessInstanceKeyProp.setValue(key);
+    this.rootProcessInstanceKey = key;
     return this;
   }
 
   @Override
   public String getBusinessId() {
-    return BufferUtil.bufferAsString(businessIdProp.getValue());
+    return bufferAsString(businessId);
   }
 
   public ProcessMessageSubscriptionRecord setBusinessId(final String businessId) {
-    businessIdProp.setValue(businessId);
+    this.businessId = BufferUtil.wrapString(businessId);
     return this;
   }
 
   public ProcessMessageSubscriptionRecord setBusinessId(final DirectBuffer businessId) {
-    businessIdProp.setValue(businessId);
+    this.businessId = businessId;
     return this;
   }
 
   @Override
   public BpmnElementType getElementType() {
-    return elementTypeProp.getValue();
+    return elementType;
   }
 
   public ProcessMessageSubscriptionRecord setElementType(final BpmnElementType elementType) {
-    elementTypeProp.setValue(elementType);
+    this.elementType = elementType;
     return this;
   }
 
   public ProcessMessageSubscriptionRecord setElementId(final DirectBuffer elementId) {
-    elementIdProp.setValue(elementId);
+    this.elementId = elementId;
     return this;
   }
 
   public ProcessMessageSubscriptionRecord setMessageName(final DirectBuffer messageName) {
-    messageNameProp.setValue(messageName);
+    this.messageName = messageName;
     return this;
   }
 
   public ProcessMessageSubscriptionRecord setMessageKey(final long messageKey) {
-    messageKeyProp.setValue(messageKey);
+    this.messageKey = messageKey;
     return this;
   }
 
   public ProcessMessageSubscriptionRecord setProcessInstanceKey(final long key) {
-    processInstanceKeyProp.setValue(key);
+    this.processInstanceKey.set(key);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getCorrelationKeyBuffer() {
-    return correlationKeyProp.getValue();
+    return correlationKey;
   }
 
   @JsonIgnore
   public DirectBuffer getElementIdBuffer() {
-    return elementIdProp.getValue();
+    return elementId;
   }
 
   @Override
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public ProcessMessageSubscriptionRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getBusinessIdBuffer() {
-    return businessIdProp.getValue();
+    return businessId;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public ProcessMessageSubscriptionRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 
   @Override
   public long getSubscriptionKey() {
-    return subscriptionKeyProp.getValue();
+    return subscriptionKey;
   }
 
   public ProcessMessageSubscriptionRecord setSubscriptionKey(final long subscriptionKey) {
-    subscriptionKeyProp.setValue(subscriptionKey);
+    this.subscriptionKey = subscriptionKey;
     return this;
   }
 
   @Override
   public boolean isClosedForSuspend() {
-    return closedForSuspendProp.getValue();
+    return closedForSuspend;
   }
 
   public ProcessMessageSubscriptionRecord setClosedForSuspend(final boolean closedForSuspend) {
-    closedForSuspendProp.setValue(closedForSuspend);
+    this.closedForSuspend = closedForSuspend;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ProcessMessageSubscriptionRecord> codec() {
+    return ProcessMessageSubscriptionRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ProcessMessageSubscriptionRecord> ops() {
+    return ProcessMessageSubscriptionRecordOps.INSTANCE;
   }
 }

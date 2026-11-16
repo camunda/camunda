@@ -11,7 +11,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecordV1;
 
 /**
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
@@ -20,8 +20,8 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentReco
 public final class VariableDocumentStateV1 extends UnpackedObject implements DbValue {
 
   private final LongProperty variableDocumentKeyProp = new LongProperty("variableDocumentKey", -1);
-  private final ObjectProperty<VariableDocumentRecord> recordProp =
-      new ObjectProperty<>("variableDocumentRecord", new VariableDocumentRecord());
+  private final ObjectProperty<VariableDocumentRecordV1> recordProp =
+      new ObjectProperty<>("variableDocumentRecord", new VariableDocumentRecordV1());
 
   public VariableDocumentStateV1() {
     super(2);
@@ -37,11 +37,11 @@ public final class VariableDocumentStateV1 extends UnpackedObject implements DbV
     return this;
   }
 
-  public VariableDocumentRecord getRecord() {
+  public VariableDocumentRecordV1 getRecord() {
     return recordProp.getValue();
   }
 
-  public VariableDocumentStateV1 setRecord(final VariableDocumentRecord record) {
+  public VariableDocumentStateV1 setRecord(final VariableDocumentRecordV1 record) {
     recordProp.getValue().wrap(record);
     return this;
   }

@@ -8,11 +8,10 @@
 package io.camunda.zeebe.engine.state.compensation;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.engine.state.RecordObjectValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecordV1;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 /**
@@ -21,10 +20,9 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
  */
 public final class CompensationSubscriptionV1 extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<RecordObjectValue<CompensationSubscriptionRecord>> recordProp =
+  private final ObjectProperty<CompensationSubscriptionRecordV1> recordProp =
       new ObjectProperty<>(
-          "compensationSubscriptionRecord",
-          new RecordObjectValue<>(new CompensationSubscriptionRecord()));
+          "compensationSubscriptionRecord", new CompensationSubscriptionRecordV1());
 
   private final LongProperty keyProp = new LongProperty("key");
 
@@ -37,19 +35,19 @@ public final class CompensationSubscriptionV1 extends UnpackedObject implements 
     final var copy = new CompensationSubscriptionV1();
     copy.setKey(getKey());
 
-    final CompensationSubscriptionRecord original = getRecord();
+    final CompensationSubscriptionRecordV1 original = getRecord();
     copy.getRecord().wrap(original);
     copy.getRecord().setVariables(BufferUtil.cloneBuffer(original.getVariablesBuffer()));
 
     return copy;
   }
 
-  public CompensationSubscriptionRecord getRecord() {
-    return recordProp.getValue().get();
+  public CompensationSubscriptionRecordV1 getRecord() {
+    return recordProp.getValue();
   }
 
-  public void setRecord(final CompensationSubscriptionRecord record) {
-    recordProp.getValue().get().wrap(record);
+  public void setRecord(final CompensationSubscriptionRecordV1 record) {
+    recordProp.getValue().wrap(record);
   }
 
   public long getKey() {

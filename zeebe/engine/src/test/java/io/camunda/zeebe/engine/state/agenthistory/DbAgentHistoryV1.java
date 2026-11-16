@@ -8,10 +8,9 @@
 package io.camunda.zeebe.engine.state.agenthistory;
 
 import io.camunda.zeebe.db.DbValue;
-import io.camunda.zeebe.engine.state.RecordObjectValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
+import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecordV1;
 
 /**
  * Frozen copy of the hand-written UnpackedObject implementation, kept to verify that the generated
@@ -19,19 +18,19 @@ import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryReco
  */
 public final class DbAgentHistoryV1 extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<RecordObjectValue<AgentHistoryRecord>> recordProp =
-      new ObjectProperty<>("agentHistoryRecord", new RecordObjectValue<>(new AgentHistoryRecord()));
+  private final ObjectProperty<AgentHistoryRecordV1> recordProp =
+      new ObjectProperty<>("agentHistoryRecord", new AgentHistoryRecordV1());
 
   public DbAgentHistoryV1() {
     super(1);
     declareProperty(recordProp);
   }
 
-  public AgentHistoryRecord getRecord() {
-    return recordProp.getValue().get();
+  public AgentHistoryRecordV1 getRecord() {
+    return recordProp.getValue();
   }
 
-  public void setRecord(final AgentHistoryRecord record) {
-    recordProp.getValue().get().copyFrom(record);
+  public void setRecord(final AgentHistoryRecordV1 record) {
+    recordProp.getValue().copyFrom(record);
   }
 }

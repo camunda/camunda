@@ -10,10 +10,12 @@ package io.camunda.zeebe.engine.state.instance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
+import io.camunda.zeebe.engine.state.RecordV1s;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.msgpack.MsgpackPropertyException;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecordV1;
 import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import org.agrona.DirectBuffer;
@@ -36,7 +38,7 @@ final class UserTaskIntermediateStateValueSerdeTest {
   void shouldWriteTheSameBytesAsV1() {
     // given
     final var v1 = new UserTaskIntermediateStateValueV1();
-    v1.setRecord(populatedRecord());
+    v1.setRecord(RecordV1s.convert(populatedRecord(), new UserTaskRecordV1()));
     v1.setLifecycleState(LifecycleState.ASSIGNING);
     final var current = new UserTaskIntermediateStateValue();
     current.setRecord(populatedRecord());
@@ -91,7 +93,7 @@ final class UserTaskIntermediateStateValueSerdeTest {
   void shouldReadBytesWrittenByV1() {
     // given
     final var v1 = new UserTaskIntermediateStateValueV1();
-    v1.setRecord(populatedRecord());
+    v1.setRecord(RecordV1s.convert(populatedRecord(), new UserTaskRecordV1()));
     v1.setLifecycleState(LifecycleState.ASSIGNING);
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);

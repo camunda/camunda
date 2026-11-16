@@ -12,12 +12,12 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecordV1;
 
 public final class LegacyProcessMessageSubscription extends UnpackedObject implements DbValue {
 
-  private final ObjectProperty<ProcessMessageSubscriptionRecord> recordProp =
-      new ObjectProperty<>("record", new ProcessMessageSubscriptionRecord());
+  private final ObjectProperty<ProcessMessageSubscriptionRecordV1> recordProp =
+      new ObjectProperty<>("record", new ProcessMessageSubscriptionRecordV1());
   private final LongProperty commandSentTimeProp = new LongProperty("commandSentTime", 0);
   private final EnumProperty<State> stateProp =
       new EnumProperty<>("state", State.class, State.STATE_OPENING);
@@ -31,11 +31,12 @@ public final class LegacyProcessMessageSubscription extends UnpackedObject imple
         .declareProperty(keyProp);
   }
 
-  public ProcessMessageSubscriptionRecord getRecord() {
+  public ProcessMessageSubscriptionRecordV1 getRecord() {
     return recordProp.getValue();
   }
 
-  public LegacyProcessMessageSubscription setRecord(final ProcessMessageSubscriptionRecord record) {
+  public LegacyProcessMessageSubscription setRecord(
+      final ProcessMessageSubscriptionRecordV1 record) {
     recordProp.getValue().wrap(record);
     return this;
   }
