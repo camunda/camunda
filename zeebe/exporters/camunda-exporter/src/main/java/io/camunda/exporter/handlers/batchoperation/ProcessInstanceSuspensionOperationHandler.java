@@ -22,7 +22,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
  * corresponding batch operation item entity.
  */
 public class ProcessInstanceSuspensionOperationHandler
-    extends AbstractOperationStatusHandler<ProcessInstanceRecordValue> {
+    extends AbstractOrdinalOperationStatusHandler<ProcessInstanceRecordValue> {
 
   public ProcessInstanceSuspensionOperationHandler(
       final String indexName,

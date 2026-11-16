@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers.batchoperation.listview;
 import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.handlers.OrdinalIndexExportHandler;
 import io.camunda.exporter.handlers.batchoperation.AbstractOperationHandler;
 import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
@@ -25,7 +26,8 @@ import java.util.Map;
 
 public abstract class AbstractProcessInstanceFromOperationItemHandler<
         R extends RecordValue & ProcessInstanceRelated>
-    extends AbstractOperationHandler<ProcessInstanceForListViewEntity, R> {
+    extends AbstractOperationHandler<ProcessInstanceForListViewEntity, R>
+    implements OrdinalIndexExportHandler<ProcessInstanceForListViewEntity, R> {
 
   protected AbstractProcessInstanceFromOperationItemHandler(
       final String indexName,

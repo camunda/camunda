@@ -21,7 +21,7 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
  * tracks the resolution of incidents by updating the corresponding batch operation item entity.
  */
 public class ResolveIncidentOperationHandler
-    extends AbstractOperationStatusHandler<IncidentRecordValue> {
+    extends AbstractOrdinalOperationStatusHandler<IncidentRecordValue> {
 
   public ResolveIncidentOperationHandler(
       final String indexName,

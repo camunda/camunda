@@ -22,7 +22,8 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
  * JobIntent#UPDATED} or {@link JobIntent#PRIORITY_UPDATED}, and failed when the {@link
  * JobIntent#UPDATE} command is rejected.
  */
-public class UpdateJobOperationHandler extends AbstractOperationStatusHandler<JobRecordValue> {
+public class UpdateJobOperationHandler
+    extends AbstractOrdinalOperationStatusHandler<JobRecordValue> {
 
   public UpdateJobOperationHandler(
       final String indexName,

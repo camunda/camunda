@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.index;
 
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 
 public class TargetIndexLocator {
@@ -14,13 +15,23 @@ public class TargetIndexLocator {
   public TargetIndex locateOrdinalIndex(
       final String indexName, final StorageOrdinalRelated ordinalRelated) {
     final var ordinal = ordinalRelated.getStorageOrdinal();
-    if (ordinal <= OrdinalIndex.DEFAULT_ORDINAL) {
-      return TargetIndex.mainIndex(indexName);
-    }
-    return TargetIndex.ordinalIndex(indexName, ordinal);
+    return targetIndexForOrdinal(indexName, ordinal);
+  }
+
+  public TargetIndex locateHistoryDeletionOrdinalIndex(
+      final String indexName, final HistoryDeletionRecordValue historyDeletionRecordValue) {
+    final var ordinal = historyDeletionRecordValue.getResourceStorageOrdinal();
+    return targetIndexForOrdinal(indexName, ordinal);
   }
 
   public TargetIndex locateMainIndex(final String indexName) {
     return TargetIndex.mainIndex(indexName);
+  }
+
+  private TargetIndex targetIndexForOrdinal(final String indexName, final int ordinal) {
+    if (ordinal <= OrdinalIndex.DEFAULT_ORDINAL) {
+      return TargetIndex.mainIndex(indexName);
+    }
+    return TargetIndex.ordinalIndex(indexName, ordinal);
   }
 }
