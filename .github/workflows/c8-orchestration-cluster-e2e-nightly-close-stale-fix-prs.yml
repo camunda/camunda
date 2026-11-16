@@ -19,8 +19,15 @@
 # with, so anything else carrying these labels is left alone.
 #
 # Single exception: PRs labelled "do-not-close" are kept across days. That label is
-# the only way for a reviewer to hold a bot PR. Review comments alone do NOT keep a
-# PR alive — merge it the same day or apply the label.
+# the only way to hold a bot PR. Review comments alone do NOT keep a PR alive —
+# merge it the same day or apply the label.
+#
+# The flakiness agent applies it itself, on a 100% shipped pass rate and nowhere
+# else, so a verified fix waits for a human instead of being swept the next night.
+# A best-effort PR (it cleared min_pass_rate but not 100%) carries no hold and goes
+# on the daily clock like any other bot PR: the fix is unproven, and the ledger
+# re-picks the test later. The label therefore means "proven", not "the bot opened
+# this" — which is why it is left to the agent to apply rather than stamped here.
 # type: CI
 # owner: @camunda/test-automation-team
 ---
@@ -92,7 +99,7 @@ jobs:
                 --label "$label" \
                 --json number,url,title,createdAt,labels,author
             done |
-            jq -s '
+            jq -s -r '
               add
               | unique_by(.number)
               | .[]
