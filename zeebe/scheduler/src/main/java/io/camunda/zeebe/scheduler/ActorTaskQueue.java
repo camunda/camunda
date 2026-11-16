@@ -124,14 +124,10 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
    * {@link #append} swapped the tail in the meantime, in which case {@code last} must stay linked.
    */
   private boolean tryResetTail(final ActorTaskQueueNode last) {
-    final ActorTaskQueueNode tail = this.tail;
-    if (tail != last) {
-      return false;
-    }
     if (beforeTailReset != null) {
       beforeTailReset.accept(this);
     }
-    return casTail(tail, empty);
+    return casTail(last, empty);
   }
 
   public ActorTaskQueueNode peek() {
