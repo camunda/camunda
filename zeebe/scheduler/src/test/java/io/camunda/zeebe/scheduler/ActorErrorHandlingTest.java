@@ -7,19 +7,20 @@
  */
 package io.camunda.zeebe.scheduler;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
+import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import org.agrona.LangUtil;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-public final class ActorErrorHandlingTest {
+final class ActorErrorHandlingTest {
 
-  @Rule public final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
+  @RegisterExtension
+  final ControlledActorSchedulerExtension scheduler = new ControlledActorSchedulerExtension();
 
   @Test
-  public void shouldCatchThrowable() {
+  void shouldCatchThrowable() {
     // given
     final var throwable = new Throwable();
     final var actor = new ThrowingActor(throwable);
@@ -34,7 +35,7 @@ public final class ActorErrorHandlingTest {
   }
 
   @Test
-  public void shouldCatchException() {
+  void shouldCatchException() {
     // given
     final var exception = new Exception();
     final var actor = new ThrowingActor(exception);
