@@ -8,6 +8,7 @@
 
 import {useMemo} from 'react';
 import {Link, useRouterState} from '@tanstack/react-router';
+import {useTranslation} from 'react-i18next';
 import {
 	preview_useClusterWebappBreadcrumbs as useClusterWebappBreadcrumbs,
 	type BreadcrumbDescriptor,
@@ -44,6 +45,7 @@ function mapBreadcrumb(breadcrumb: BreadcrumbDescriptor): NavBreadcrumbDescripto
 }
 
 function useBreadcrumbs(options: BreadcrumbOptions) {
+	const {t} = useTranslation();
 	const activeItemKey = useRouterState({select: ({location}) => `${location.pathname}${location.searchStr}`});
 	const breadcrumbs = useClusterWebappBreadcrumbs({
 		currentApp: 'operate',
@@ -56,7 +58,7 @@ function useBreadcrumbs(options: BreadcrumbOptions) {
 			items={items}
 			activeItemKey={activeItemKey}
 			linkComponent={Link}
-			aria-label="Camunda context"
+			aria-label={t('headerContextLabel')}
 			className="operate-nav-v2-breadcrumb"
 		/>
 	);

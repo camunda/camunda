@@ -139,9 +139,9 @@ const Header: React.FC<Props> = observer(({currentUser, license}) => {
 	const isSaas = getBootConfig().organizationId !== null;
 	const toolsOptions = useMemo(
 		() => ({
-			notifications: isSaas ? {title: 'Notifications'} : undefined,
+			notifications: isSaas ? {title: t('headerNotificationsLabel')} : undefined,
 		}),
-		[isSaas],
+		[isSaas, t],
 	) satisfies UseCamundaToolsOptions;
 	const {tools, ToolsProvider} = useCamundaTools(toolsOptions);
 	const breadcrumb = useBreadcrumbs({isSaas, webappLinks: currentUser.c8Links});
@@ -203,7 +203,7 @@ const Header: React.FC<Props> = observer(({currentUser, license}) => {
 									? [
 											{
 												key: 'notifications',
-												label: 'Notifications',
+												label: t('headerNotificationsLabel'),
 												element: <C3ToolsArea tools={tools} />,
 											},
 										]
