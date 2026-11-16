@@ -17,6 +17,7 @@ import io.camunda.search.clients.query.SearchHasParentQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
+import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.query.SearchWildcardQuery;
@@ -36,6 +37,7 @@ import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.security.core.authz.TenantCheck;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -271,6 +273,125 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+<<<<<<< HEAD
+=======
+  public void shouldQueryByCreationDateIn() {
+    // given
+    final var first = OffsetDateTime.parse("2024-01-01T10:15:30.123Z");
+    final var second = OffsetDateTime.parse("2024-01-02T08:00:00+02:00");
+    final var filter =
+        FilterBuilders.userTask(f -> f.creationDateOperations(Operation.in(first, second)));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then each value is formatted the way EQUALS formats it
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery ->
+                assertSearchTermsQuery(
+                    boolQuery.must().getFirst().queryOption(),
+                    TaskTemplate.CREATION_TIME,
+                    "2024-01-01T10:15:30.123+0000",
+                    "2024-01-02T08:00:00.000+0200"));
+  }
+
+  @Test
+  public void shouldQueryByDueDateInTogetherWithRange() {
+    // given
+    final var first = OffsetDateTime.parse("2024-03-01T00:00:00Z");
+    final var second = OffsetDateTime.parse("2024-03-02T00:00:00Z");
+    final var filter =
+        FilterBuilders.userTask(
+            f ->
+                f.dueDateOperations(
+                    Operation.in(first, second),
+                    Operation.gte(OffsetDateTime.parse("2024-01-01T00:00:00Z"))));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then the IN clause and the range clause are both kept
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> {
+              final var clauses = boolQuery.must().stream().map(SearchQuery::queryOption).toList();
+              assertThat(clauses)
+                  .anySatisfy(
+                      clause ->
+                          assertSearchTermsQuery(
+                              clause,
+                              TaskTemplate.DUE_DATE,
+                              "2024-03-01T00:00:00.000+0000",
+                              "2024-03-02T00:00:00.000+0000"))
+                  .anySatisfy(
+                      clause ->
+                          assertThat(clause)
+                              .isInstanceOfSatisfying(
+                                  SearchRangeQuery.class,
+                                  range ->
+                                      assertThat(range.field()).isEqualTo(TaskTemplate.DUE_DATE)));
+            });
+  }
+
+  @Test
+  public void shouldQueryBySuspendedUserTasks() {
+    // given
+    final var filter = FilterBuilders.userTask((f) -> f.isSuspended(true));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (t) -> {
+              assertSearchTermQuery(t.must().get(0).queryOption(), "isSuspended", true);
+            });
+  }
+
+  @Test
+  public void shouldQueryByNotSuspendedUserTasksIncludingMissingField() {
+    // given
+    final var filter = FilterBuilders.userTask((f) -> f.isSuspended(false));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (t) -> {
+              // user tasks indexed before the field existed have no value and read as not suspended
+              assertThat(t.must().get(0).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchBoolQuery.class,
+                      (orQuery) -> {
+                        assertThat(orQuery.should()).hasSize(2);
+                        assertSearchTermQuery(
+                            orQuery.should().get(0).queryOption(), "isSuspended", false);
+                        assertThat(orQuery.should().get(1).queryOption())
+                            .isInstanceOfSatisfying(
+                                SearchBoolQuery.class,
+                                (notQuery) ->
+                                    assertThat(notQuery.mustNot())
+                                        .singleElement()
+                                        .extracting(SearchQuery::queryOption)
+                                        .satisfies(
+                                            (mustNotQuery) ->
+                                                assertExistsQuery(mustNotQuery, "isSuspended")));
+                      });
+            });
+  }
+
+  @Test
+>>>>>>> f9824d93b (fix: support $in on date-time filters in Elasticsearch/OpenSearch search queries)
   public void shouldQueryByTenantId() {
     // given
     final var filter = FilterBuilders.userTask((f) -> f.tenantIds("tenant1"));
