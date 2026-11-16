@@ -1530,9 +1530,9 @@ components:
         is listed.
 
         When a `jobReservationToken` is given, the stub jobs are reserved for the caller: they are
-        served to no worker by poll or push, except an activation that presents the matching token
-        and the called process id of the stub. This lets a single mock worker drain every stub of a
-        stubbed process, a multi-instance call activity included. Without a token the stub jobs are
+        served to no worker by poll or push, except an activation that presents the matching token,
+        optionally narrowed to one called process id. This lets a single mock worker drain every stub
+        of a stubbed process, a multi-instance call activity included. Without a token the stub jobs are
         hidden from every worker and completed by whoever created the process instance. If a
         `ProcessInstanceCreationReserveJobsInstruction` is also given, the two tokens must be equal.
 
