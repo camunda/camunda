@@ -63,13 +63,6 @@ public final class DbPolicyUpdateState implements MutablePolicyUpdateState {
   }
 
   @Override
-  public boolean hasChunk(final String updateId, final int chunkIndex) {
-    this.updateId.wrapString(updateId);
-    this.chunkIndex.wrapInt(chunkIndex);
-    return chunkColumnFamily.exists(updateIdAndChunkIndex);
-  }
-
-  @Override
   public Optional<PolicyUpdateRecord> getChunk(final String updateId, final int chunkIndex) {
     this.updateId.wrapString(updateId);
     this.chunkIndex.wrapInt(chunkIndex);

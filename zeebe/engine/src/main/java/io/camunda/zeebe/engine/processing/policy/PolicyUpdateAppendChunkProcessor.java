@@ -24,10 +24,11 @@ import java.util.Optional;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Buffers a chunk of a policy update. An update starts with its first chunk; the other chunks may
- * arrive in any order. Once the last missing chunk is buffered, the processor starts applying the
- * update with its first chunk. It applies the update with the identifiers and chunk count that are
- * buffered with the update, which is the same count that decides whether every chunk is buffered.
+ * Buffers a chunk of a policy update. The broker writes the chunks of an update one after another,
+ * in index order, and the log keeps that order, so each chunk must be the next one of its update.
+ * Once the last chunk is buffered, the processor starts applying the update with its first chunk.
+ * It applies the update with the identifiers and chunk count that are buffered with the update,
+ * which is the same count that decides whether every chunk is buffered.
  *
  * <p>Only one update is open at a time. The processor rejects a chunk without changing the open
  * update if it cannot belong to it.
@@ -71,11 +72,6 @@ public final class PolicyUpdateAppendChunkProcessor
     final var chunk = command.getValue();
     final var openUpdate = policyUpdateState.getOpenUpdate();
     if (openUpdate.isEmpty()) {
-      if (!isChunkIndexInRange(chunk)) {
-        rejectionWriter.appendRejection(
-            command, RejectionType.INVALID_ARGUMENT, chunkIndexOutOfRange(chunk));
-        return;
-      }
       if (chunk.getChunkIndex() != 0) {
         rejectionWriter.appendRejection(
             command,
@@ -140,36 +136,19 @@ public final class PolicyUpdateAppendChunkProcessor
       return false;
     }
 
-    if (!isChunkIndexInRange(chunk)) {
-      failUpdate(command, openUpdate, RejectionType.INVALID_ARGUMENT, chunkIndexOutOfRange(chunk));
-      return false;
-    }
-
-    if (policyUpdateState.hasChunk(chunk.getUpdateId(), chunk.getChunkIndex())) {
+    // a lower index is a chunk received again, a higher one skips a chunk; as the next chunk is
+    // below the chunk count, this also keeps every index in range
+    final int nextChunkIndex = persistedUpdate.getBufferedChunkCount();
+    if (chunk.getChunkIndex() != nextChunkIndex) {
       failUpdate(
           command,
           openUpdate,
-          RejectionType.ALREADY_EXISTS,
-          "Expected chunk %d of policy update '%s' to be received once, but it was received again"
-              .formatted(chunk.getChunkIndex(), chunk.getUpdateId()));
+          RejectionType.INVALID_ARGUMENT,
+          "Expected chunk %d of policy update '%s' to be received next, but received chunk %d"
+              .formatted(nextChunkIndex, chunk.getUpdateId(), chunk.getChunkIndex()));
       return false;
     }
     return true;
-  }
-
-  /**
-   * Whether the index is one of the chunk's update. Together with the check for chunks that are
-   * received twice, this makes sure that an update whose buffered chunk count equals its chunk
-   * count has every one of its chunks buffered.
-   */
-  private static boolean isChunkIndexInRange(final PolicyUpdateRecord chunk) {
-    return chunk.getChunkIndex() >= 0 && chunk.getChunkIndex() < chunk.getChunkCount();
-  }
-
-  private static String chunkIndexOutOfRange(final PolicyUpdateRecord chunk) {
-    return ("Expected the chunk index of policy update '%s' to be at least 0 and less than the"
-            + " chunk count %d, but it is %d")
-        .formatted(chunk.getUpdateId(), chunk.getChunkCount(), chunk.getChunkIndex());
   }
 
   private void failUpdate(

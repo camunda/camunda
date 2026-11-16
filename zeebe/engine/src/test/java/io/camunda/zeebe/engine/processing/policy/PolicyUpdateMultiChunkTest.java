@@ -60,13 +60,13 @@ public final class PolicyUpdateMultiChunkTest {
   }
 
   @Test
-  public void shouldApplyChunksInTheirOrderEvenIfTheyArriveInAnotherOrder() {
+  public void shouldApplyChunksInTheirOrder() {
     // given
     final var updateId = "update-" + uid();
     final var roleIds = List.of("role-0-" + uid(), "role-1-" + uid(), "role-2-" + uid());
 
     // when
-    for (final int chunkIndex : List.of(0, 2, 1)) {
+    for (int chunkIndex = 0; chunkIndex < 3; chunkIndex++) {
       apply(
           ENGINE,
           chunk(updateId, chunkIndex, 3)
@@ -94,10 +94,12 @@ public final class PolicyUpdateMultiChunkTest {
     final var updateId = "update-" + uid();
     final var roleId = "role-" + uid();
     final var clientId = "client-" + uid();
-    apply(ENGINE, chunk(updateId, 0, 3));
+    apply(ENGINE, chunk(updateId, 0, 2).setRoles(List.<RoleRecordValue>of(role(roleId))));
+
+    // when
     apply(
         ENGINE,
-        chunk(updateId, 2, 3)
+        chunk(updateId, 1, 2)
             .setMemberships(
                 List.<PolicyMembershipEntryValue>of(
                     new PolicyMembershipEntry()
@@ -105,9 +107,6 @@ public final class PolicyUpdateMultiChunkTest {
                         .setTargetId(roleId)
                         .setMemberType(EntityType.CLIENT)
                         .setMemberId(clientId))));
-
-    // when
-    apply(ENGINE, chunk(updateId, 1, 3).setRoles(List.<RoleRecordValue>of(role(roleId))));
 
     // then
     final var entityAdded =
@@ -134,32 +133,9 @@ public final class PolicyUpdateMultiChunkTest {
   }
 
   @Test
-  public void shouldRejectAFirstChunkWithAnIndexOutOfRange() {
-    // given
-    final var updateId = "update-" + uid();
-
-    // when
-    apply(ENGINE, chunk(updateId, 0, 0));
-
-    // then
-    final var rejection = appendRejection(updateId);
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejection.getRejectionReason())
-        .contains(updateId, "less than the chunk count 0", "it is 0");
-    assertThat(recordsUntilAMarkerUpdateIsApplied())
-        .noneMatch(record -> isPolicyUpdate(record, PolicyUpdateIntent.CHUNK_APPENDED, updateId))
-        .noneMatch(record -> isPolicyUpdate(record, PolicyUpdateIntent.FAILED, updateId));
-  }
-
-  @Test
-  public void shouldFailTheUpdateWhenAChunkIndexIsNotLessThanTheChunkCount() {
+  public void shouldFailTheUpdateWhenAChunkIsSkipped() {
     assertFailsWithAChunkThatHas(
-        chunk -> chunk.setChunkIndex(3), "less than the chunk count 3", "it is 3");
-  }
-
-  @Test
-  public void shouldFailTheUpdateWhenAChunkIndexIsNegative() {
-    assertFailsWithAChunkThatHas(chunk -> chunk.setChunkIndex(-1), "at least 0", "it is -1");
+        chunk -> chunk.setChunkIndex(2), "Expected chunk 1", "received next", "received chunk 2");
   }
 
   @Test
@@ -239,9 +215,10 @@ public final class PolicyUpdateMultiChunkTest {
             .filter(record -> record.getValue().getUpdateId().equals(updateId))
             .getFirst();
     assertThat(failed.getValue().getChunkIndex()).isZero();
-    assertThat(failed.getValue().getErrorMessage()).contains("chunk 0", updateId, "received again");
+    assertThat(failed.getValue().getErrorMessage())
+        .contains("Expected chunk 1", updateId, "received next", "received chunk 0");
     final var rejection = appendRejection(updateId);
-    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(rejection.getRejectionReason()).isEqualTo(failed.getValue().getErrorMessage());
   }
 

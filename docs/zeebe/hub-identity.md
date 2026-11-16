@@ -160,22 +160,21 @@ sequenceDiagram
 
 - **Buffering.** The chunks are stored on partition 1 under the update's `updateId`. They are not
   applied before the last chunk arrives, so a partially received update never changes identity
-  data. An update starts with chunk 0; the other chunks may arrive in any order. Partition 1 checks
-  each chunk against the open update:
+  data. The transformer writes the chunks of an update one after another, in index order, and the
+  log keeps that order. Partition 1 checks each chunk against the open update:
 
-  - No update is open and the chunk's index is not at least 0 and less than its `chunkCount`, or
-    the chunk is not chunk 0: the chunk is rejected.
+  - No update is open and the chunk is not chunk 0: the chunk is rejected.
   - Another update is open: the chunk is rejected. The open update is not changed.
   - The chunk has a different `policyId`, `policyVersion`, `basePolicyVersion`, `seqNo` or
-    `chunkCount` than its update, its index is out of range, or it is already buffered: the update
-    ends with `FAILED`, which removes its chunks, and the chunk is rejected.
+    `chunkCount` than its update, or it is not the next chunk (a chunk received again or a skipped
+    chunk): the update ends with `FAILED`, which removes its chunks, and the chunk is rejected.
 
   Once every chunk is buffered, the update is being applied, and its identity commands cannot be
   undone. A chunk of it is then only rejected, whatever is wrong with it, and the update does not
   fail.
 
-  So every buffered chunk has a distinct index from 0 to `chunkCount - 1`, and an update has all its
-  chunks once as many chunks are buffered as its `chunkCount`.
+  So the buffered chunks are exactly chunks 0 to `chunkCount - 1`, and an update has all its chunks
+  once as many chunks are buffered as its `chunkCount`.
 
 - **One chunk per `APPLY_CHUNK`.** Each `APPLY_CHUNK` command applies exactly one chunk and then writes the next
   `APPLY_CHUNK`. This bounds the batch of the `APPLY_CHUNK` command itself. Each identity command it writes is
