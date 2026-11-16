@@ -338,7 +338,7 @@ class SegmentsManagerTest {
   void shouldCloseBackgroundIoExecutor() {
     // given
     final var bgIoExecutor = Executors.newVirtualThreadPerTaskExecutor();
-    segments = journalFactory.segmentsManager(directory, bgIoExecutor);
+    segments = journalFactory.segmentsManager(directory, () -> bgIoExecutor);
     segments.open();
 
     // when
@@ -346,6 +346,22 @@ class SegmentsManagerTest {
 
     // then
     assertThat(bgIoExecutor.isTerminated()).isTrue();
+  }
+
+  @Test
+  void shouldRollOverSegmentAfterReopening() {
+    // given
+    segments = journalFactory.segmentsManager(directory);
+    segments.open();
+    segments.close();
+    segments.open();
+
+    // when
+    final var first = segments.getNextSegment();
+    final var second = segments.getNextSegment();
+
+    // then
+    assertThat(second.id()).isGreaterThan(first.id());
   }
 
   private SegmentedJournal openJournal() {

@@ -33,6 +33,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +58,8 @@ final class SegmentsManager implements AutoCloseable {
   private final SegmentLoader segmentLoader;
   private final String name;
   private final JournalMetaStore metaStore;
-  private final ExecutorService bgIoExecutor;
+  private final Supplier<ExecutorService> bgIoExecutorFactory;
+  private @Nullable ExecutorService bgIoExecutor;
 
   private volatile @Nullable Segment currentSegment;
 
@@ -77,8 +79,9 @@ final class SegmentsManager implements AutoCloseable {
         segmentLoader,
         journalMetrics,
         metaStore,
-        Executors.newThreadPerTaskExecutor(
-            Thread.ofVirtual().name("journal-bg-io-" + name + "-", 0).factory()));
+        () ->
+            Executors.newThreadPerTaskExecutor(
+                Thread.ofVirtual().name("journal-bg-io-" + name + "-", 0).factory()));
   }
 
   @VisibleForTesting
@@ -90,7 +93,7 @@ final class SegmentsManager implements AutoCloseable {
       final SegmentLoader segmentLoader,
       final JournalMetrics journalMetrics,
       final JournalMetaStore metaStore,
-      final ExecutorService bgIoExecutor) {
+      final Supplier<ExecutorService> bgIoExecutorFactory) {
     this.name = checkNotNull(name, "name cannot be null");
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
@@ -98,7 +101,7 @@ final class SegmentsManager implements AutoCloseable {
     this.segmentLoader = segmentLoader;
     this.journalMetrics = journalMetrics;
     this.metaStore = metaStore;
-    this.bgIoExecutor = bgIoExecutor;
+    this.bgIoExecutorFactory = bgIoExecutorFactory;
   }
 
   @Override
@@ -121,7 +124,10 @@ final class SegmentsManager implements AutoCloseable {
       nextSegment = null;
     }
 
-    bgIoExecutor.close();
+    if (bgIoExecutor != null) {
+      bgIoExecutor.close();
+      bgIoExecutor = null;
+    }
     currentSegment = null;
   }
 
@@ -311,6 +317,7 @@ final class SegmentsManager implements AutoCloseable {
 
   /** Loads existing segments from the disk */
   void open() {
+    bgIoExecutor = bgIoExecutorFactory.get();
     final var openDurationTimer = journalMetrics.startJournalOpenDurationTimer();
     // Load existing log segments from disk.
     for (final Segment segment : loadSegments()) {
