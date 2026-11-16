@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
     inputs:
       slack_channel_id:
-        description: 'Slack channel ID for the failed tests summary, e.g. a private test channel. Empty posts to #top-monorepo-ci. The CI SLO report always posts to #top-monorepo-ci.'
+        description: 'Slack channel ID for the failed tests summary, e.g. a private test channel. Empty posts to #top-monorepo-ci. When set, the CI SLO report is only printed in the job log.'
         required: false
         type: string
 
@@ -139,15 +139,16 @@ jobs:
           bash .ci/scripts/ci/create-ci-slo-report.sh
 
       - name: Debug notification
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || inputs.slack_channel_id != ''
         shell: bash
         env:
           MESSAGE: ${{ steps.slo_message.outputs.MESSAGE }}
         run: |
           echo "$MESSAGE"
 
+      # The webhook is bound to #top-monorepo-ci, so a test run with slack_channel_id skips the post.
       - name: Send notification
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && inputs.slack_channel_id == ''
         uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
