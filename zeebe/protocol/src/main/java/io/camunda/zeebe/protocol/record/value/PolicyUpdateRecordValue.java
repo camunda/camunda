@@ -75,6 +75,6 @@ public interface PolicyUpdateRecordValue extends RecordValue {
 
   List<PolicyAuthorizationDeleteEntryValue> getAuthorizationDeletes();
 
-  /** Why the update failed or was aborted, or empty if it did not. */
+  /** Why the update failed or was canceled, or empty if it did not. */
   String getErrorMessage();
 }

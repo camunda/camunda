@@ -22,8 +22,9 @@ public enum PolicyUpdateIntent implements Intent {
   CHUNK_APPLIED(3),
   COMMIT_VERSION(4),
   VERSION_COMMITTED(5),
-  ABORT(6),
-  ABORTED(7);
+  CANCEL(6),
+  CANCELED(7),
+  FAILED(8);
 
   private final short value;
 
@@ -42,7 +43,8 @@ public enum PolicyUpdateIntent implements Intent {
       case CHUNK_APPENDED:
       case CHUNK_APPLIED:
       case VERSION_COMMITTED:
-      case ABORTED:
+      case CANCELED:
+      case FAILED:
         return true;
       default:
         return false;
@@ -64,9 +66,11 @@ public enum PolicyUpdateIntent implements Intent {
       case 5:
         return VERSION_COMMITTED;
       case 6:
-        return ABORT;
+        return CANCEL;
       case 7:
-        return ABORTED;
+        return CANCELED;
+      case 8:
+        return FAILED;
       default:
         return Intent.UNKNOWN;
     }
