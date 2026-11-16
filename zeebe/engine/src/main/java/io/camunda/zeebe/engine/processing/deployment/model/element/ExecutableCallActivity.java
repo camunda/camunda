@@ -73,6 +73,15 @@ public class ExecutableCallActivity extends ExecutableActivity {
     this.propagateAllParentVariablesEnabled = propagateAllParentVariablesEnabled;
   }
 
+  /**
+   * Whether the variables of the called process reach this call activity's scope when that process
+   * completes. The engine writes the parent's event trigger only under this condition — both when a
+   * real called process completes and when a job standing in for one is completed.
+   */
+  public boolean propagatesCalledProcessVariables() {
+    return getOutputMappings().isPresent() || isPropagateAllChildVariablesEnabled();
+  }
+
   public int getLexicographicIndex() {
     return lexicographicIndex;
   }

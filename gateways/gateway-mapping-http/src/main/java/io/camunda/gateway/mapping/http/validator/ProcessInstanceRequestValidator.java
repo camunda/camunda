@@ -12,12 +12,14 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_RUNTIME_INSTRUCTIONS_OF_TYPE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_VERSION_TAG_REQUIRES_ID;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateBusinessId;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateOperationReference;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateProcessDefinitionId;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateReservationToken;
 
 import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
@@ -28,6 +30,9 @@ import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationReserveJobsInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationStubCallActivitiesInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationActivateInstruction;
@@ -88,6 +93,7 @@ public class ProcessInstanceRequestValidator {
           validateKeyFormat(request.getProcessDefinitionKey(), "processDefinitionKey", violations);
           validateOperationReference(request.getOperationReference(), violations);
           validateBusinessId(request.getBusinessId(), violations);
+          validateRuntimeInstructions(request.getRuntimeInstructions(), violations);
           validateTags(request.getTags(), violations);
         });
   }
@@ -104,6 +110,7 @@ public class ProcessInstanceRequestValidator {
           validateProcessDefinitionId(request.getProcessDefinitionId(), violations);
           validateOperationReference(request.getOperationReference(), violations);
           validateBusinessId(request.getBusinessId(), violations);
+          validateRuntimeInstructions(request.getRuntimeInstructions(), violations);
           validateTags(request.getTags(), violations);
         });
   }
@@ -118,6 +125,7 @@ public class ProcessInstanceRequestValidator {
           }
           validateOperationReference(request.getOperationReference(), violations);
           validateBusinessId(request.getBusinessId(), violations);
+          validateRuntimeInstructions(request.getRuntimeInstructions(), violations);
           validateTags(request.getTags(), violations);
         });
   }
@@ -446,6 +454,52 @@ public class ProcessInstanceRequestValidator {
             }
           }
         });
+  }
+
+  private static void validateRuntimeInstructions(
+      final @Nullable List<ProcessInstanceCreationRuntimeInstruction> instructions,
+      final List<String> violations) {
+    if (instructions == null) {
+      return;
+    }
+    var reserveJobsCount = 0;
+    var stubCallActivitiesCount = 0;
+    for (final var instruction : instructions) {
+      if (instruction instanceof final ProcessInstanceCreationReserveJobsInstruction reserve) {
+        reserveJobsCount++;
+        final var jobTypes = reserve.getJobTypes();
+        if (jobTypes == null || jobTypes.isEmpty()) {
+          violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobTypes"));
+        } else if (jobTypes.stream().anyMatch(type -> type == null || type.isBlank())) {
+          violations.add("jobTypes must not contain blank values");
+        }
+        final var token = reserve.getReservationToken();
+        if (token == null) {
+          violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("reservationToken"));
+        } else {
+          validateReservationToken(token, violations);
+        }
+      } else if (instruction
+          instanceof final ProcessInstanceCreationStubCallActivitiesInstruction stub) {
+        stubCallActivitiesCount++;
+        final var processIds = stub.getProcessIds();
+        if (processIds == null || processIds.isEmpty()) {
+          violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("processIds"));
+        } else if (processIds.stream().anyMatch(id -> id == null || id.isBlank())) {
+          violations.add("processIds must not contain blank values");
+        }
+      }
+    }
+    if (reserveJobsCount > 1) {
+      violations.add(
+          ERROR_MESSAGE_TOO_MANY_RUNTIME_INSTRUCTIONS_OF_TYPE.formatted(
+              reserveJobsCount, "RESERVE_JOBS"));
+    }
+    if (stubCallActivitiesCount > 1) {
+      violations.add(
+          ERROR_MESSAGE_TOO_MANY_RUNTIME_INSTRUCTIONS_OF_TYPE.formatted(
+              stubCallActivitiesCount, "STUB_CALL_ACTIVITIES"));
+    }
   }
 
   private static void validateMoveInstructions(

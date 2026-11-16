@@ -1,0 +1,71 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.job;
+
+import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
+import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+
+/** The single place that decides whether a job may be served to a job worker at all. */
+@NullMarked
+public final class JobWorkerDispatch {
+
+  private JobWorkerDispatch() {}
+
+  /**
+   * The reason this job is served to no job worker, or {@code null} when any subscribed worker may
+   * take it. Every path that hands jobs out — the poll that collects a batch and the push that
+   * wakes a stream — asks this, so a job withheld from workers is withheld from all of them.
+   *
+   * <p>A call-activity-stub job stands in for the process a stubbed call activity calls, so no
+   * ordinary worker runs it. It is never reserved; it is served only to an activation that names
+   * the called process it stands in for in {@code requesterCalledProcessId} (for example CPT's mock
+   * worker for that process), and to no other worker or stream. Otherwise whoever created the
+   * process instance completes it directly.
+   *
+   * <p>A job carrying a reservation token belongs to an instance whose creator claimed it: that
+   * creator drives it, but a worker that presents the matching {@code requesterReservationToken} is
+   * that creator (for example CPT's mock worker, which replays the reserved jobs), so the job is
+   * served to it and to no one else.
+   *
+   * <p>Returns a {@link JobAction} rather than a boolean because both callers count the reason, and
+   * {@code null} rather than an {@link java.util.Optional} because the poll asks this once per
+   * activatable job.
+   *
+   * @param job the activatable job being considered
+   * @param requesterReservationToken the reservation token the activation presents, or {@code null}
+   *     / empty when it presents none
+   * @param requesterCalledProcessId the called process id the activation is narrowed to, or {@code
+   *     null} / empty when it names none
+   */
+  public static @Nullable JobAction withheldFromWorkersReason(
+      final JobRecord job,
+      final @Nullable String requesterReservationToken,
+      final @Nullable String requesterCalledProcessId) {
+    if (job.isCallActivityStub()) {
+      final String calledProcessId =
+          job.getCustomHeaders().get(Protocol.CALLED_PROCESS_ID_HEADER_NAME);
+      return requesterCalledProcessId != null
+              && !requesterCalledProcessId.isEmpty()
+              && requesterCalledProcessId.equals(calledProcessId)
+          ? null
+          : JobAction.SKIPPED_CALL_ACTIVITY_STUB;
+    }
+    if (job.hasReservationToken()) {
+      if (requesterReservationToken != null
+          && job.getReservationToken().equals(requesterReservationToken)) {
+        // the activation holds this job's reservation token, so its owner is claiming it
+        return null;
+      }
+      return JobAction.SKIPPED_RESERVED;
+    }
+    return null;
+  }
+}

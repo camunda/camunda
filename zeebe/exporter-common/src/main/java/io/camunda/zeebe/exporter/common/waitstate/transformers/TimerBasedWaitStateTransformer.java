@@ -13,19 +13,18 @@ import io.camunda.zeebe.exporter.common.waitstate.WaitStateEntry;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateTransformer;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateTransformerConfig;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 
 /**
- * Transforms timer records into wait-state entries. Only intermediate catch event timers are
- * exported. Records are skipped when:
+ * Transforms timer records into wait-state entries. Every timer a process instance waits on is
+ * exported: intermediate catch events, boundary events and event sub-process start events. The
+ * timer search API ({@code POST /v2/timers/search}) reads these entries, so a boundary timer must
+ * be findable like any other. Records are skipped when:
  *
  * <ul>
  *   <li>processInstanceKey is -1 (timer start event subscriptions — no process instance context)
  *   <li>rootProcessInstanceKey is -1 or bpmnProcessId is empty (pre-8.10 V1 records written before
  *       these fields existed — exporting partial data would be misleading)
- *   <li>elementType is not INTERMEDIATE_CATCH_EVENT (boundary events are not tracked as wait states
- *       because they represent interrupts, not explicit waits)
  * </ul>
  */
 public class TimerBasedWaitStateTransformer implements WaitStateTransformer<TimerRecordValue> {
@@ -62,7 +61,6 @@ public class TimerBasedWaitStateTransformer implements WaitStateTransformer<Time
     final TimerRecordValue value = record.getValue();
     return value.getProcessInstanceKey() != -1L
         && value.getRootProcessInstanceKey() != -1L
-        && !value.getBpmnProcessId().isEmpty()
-        && value.getElementType() == BpmnElementType.INTERMEDIATE_CATCH_EVENT;
+        && !value.getBpmnProcessId().isEmpty();
   }
 }

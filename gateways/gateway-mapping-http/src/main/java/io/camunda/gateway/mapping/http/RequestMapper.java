@@ -20,6 +20,7 @@ import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.vali
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobBatchUpdateRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobCompletionRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobErrorRequest;
+import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobFailRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobUpdateRequest;
 import static io.camunda.gateway.mapping.http.validator.MessageRequestValidator.validateMessageCorrelationRequest;
 import static io.camunda.gateway.mapping.http.validator.MessageRequestValidator.validateMessagePublicationRequest;
@@ -83,6 +84,7 @@ import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
@@ -237,16 +239,19 @@ public class RequestMapper {
         buildActivateJobsRequest(activationRequest, tenantIdsResult.get(), tenantFilter));
   }
 
-  public static FailJobRequest toJobFailRequest(
+  public static Either<ProblemDetail, FailJobRequest> toJobFailRequest(
       final JobFailRequest failRequest, final long jobKey) {
-
-    return new FailJobRequest(
-        jobKey,
-        getIntOrZero(failRequest, JobFailRequest::getRetries),
-        getStringOrEmpty(failRequest, JobFailRequest::getErrorMessage),
-        getLongOrZero(failRequest, JobFailRequest::getRetryBackOff),
-        getMapOrEmpty(failRequest, JobFailRequest::getVariables),
-        failRequest == null ? null : failRequest.getJobLeaseToken());
+    return getResult(
+        validateJobFailRequest(failRequest),
+        () ->
+            new FailJobRequest(
+                jobKey,
+                getIntOrZero(failRequest, JobFailRequest::getRetries),
+                getStringOrEmpty(failRequest, JobFailRequest::getErrorMessage),
+                getLongOrZero(failRequest, JobFailRequest::getRetryBackOff),
+                getMapOrEmpty(failRequest, JobFailRequest::getVariables),
+                failRequest == null ? null : failRequest.getJobLeaseToken(),
+                failRequest == null ? null : failRequest.getReservationToken()));
   }
 
   public static Either<ProblemDetail, ErrorJobRequest> toJobErrorRequest(
@@ -261,7 +266,8 @@ public class RequestMapper {
                 errorRequest.getErrorCode(),
                 getStringOrEmpty(errorRequest, JobErrorRequest::getErrorMessage),
                 getMapOrEmpty(errorRequest, JobErrorRequest::getVariables),
-                errorRequest.getJobLeaseToken()));
+                errorRequest.getJobLeaseToken(),
+                errorRequest.getReservationToken()));
   }
 
   public static Either<ProblemDetail, CorrelateMessageRequest> toMessageCorrelationRequest(
@@ -296,6 +302,7 @@ public class RequestMapper {
                 getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables),
                 getJobResultOrDefault(completionRequest),
                 completionRequest == null ? null : completionRequest.getJobLeaseToken(),
+                completionRequest == null ? null : completionRequest.getReservationToken(),
                 completionRequest == null ? null : completionRequest.getBusinessId()));
   }
 
@@ -312,7 +319,8 @@ public class RequestMapper {
                     updateRequest.getChangeset().getRetries(),
                     updateRequest.getChangeset().getTimeout(),
                     updateRequest.getChangeset().getPriority()),
-                updateRequest.getJobLeaseToken()));
+                updateRequest.getJobLeaseToken(),
+                updateRequest.getReservationToken()));
   }
 
   public static Either<ProblemDetail, BatchUpdateJobRequest> toJobBatchUpdateRequest(
@@ -808,8 +816,14 @@ public class RequestMapper {
       final List<String> tenantIds,
       final TenantFilter tenantFilter) {
 
+    final String calledProcessId =
+        getStringOrEmpty(activationRequest, JobActivationRequest::getCalledProcessId);
+    final String type =
+        calledProcessId.isBlank()
+            ? activationRequest.getType()
+            : Protocol.CALL_ACTIVITY_STUB_JOB_TYPE;
     return new ActivateJobsRequest(
-        activationRequest.getType(),
+        type,
         activationRequest.getMaxJobsToActivate(),
         tenantIds,
         tenantFilter,
@@ -817,7 +831,9 @@ public class RequestMapper {
         getStringOrEmpty(activationRequest, JobActivationRequest::getWorker),
         getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable),
         getLongOrZero(activationRequest, JobActivationRequest::getRequestTimeout),
-        getBooleanOrDefault(activationRequest, JobActivationRequest::getWithLease, false));
+        getBooleanOrDefault(activationRequest, JobActivationRequest::getWithLease, false),
+        getStringOrEmpty(activationRequest, JobActivationRequest::getReservationToken),
+        calledProcessId);
   }
 
   public static <R> Map<String, Object> getMapOrEmpty(
@@ -973,27 +989,31 @@ public class RequestMapper {
       String errorMessage,
       Long retryBackoff,
       Map<String, Object> variables,
-      @Nullable String jobLeaseToken) {}
+      @Nullable String jobLeaseToken,
+      @Nullable String reservationToken) {}
 
   public record ErrorJobRequest(
       long jobKey,
       String errorCode,
       String errorMessage,
       Map<String, Object> variables,
-      @Nullable String jobLeaseToken) {}
+      @Nullable String jobLeaseToken,
+      @Nullable String reservationToken) {}
 
   public record CompleteJobRequest(
       long jobKey,
       Map<String, Object> variables,
       JobResult result,
       @Nullable String jobLeaseToken,
+      @Nullable String reservationToken,
       @Nullable String businessId) {}
 
   public record UpdateJobRequest(
       long jobKey,
       @Nullable Long operationReference,
       UpdateJobChangeset changeset,
-      @Nullable String jobLeaseToken) {}
+      @Nullable String jobLeaseToken,
+      @Nullable String reservationToken) {}
 
   public record BroadcastSignalRequest(
       String signalName, Map<String, Object> variables, String tenantId) {}

@@ -18,6 +18,7 @@ package io.camunda.process.test.api.testCases.instructions;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import io.camunda.process.test.api.testCases.TestCaseInstructionType;
+import io.camunda.process.test.api.testCases.TestCaseReservationToken;
 import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value;
@@ -34,11 +35,33 @@ public interface MockJobWorkerThrowBpmnErrorInstruction extends TestCaseInstruct
   }
 
   /**
-   * The job type to mock. This should match the `zeebeJobType` in the BPMN model.
+   * The job type to mock. This should match the `zeebeJobType` in the BPMN model. Exactly one of
+   * {@code jobType} or {@code calledProcessId} is set.
    *
-   * @return the job type
+   * @return the job type or empty when mocking a call activity
    */
-  String getJobType();
+  Optional<String> getJobType();
+
+  /**
+   * The called-process id whose stubbed call activities to stand in for, instead of a job type.
+   * When set, the mock drains the stub jobs of every call activity calling this process to throw a
+   * BPMN error — driving the call activity's error boundary event. Stub jobs are never reserved, so
+   * {@link #getReservationToken()} is ignored. Exactly one of {@code jobType} or {@code
+   * calledProcessId} is set.
+   *
+   * @return the called-process id or empty when mocking an ordinary job type
+   */
+  Optional<String> getCalledProcessId();
+
+  /**
+   * The reservation token the jobs of this type were reserved with. Use {@link
+   * TestCaseReservationToken#PLACEHOLDER}: the runner substitutes the token of the current run for
+   * it. Optional; required only to mock a reserved job type, so the mock worker can activate its
+   * reserved jobs on a remote cluster.
+   *
+   * @return the job reservation token or empty if not set
+   */
+  Optional<String> getReservationToken();
 
   /**
    * The error code to throw. This should match the error code in an error catch event.

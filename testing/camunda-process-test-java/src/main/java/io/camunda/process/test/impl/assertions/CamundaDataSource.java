@@ -25,6 +25,7 @@ import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.filter.TimerFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.page.AnyPage;
@@ -38,6 +39,7 @@ import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
+import io.camunda.client.api.search.response.Timer;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
 import java.io.ByteArrayOutputStream;
@@ -274,6 +276,10 @@ public class CamundaDataSource {
     }
     return ((Consumer<JobFilter>) f -> f.creationTime(b -> b.gte(testCaseStartTime)))
         .andThen(filter);
+  }
+
+  public List<Timer> findTimers(final Consumer<TimerFilter> filter) {
+    return client.newTimerSearchRequest().filter(filter).page(pageRequest).send().join().items();
   }
 
   public List<DecisionInstance> findDecisionInstances(

@@ -21,9 +21,16 @@ import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.process.test.api.testCases.instructions.MockJobWorkerThrowBpmnErrorInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
 
 public class MockJobWorkerThrowBpmnErrorInstructionHandler
     implements TestCaseInstructionHandler<MockJobWorkerThrowBpmnErrorInstruction> {
+
+  private final TestRunContext runContext;
+
+  public MockJobWorkerThrowBpmnErrorInstructionHandler(final TestRunContext runContext) {
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(
@@ -32,7 +39,17 @@ public class MockJobWorkerThrowBpmnErrorInstructionHandler
       final CamundaClient camundaClient,
       final AssertionFacade assertionFacade) {
 
-    final JobWorkerMockBuilder mockBuilder = context.mockJobWorker(instruction.getJobType());
+    final JobWorkerMockBuilder mockBuilder;
+    if (instruction.getCalledProcessId().isPresent()) {
+      // stub jobs are never reserved, so a token would only get their commands rejected
+      mockBuilder = context.mockCallActivity(instruction.getCalledProcessId().get());
+    } else {
+      mockBuilder = context.mockJobWorker(instruction.getJobType().get());
+      instruction
+          .getReservationToken()
+          .map(runContext::resolveReservationToken)
+          .ifPresent(mockBuilder::withReservationToken);
+    }
 
     if (instruction.getErrorMessage().isPresent()) {
       mockBuilder.thenThrowBpmnError(

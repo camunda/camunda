@@ -53,7 +53,7 @@ public class CompleteUserTaskInstructionTest {
   @Captor private ArgumentCaptor<UserTaskSelector> selectorCaptor;
 
   private final CompleteUserTaskInstructionHandler instructionHandler =
-      new CompleteUserTaskInstructionHandler();
+      new CompleteUserTaskInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldCompleteUserTaskByTaskName() {

@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.job.JobSecretLookup;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.Secret;
 import io.camunda.zeebe.engine.processing.job.JobSecretLookup.SecretCheckResult;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
+import io.camunda.zeebe.engine.processing.job.JobWorkerDispatch;
 import io.camunda.zeebe.engine.processing.job.LeaseTokens;
 import io.camunda.zeebe.engine.processing.secretreference.SecretResolutionScheduler;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -160,6 +161,23 @@ public class BpmnJobActivationBehavior {
 
     final String jobType = wrappedJobRecord.getType();
     final JobKind jobKind = wrappedJobRecord.getJobKind();
+
+    // a job stream carries neither a reservation token nor a called process id, so a reserved job
+    // or a call-activity-stub job is never pushed to a stream; its owner activates it through the
+    // poll path instead.
+    final var withheldReason =
+        JobWorkerDispatch.withheldFromWorkersReason(wrappedJobRecord, null, null);
+    if (withheldReason != null) {
+      sideEffectWriter.appendSideEffect(
+          () -> jobMetrics.countJobEvent(withheldReason, jobKind, jobType));
+      // the job stays activatable for its owner; no stream is woken, but a parked long poll
+      // presenting the matching token or called process id must still be notified so it re-polls
+      // and the collector hands the job to it. Any other poll re-polls, finds nothing and parks
+      // again.
+      notifyJobAvailableOnce(jobType, jobKind, notifiedJobTypes);
+      return true;
+    }
+
     final var leaseAwarePredicate = new LeaseAwarePredicate(wrappedJobRecord);
     final Optional<JobStream> optionalJobStream =
         jobStreamer.streamFor(

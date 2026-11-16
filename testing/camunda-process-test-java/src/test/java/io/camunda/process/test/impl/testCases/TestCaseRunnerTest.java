@@ -15,15 +15,20 @@
  */
 package io.camunda.process.test.impl.testCases;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.IncidentAssert;
 import io.camunda.process.test.api.testCases.ImmutableIncidentSelector;
@@ -32,11 +37,14 @@ import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.testCases.ImmutableTestCase;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
+import io.camunda.process.test.api.testCases.TestCaseReservationToken;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertIncidentInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcessInstanceInstruction;
+import io.camunda.process.test.api.testCases.instructions.ImmutableMockJobWorkerCompleteJobInstruction;
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstance.ProcessInstanceState;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -48,7 +56,7 @@ public class TestCaseRunnerTest {
 
   @Mock private CamundaProcessTestContext processTestContext;
 
-  @Mock(answer = Answers.RETURNS_MOCKS)
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private CamundaClient camundaClient;
 
   @Mock private AssertionFacade assertionFacade;
@@ -93,6 +101,108 @@ public class TestCaseRunnerTest {
     // when / then
     assertThatCode(() -> runner.run(testCase)).doesNotThrowAnyException();
     verify(assertionFacade).assertThatIncident(any());
+  }
+
+  @Test
+  void shouldCancelIsolatedProcessInstance() {
+    // given
+    final TestCaseRunner runner = new CamundaTestCaseRunner(processTestContext);
+    when(processTestContext.createClient()).thenReturn(camundaClient);
+
+    final ProcessInstanceEvent processInstance = mock(ProcessInstanceEvent.class);
+    when(processInstance.getProcessInstanceKey()).thenReturn(42L);
+    when(camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(any())
+            .latestVersion()
+            .variables(anyMap())
+            .send()
+            .join())
+        .thenReturn(processInstance);
+
+    final TestCase testCase =
+        createTestCase(
+            ImmutableCreateProcessInstanceInstruction.builder()
+                .processDefinitionSelector(
+                    ImmutableProcessDefinitionSelector.builder()
+                        .processDefinitionId("process")
+                        .build())
+                .addRuntimeInstructions(
+                    ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction.builder()
+                        .addJobTypes("send-invoice")
+                        .reservationToken(TestCaseReservationToken.PLACEHOLDER)
+                        .build())
+                .build());
+
+    // when
+    runner.run(testCase);
+
+    // then
+    verify(camundaClient).newCancelInstanceCommand(42L);
+  }
+
+  @Test
+  void shouldCancelIsolatedProcessInstanceWhenTestCaseFails() {
+    // given
+    final TestCaseRunner runner = new CamundaTestCaseRunner(processTestContext);
+    when(processTestContext.createClient()).thenReturn(camundaClient);
+
+    final ProcessInstanceEvent processInstance = mock(ProcessInstanceEvent.class);
+    when(processInstance.getProcessInstanceKey()).thenReturn(42L);
+    when(camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(any())
+            .latestVersion()
+            .variables(anyMap())
+            .send()
+            .join())
+        .thenReturn(processInstance);
+
+    final TestCase testCase =
+        ImmutableTestCase.builder()
+            .name("test")
+            .addInstructions(
+                ImmutableCreateProcessInstanceInstruction.builder()
+                    .processDefinitionSelector(
+                        ImmutableProcessDefinitionSelector.builder()
+                            .processDefinitionId("process")
+                            .build())
+                    .addRuntimeInstructions(
+                        ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction.builder()
+                            .addJobTypes("send-invoice")
+                            .reservationToken(TestCaseReservationToken.PLACEHOLDER)
+                            .build())
+                    .build())
+            .addInstructions(mock(TestCaseInstruction.class))
+            .build();
+
+    // when
+    assertThatThrownBy(() -> runner.run(testCase)).isInstanceOf(TestCaseRunException.class);
+
+    // then
+    verify(camundaClient).newCancelInstanceCommand(42L);
+  }
+
+  @Test
+  void shouldNotCancelProcessInstanceThatIsNotIsolated() {
+    // given
+    final TestCaseRunner runner = new CamundaTestCaseRunner(processTestContext);
+    when(processTestContext.createClient()).thenReturn(camundaClient);
+
+    final TestCase testCase =
+        createTestCase(
+            ImmutableCreateProcessInstanceInstruction.builder()
+                .processDefinitionSelector(
+                    ImmutableProcessDefinitionSelector.builder()
+                        .processDefinitionId("process")
+                        .build())
+                .build());
+
+    // when
+    runner.run(testCase);
+
+    // then
+    verify(camundaClient, never()).newCancelInstanceCommand(anyLong());
   }
 
   @Test
@@ -166,6 +276,86 @@ public class TestCaseRunnerTest {
     assertThatThrownBy(() -> runner.run(testCase))
         .isInstanceOf(AssertionError.class)
         .isEqualTo(assertionError);
+  }
+
+  @Test
+  void shouldDetectThatReservedJobsAreMocked() {
+    // given
+    final TestCase testCase =
+        ImmutableTestCase.builder()
+            .name("test")
+            .addInstructions(createProcessInstance("charge-card"))
+            .addInstructions(
+                ImmutableMockJobWorkerCompleteJobInstruction.builder()
+                    .jobType("charge-card")
+                    .build())
+            .build();
+
+    // when/then
+    assertThat(CamundaTestCaseRunner.reservesJobsAndMocksJobWorkers(testCase)).isTrue();
+  }
+
+  @Test
+  void shouldNotDetectMockedJobWorkerOfAnUnreservedJobType() {
+    // given a mock for a type the instance does not reserve: the engine hands it to workers
+    final TestCase testCase =
+        ImmutableTestCase.builder()
+            .name("test")
+            .addInstructions(createProcessInstance("send-invoice"))
+            .addInstructions(
+                ImmutableMockJobWorkerCompleteJobInstruction.builder()
+                    .jobType("charge-card")
+                    .build())
+            .build();
+
+    // when/then
+    assertThat(CamundaTestCaseRunner.reservesJobsAndMocksJobWorkers(testCase)).isFalse();
+  }
+
+  @Test
+  void shouldNotDetectMockedJobWorkerWithoutReservation() {
+    // given
+    final TestCase testCase =
+        ImmutableTestCase.builder()
+            .name("test")
+            .addInstructions(createProcessInstance())
+            .addInstructions(
+                ImmutableMockJobWorkerCompleteJobInstruction.builder()
+                    .jobType("charge-card")
+                    .build())
+            .build();
+
+    // when/then
+    assertThat(CamundaTestCaseRunner.reservesJobsAndMocksJobWorkers(testCase)).isFalse();
+  }
+
+  @Test
+  void shouldNotDetectReservationWithoutMockedJobWorker() {
+    // given
+    final TestCase testCase = createTestCase(createProcessInstance("charge-card"));
+
+    // when/then
+    assertThat(CamundaTestCaseRunner.reservesJobsAndMocksJobWorkers(testCase)).isFalse();
+  }
+
+  /**
+   * Creates a process instance that reserves the given job types, or none when no type is given.
+   */
+  private static TestCaseInstruction createProcessInstance(final String... reservedJobTypes) {
+    final ImmutableCreateProcessInstanceInstruction.Builder builder =
+        ImmutableCreateProcessInstanceInstruction.builder()
+            .processDefinitionSelector(
+                ImmutableProcessDefinitionSelector.builder()
+                    .processDefinitionId("process")
+                    .build());
+    if (reservedJobTypes.length > 0) {
+      builder.addRuntimeInstructions(
+          ImmutableCreateProcessInstanceReserveJobsRuntimeInstruction.builder()
+              .addJobTypes(reservedJobTypes)
+              .reservationToken(TestCaseReservationToken.PLACEHOLDER)
+              .build());
+    }
+    return builder.build();
   }
 
   private static TestCase createTestCase(final TestCaseInstruction instruction) {

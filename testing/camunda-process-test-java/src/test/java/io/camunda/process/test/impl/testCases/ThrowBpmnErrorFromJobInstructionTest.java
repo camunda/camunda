@@ -60,7 +60,7 @@ public class ThrowBpmnErrorFromJobInstructionTest {
   @Captor private ArgumentCaptor<String> errorMessageCaptor;
 
   private final ThrowBpmnErrorFromJobInstructionHandler instructionHandler =
-      new ThrowBpmnErrorFromJobInstructionHandler();
+      new ThrowBpmnErrorFromJobInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldThrowBpmnErrorByJobType() {
@@ -251,6 +251,6 @@ public class ThrowBpmnErrorFromJobInstructionTest {
                     instruction, processTestContext, camundaClient, assertionFacade))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
-            "Missing required property: at least one of jobType, elementId, or processDefinitionId must be set");
+            "Missing required property: at least one of jobType, jobKind, elementId, or processDefinitionId must be set");
   }
 }

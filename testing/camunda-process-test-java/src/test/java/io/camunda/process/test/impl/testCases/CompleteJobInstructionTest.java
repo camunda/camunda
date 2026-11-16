@@ -56,7 +56,7 @@ public class CompleteJobInstructionTest {
   @Captor private ArgumentCaptor<JobSelector> jobSelectorCaptor;
 
   private final CompleteJobInstructionHandler instructionHandler =
-      new CompleteJobInstructionHandler();
+      new CompleteJobInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldCompleteJobByJobType() {
@@ -224,6 +224,6 @@ public class CompleteJobInstructionTest {
                     instruction, processTestContext, camundaClient, assertionFacade))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
-            "Missing required property: at least one of jobType, elementId, or processDefinitionId must be set");
+            "Missing required property: at least one of jobType, jobKind, elementId, or processDefinitionId must be set");
   }
 }

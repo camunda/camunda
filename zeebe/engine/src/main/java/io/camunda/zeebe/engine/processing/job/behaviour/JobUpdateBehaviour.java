@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizatio
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.job.JobCommandPreconditionValidator;
 import io.camunda.zeebe.engine.processing.job.JobLeaseFencingCheck;
+import io.camunda.zeebe.engine.processing.job.JobReservationFencingCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.JobState;
@@ -61,7 +62,8 @@ public class JobUpdateBehaviour {
                 State.FAILED,
                 State.ERROR_THROWN,
                 State.WAITING_FOR_SECRET_RESOLUTION),
-            List.of(JobLeaseFencingCheck.forUpdateCommand()),
+            List.of(
+                JobReservationFencingCheck.forCommand(), JobLeaseFencingCheck.forUpdateCommand()),
             tenantCheck);
     this.cslCheck = cslCheck;
   }

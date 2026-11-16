@@ -100,6 +100,7 @@ import io.camunda.client.api.command.TenantScopedClusterVariableDeletionCommandS
 import io.camunda.client.api.command.TenantScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
+import io.camunda.client.api.command.TriggerTimerCommandStep1;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignClientFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
@@ -199,6 +200,7 @@ import io.camunda.client.api.search.request.ResourceSearchRequest;
 import io.camunda.client.api.search.request.RolesByGroupSearchRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.TenantsSearchRequest;
+import io.camunda.client.api.search.request.TimerSearchRequest;
 import io.camunda.client.api.search.request.UserTaskAuditLogSearchRequest;
 import io.camunda.client.api.search.request.UserTaskEffectiveVariableSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
@@ -301,6 +303,7 @@ import io.camunda.client.impl.command.TenantScopedCreateClusterVariableImpl;
 import io.camunda.client.impl.command.TenantScopedDeleteClusterVariableImpl;
 import io.camunda.client.impl.command.TenantScopedUpdateClusterVariableImpl;
 import io.camunda.client.impl.command.TopologyRequestImpl;
+import io.camunda.client.impl.command.TriggerTimerCommandImpl;
 import io.camunda.client.impl.command.UnassignClientFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignClientFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignGroupFromTenantCommandImpl;
@@ -399,6 +402,7 @@ import io.camunda.client.impl.search.request.RolesByGroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.RolesByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.RolesSearchRequestImpl;
 import io.camunda.client.impl.search.request.TenantsSearchRequestImpl;
+import io.camunda.client.impl.search.request.TimerSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskAuditLogSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskEffectiveVariableSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskSearchRequestImpl;
@@ -989,6 +993,11 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
+  public TriggerTimerCommandStep1 newTriggerTimerCommand(final long timerKey) {
+    return new TriggerTimerCommandImpl(timerKey, httpClient);
+  }
+
+  @Override
   public PinClockCommandStep1 newPinClockCommand() {
     return new PinClockCommandImpl(httpClient, jsonMapper);
   }
@@ -1118,6 +1127,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public ProcessInstanceSearchRequest newProcessInstanceSearchRequest() {
     return new ProcessInstanceSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public TimerSearchRequest newTimerSearchRequest() {
+    return new TimerSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override

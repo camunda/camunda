@@ -30,6 +30,20 @@ public interface JobWorkerBuilderStep1 {
    */
   JobWorkerBuilderStep2 jobType(String type);
 
+  /**
+   * Set the called process id whose stubbed call activities this worker drains, instead of a job
+   * type (see the {@code STUB_CALL_ACTIVITIES} runtime instruction). It implies the internal stub
+   * job type, so {@link #jobType(String)} must not also be set. Stub jobs are never reserved, so no
+   * reservation token is needed. This lets one mock worker drain every stub of a stubbed process, a
+   * multi-instance call activity included.
+   *
+   * <p>Only supported over the polling REST path; a called-process worker cannot stream.
+   *
+   * @param calledProcessId the BPMN process id whose stubbed call activities to drain
+   * @return the builder for this worker
+   */
+  JobWorkerBuilderStep2 calledProcessId(String calledProcessId);
+
   interface JobWorkerBuilderStep2 {
     /**
      * Set the handler to process the jobs. At the end of the processing, the handler should
@@ -201,6 +215,20 @@ public interface JobWorkerBuilderStep1 {
      * @return the builder for this worker
      */
     JobWorkerBuilderStep3 withLease(boolean withLease);
+
+    /**
+     * Presents the reservation token of a process instance whose jobs were reserved at creation
+     * (via the {@code RESERVE_JOBS} runtime instruction) on every poll this worker makes. A worker
+     * presenting the matching token activates those reserved jobs, which are withheld from every
+     * other worker; this lets a test drive the reserved job types with an ordinary worker while
+     * real workers keep running the rest. Applies to the poll path.
+     *
+     * <p>If not set, only unreserved jobs are activated.
+     *
+     * @param reservationToken the reservation token to present
+     * @return the builder for this worker
+     */
+    JobWorkerBuilderStep3 reservationToken(String reservationToken);
 
     /**
      * Sets the backoff supplier. The supplier is called to determine the retry delay after each

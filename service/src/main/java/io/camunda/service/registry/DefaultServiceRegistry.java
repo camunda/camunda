@@ -51,6 +51,7 @@ import io.camunda.service.RuntimeBackupServices;
 import io.camunda.service.SecretServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.TimerServices;
 import io.camunda.service.TopologyServices;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
@@ -103,6 +104,7 @@ public record DefaultServiceRegistry(
     Map<String, SecretServices> secretByTenant,
     Map<String, SignalServices> signalByTenant,
     Map<String, TenantServices> tenantByTenant,
+    Map<String, TimerServices> timerByTenant,
     Map<String, TopologyServices> topologyByTenant,
     Map<String, UsageMetricsServices> usageMetricsByTenant,
     Map<String, UserServices> userByTenant,
@@ -305,6 +307,11 @@ public record DefaultServiceRegistry(
   }
 
   @Override
+  public TimerServices timerServices(final String physicalTenantId) {
+    return byTenant(timerByTenant, physicalTenantId);
+  }
+
+  @Override
   public TopologyServices topologyServices(final String physicalTenantId) {
     return byTenant(topologyByTenant, physicalTenantId);
   }
@@ -458,6 +465,7 @@ public record DefaultServiceRegistry(
     private final Map<String, SecretServices> secretByTenant = new HashMap<>();
     private final Map<String, SignalServices> signalByTenant = new HashMap<>();
     private final Map<String, TenantServices> tenantByTenant = new HashMap<>();
+    private final Map<String, TimerServices> timerByTenant = new HashMap<>();
     private final Map<String, TopologyServices> topologyByTenant = new HashMap<>();
     private final Map<String, UsageMetricsServices> usageMetricsByTenant = new HashMap<>();
     private final Map<String, UserServices> userByTenant = new HashMap<>();
@@ -663,6 +671,11 @@ public record DefaultServiceRegistry(
       return this;
     }
 
+    public Builder timerServices(final String tenantId, final TimerServices service) {
+      timerByTenant.put(tenantId, service);
+      return this;
+    }
+
     public Builder topologyServices(final String tenantId, final TopologyServices service) {
       topologyByTenant.put(tenantId, service);
       return this;
@@ -770,6 +783,7 @@ public record DefaultServiceRegistry(
           Map.copyOf(secretByTenant),
           Map.copyOf(signalByTenant),
           Map.copyOf(tenantByTenant),
+          Map.copyOf(timerByTenant),
           Map.copyOf(topologyByTenant),
           Map.copyOf(usageMetricsByTenant),
           Map.copyOf(userByTenant),

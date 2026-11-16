@@ -42,5 +42,14 @@ public enum JobKind {
    * Represents jobs created for ad-hoc sub-processes. These jobs are associated with the execution
    * of ad-hoc sub-processes within a BPMN workflow.
    */
-  AD_HOC_SUB_PROCESS
+  AD_HOC_SUB_PROCESS,
+
+  /**
+   * Represents the stand-in job a stubbed call activity waits on instead of starting the process it
+   * calls. Such a job is never reserved and is hidden from ordinary job activation and job streams:
+   * it is served only to an activation that names the called process id it stands in for — a mock
+   * worker standing in for the called process — or completed directly by whoever created the
+   * process instance. See the {@code STUB_CALL_ACTIVITIES} recording switch.
+   */
+  CALL_ACTIVITY_STUB
 }

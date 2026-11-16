@@ -856,7 +856,10 @@ public final class ProcessInstanceServiceTest {
         List.of(), // runtimeInstructions
         List.of(), // fetchVariables
         null, // tags
-        null // businessId
+        null, // businessId
+        null, // stubbedCallActivityProcessIds
+        null, // reservedJobTypes
+        null // reservationToken
         );
   }
 
@@ -878,7 +881,10 @@ public final class ProcessInstanceServiceTest {
             List.of(), // runtimeInstructions
             List.of(), // fetchVariables
             null, // tags
-            null // businessId
+            null, // businessId
+            null, // stubbedCallActivityProcessIds
+            null, // reservedJobTypes
+            null // reservationToken
             );
 
     final var mockResponse =
@@ -917,7 +923,10 @@ public final class ProcessInstanceServiceTest {
             List.of(), // runtimeInstructions
             List.of(), // fetchVariables
             null, // tags
-            null // businessId
+            null, // businessId
+            null, // stubbedCallActivityProcessIds
+            null, // reservedJobTypes
+            null // reservationToken
             );
 
     final var mockResponse =
@@ -957,7 +966,10 @@ public final class ProcessInstanceServiceTest {
             List.of(), // runtimeInstructions
             List.of(), // fetchVariables
             null, // tags
-            null // businessId
+            null, // businessId
+            null, // stubbedCallActivityProcessIds
+            null, // reservedJobTypes
+            null // reservationToken
             );
 
     final var mockResponse =
@@ -1215,7 +1227,10 @@ public final class ProcessInstanceServiceTest {
           List.of(), // runtimeInstructions
           List.of(), // fetchVariables
           null, // tags
-          businessId // businessId
+          businessId, // businessId
+          null, // stubbedCallActivityProcessIds
+          null, // reservedJobTypes
+          null // reservationToken
           );
     }
 
@@ -1235,7 +1250,10 @@ public final class ProcessInstanceServiceTest {
           List.of(), // runtimeInstructions
           List.of(), // fetchVariables
           null, // tags
-          businessId // businessId
+          businessId, // businessId
+          null, // stubbedCallActivityProcessIds
+          null, // reservedJobTypes
+          null // reservationToken
           );
     }
   }

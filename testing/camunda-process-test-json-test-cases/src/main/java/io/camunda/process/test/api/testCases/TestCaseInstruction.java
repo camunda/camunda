@@ -46,6 +46,7 @@ import io.camunda.process.test.api.testCases.instructions.PublishMessageInstruct
 import io.camunda.process.test.api.testCases.instructions.ResolveIncidentInstruction;
 import io.camunda.process.test.api.testCases.instructions.SetTimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.ThrowBpmnErrorFromJobInstruction;
+import io.camunda.process.test.api.testCases.instructions.TriggerTimerInstruction;
 import io.camunda.process.test.api.testCases.instructions.UpdateVariablesInstruction;
 
 /** An instruction to define an action or an assertion to be performed in a test case. */
@@ -137,6 +138,9 @@ import io.camunda.process.test.api.testCases.instructions.UpdateVariablesInstruc
   @JsonSubTypes.Type(
       value = ThrowBpmnErrorFromJobInstruction.class,
       name = TestCaseInstructionType.THROW_BPMN_ERROR_FROM_JOB),
+  @JsonSubTypes.Type(
+      value = TriggerTimerInstruction.class,
+      name = TestCaseInstructionType.TRIGGER_TIMER),
   @JsonSubTypes.Type(
       value = UpdateVariablesInstruction.class,
       name = TestCaseInstructionType.UPDATE_VARIABLES)

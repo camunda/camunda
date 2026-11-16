@@ -15,6 +15,8 @@
  */
 package io.camunda.client.impl.command;
 
+import static io.camunda.client.api.command.enums.ProcessInstanceCreationInstruction.RESERVE_JOBS;
+import static io.camunda.client.api.command.enums.ProcessInstanceCreationInstruction.STUB_CALL_ACTIVITIES;
 import static io.camunda.client.api.command.enums.ProcessInstanceCreationInstruction.TERMINATE_PROCESS_INSTANCE;
 
 import io.camunda.client.CamundaClientConfiguration;
@@ -34,6 +36,8 @@ import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.impl.util.TagUtil;
 import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationReserveJobsInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationStubCallActivitiesInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -68,6 +72,7 @@ public final class CreateProcessInstanceCommandImpl
   private final ProcessInstanceCreationInstruction httpRequestObject =
       new ProcessInstanceCreationInstruction();
   private final CamundaClientConfiguration config;
+  private String restOnlyProperty;
 
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
@@ -119,6 +124,31 @@ public final class CreateProcessInstanceCommandImpl
         new ProcessInstanceCreationTerminateInstruction()
             .afterElementId(elementId)
             .type(TERMINATE_PROCESS_INSTANCE.name()));
+    return this;
+  }
+
+  @Override
+  public CreateProcessInstanceCommandStep3 reserveJobs(
+      final String reservationToken, final String... jobTypes) {
+    ArgumentUtil.ensureNotNullNorEmpty("reservationToken", reservationToken);
+    ArgumentUtil.ensureNotNull("jobTypes", jobTypes);
+    restOnlyProperty = "reserveJobs";
+    httpRequestObject.addRuntimeInstructionsItem(
+        new ProcessInstanceCreationReserveJobsInstruction()
+            .jobTypes(Arrays.asList(jobTypes))
+            .reservationToken(reservationToken)
+            .type(RESERVE_JOBS.name()));
+    return this;
+  }
+
+  @Override
+  public CreateProcessInstanceCommandStep3 stubCallActivities(final String... processIds) {
+    ArgumentUtil.ensureNotNull("processIds", processIds);
+    restOnlyProperty = "stubCallActivities";
+    httpRequestObject.addRuntimeInstructionsItem(
+        new ProcessInstanceCreationStubCallActivitiesInstruction()
+            .processIds(Arrays.asList(processIds))
+            .type(STUB_CALL_ACTIVITIES.name()));
     return this;
   }
 
@@ -213,6 +243,9 @@ public final class CreateProcessInstanceCommandImpl
 
   @Override
   public CamundaFuture<ProcessInstanceEvent> send() {
+    if (restOnlyProperty != null) {
+      ArgumentUtil.ensureRestTransport(restOnlyProperty, useRest);
+    }
     if (useRest) {
       return sendRestRequest();
     } else {

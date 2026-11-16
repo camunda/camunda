@@ -22,9 +22,16 @@ import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.testCases.instructions.UpdateVariablesInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
 
 public class UpdateVariablesInstructionHandler
     implements TestCaseInstructionHandler<UpdateVariablesInstruction> {
+
+  private final TestRunContext runContext;
+
+  public UpdateVariablesInstructionHandler(final TestRunContext runContext) {
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(

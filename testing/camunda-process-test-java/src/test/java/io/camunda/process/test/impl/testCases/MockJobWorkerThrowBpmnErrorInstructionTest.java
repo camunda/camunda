@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.testCases;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -49,7 +50,7 @@ public class MockJobWorkerThrowBpmnErrorInstructionTest {
   @Mock private JobWorkerMockBuilder jobWorkerMockBuilder;
 
   private final MockJobWorkerThrowBpmnErrorInstructionHandler instructionHandler =
-      new MockJobWorkerThrowBpmnErrorInstructionHandler();
+      new MockJobWorkerThrowBpmnErrorInstructionHandler(mock(TestRunContext.class));
 
   @BeforeEach
   void setUp() {

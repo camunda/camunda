@@ -61,7 +61,7 @@ public class AssertProcessInstanceMessageSubscriptionInstructionTest {
   @Captor private ArgumentCaptor<ProcessInstanceSelector> processInstanceSelectorCaptor;
 
   private final AssertProcessInstanceMessageSubscriptionInstructionHandler instructionHandler =
-      new AssertProcessInstanceMessageSubscriptionInstructionHandler();
+      new AssertProcessInstanceMessageSubscriptionInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldSelectProcessInstanceByProcessDefinitionId() {

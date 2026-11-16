@@ -44,7 +44,7 @@ public class UpdateVariablesInstructionTest {
   @Mock private AssertionFacade assertionFacade;
 
   private final UpdateVariablesInstructionHandler instructionHandler =
-      new UpdateVariablesInstructionHandler();
+      new UpdateVariablesInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldUpdateGlobalVariables() {

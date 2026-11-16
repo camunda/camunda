@@ -89,6 +89,7 @@ import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandS
 import io.camunda.client.api.command.TenantScopedClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
+import io.camunda.client.api.command.TriggerTimerCommandStep1;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignClientFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
@@ -188,6 +189,7 @@ import io.camunda.client.api.search.request.ResourceSearchRequest;
 import io.camunda.client.api.search.request.RolesByGroupSearchRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.TenantsSearchRequest;
+import io.camunda.client.api.search.request.TimerSearchRequest;
 import io.camunda.client.api.search.request.UserTaskAuditLogSearchRequest;
 import io.camunda.client.api.search.request.UserTaskEffectiveVariableSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
@@ -929,6 +931,30 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   UpdateJobCommandStep1 newUpdateJobCommand(ActivatedJob job);
 
   /**
+   * Command to fire a waiting timer immediately, by its key (alpha).
+   *
+   * <pre>
+   * camundaClient
+   *  .newTriggerTimerCommand(timerKey)
+   *  .send();
+   * </pre>
+   *
+   * <p>The timer fires as if its due date had arrived, without waiting for it and without changing
+   * the cluster clock, so no other process instance on the cluster is affected. The timer key is
+   * learned from the timer search ({@code POST /v2/timers/search}).
+   *
+   * <p>The command is rejected when no timer with that key is waiting, for example because it has
+   * already fired or its element was left.
+   *
+   * <p>This command is only supported over REST. This is an alpha feature and may be subject to
+   * change in future releases.
+   *
+   * @param timerKey the key of the timer to fire
+   * @return a builder for the command
+   */
+  TriggerTimerCommandStep1 newTriggerTimerCommand(long timerKey);
+
+  /**
    * Command to pin the Zeebe engine's internal clock to a specific time.
    *
    * <p>This method initiates a command to pin the clock to a specified time. You can specify the
@@ -1344,6 +1370,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the process instance search request
    */
   ProcessInstanceSearchRequest newProcessInstanceSearchRequest();
+
+  /**
+   * Executes a search request to query the timers that process instances wait on. Only timers in
+   * state {@code CREATED} are returned.
+   *
+   * <pre>
+   * long processInstanceKey = ...;
+   *
+   * camundaClient
+   *  .newTimerSearchRequest()
+   *  .filter((f) -> f.processInstanceKey(processInstanceKey))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the timer search request
+   */
+  TimerSearchRequest newTimerSearchRequest();
 
   /**
    * Executes a search request to query element instances.

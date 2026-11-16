@@ -52,7 +52,7 @@ public class AssertVariablesInstructionTest {
   private AssertionFacade assertionFacade;
 
   private final AssertVariablesInstructionHandler instructionHandler =
-      new AssertVariablesInstructionHandler();
+      new AssertVariablesInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldAssertVariableNames() {

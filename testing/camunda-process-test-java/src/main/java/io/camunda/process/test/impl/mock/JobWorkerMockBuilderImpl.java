@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.mock;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobHandler;
@@ -43,22 +44,42 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
   private static final String ACTION_THROW_BPMN_ERROR = "Throw BPMN Error";
 
   private final String jobType;
+  private final String calledProcessId;
   private final CamundaClient client;
   private final BpmnExampleDataReader exampleDataReader;
 
   private final BiFunction<String, ActivatedJob, String> logMessagePrefix;
 
+  private String reservationToken;
+
   public JobWorkerMockBuilderImpl(
       final String jobType,
       final CamundaClient client,
       final BpmnExampleDataReader exampleDataReader) {
+    this(jobType, null, client, exampleDataReader);
+  }
+
+  public JobWorkerMockBuilderImpl(
+      final String jobType,
+      final String calledProcessId,
+      final CamundaClient client,
+      final BpmnExampleDataReader exampleDataReader) {
 
     this.jobType = jobType;
+    this.calledProcessId = calledProcessId;
     this.client = client;
     this.exampleDataReader = exampleDataReader;
+    final String subscription =
+        calledProcessId != null ? "calledProcessId: " + calledProcessId : "jobType: " + jobType;
     logMessagePrefix =
         (action, job) ->
-            String.format("Mock: %s [jobType: %s, jobKey: %s]", action, jobType, job.getKey());
+            String.format("Mock: %s [%s, jobKey: %s]", action, subscription, job.getKey());
+  }
+
+  @Override
+  public JobWorkerMockBuilder withReservationToken(final String reservationToken) {
+    this.reservationToken = reservationToken;
+    return this;
   }
 
   @Override
@@ -73,7 +94,9 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
           LOGGER.debug(
               "{} with variables {}", logMessagePrefix.apply(ACTION_COMPLETE_JOB, job), variables);
 
-          jobClient.newCompleteCommand(job).variables(variables).send().join();
+          applyReservationToken(jobClient.newCompleteCommand(job).variables(variables))
+              .send()
+              .join();
         });
   }
 
@@ -98,7 +121,9 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
           LOGGER.debug(
               "{} with variables {}", logMessagePrefix.apply(ACTION_COMPLETE_JOB, job), variables);
 
-          jobClient.newCompleteCommand(job).variables(variables).send().join();
+          applyReservationToken(jobClient.newCompleteCommand(job).variables(variables))
+              .send()
+              .join();
         });
   }
 
@@ -147,12 +172,14 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
                     job.getProcessDefinitionKey(), job.getBpmnProcessId(), job.getElementId());
 
             LOGGER.debug("{} with example data {}", logMessagePrefix, exampleDataVariables);
-            jobClient.newCompleteCommand(job).variables(exampleDataVariables).send().join();
+            applyReservationToken(jobClient.newCompleteCommand(job).variables(exampleDataVariables))
+                .send()
+                .join();
           } catch (final BpmnExampleDataReaderException e) {
 
             LOGGER.warn(
                 "{} without example data due to errors. {}", logMessagePrefix, e.getMessage());
-            jobClient.newCompleteCommand(job).send().join();
+            applyReservationToken(jobClient.newCompleteCommand(job)).send().join();
           }
         });
   }
@@ -182,6 +209,9 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
 
           final ThrowErrorCommandStep2 command =
               jobClient.newThrowErrorCommand(job).errorCode(errorCode).variables(variables);
+          if (reservationToken != null) {
+            command.withReservationToken(reservationToken);
+          }
 
           if (errorMessage != null) {
             command.errorMessage(errorMessage);
@@ -193,7 +223,14 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
 
   @Override
   public JobWorkerMock withHandler(final JobHandler jobHandler) {
-    return new JobWorkerMockImpl(jobType, client, jobHandler);
+    return new JobWorkerMockImpl(jobType, calledProcessId, client, jobHandler, reservationToken);
+  }
+
+  private CompleteJobCommandStep1 applyReservationToken(final CompleteJobCommandStep1 command) {
+    if (reservationToken != null) {
+      command.withReservationToken(reservationToken);
+    }
+    return command;
   }
 
   private static Map<String, Object> normalize(

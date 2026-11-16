@@ -56,7 +56,7 @@ public class AssertUserTaskInstructionTest {
   @Captor private ArgumentCaptor<UserTaskSelector> userTaskSelectorCaptor;
 
   private final AssertUserTaskInstructionHandler instructionHandler =
-      new AssertUserTaskInstructionHandler();
+      new AssertUserTaskInstructionHandler(TestRunContext.disabled());
 
   @Test
   void shouldSelectUserTaskByTaskName() {

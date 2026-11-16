@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.worker;
 
+import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivatedJob;
@@ -42,6 +43,8 @@ public final class JobPollerImpl implements JobPoller {
   private final List<String> tenantIds;
   private final TenantFilter tenantFilter;
   private final boolean withLease;
+  private final String reservationToken;
+  private final String calledProcessId;
 
   private int maxJobsToActivate;
 
@@ -61,10 +64,13 @@ public final class JobPollerImpl implements JobPoller {
       final List<String> tenantIds,
       final TenantFilter tenantFilter,
       final int maxJobsToActivate,
-      final boolean withLease) {
+      final boolean withLease,
+      final String reservationToken,
+      final String calledProcessId) {
     this.requestTimeout = requestTimeout;
     this.jobClient = jobClient;
     this.jobType = jobType;
+    this.calledProcessId = calledProcessId;
     this.workerName = workerName;
     this.timeout = timeout;
     this.fetchVariables = fetchVariables;
@@ -72,6 +78,11 @@ public final class JobPollerImpl implements JobPoller {
     this.tenantFilter = tenantFilter;
     this.maxJobsToActivate = maxJobsToActivate;
     this.withLease = withLease;
+    this.reservationToken = reservationToken;
+  }
+
+  private boolean activatesByCalledProcessId() {
+    return calledProcessId != null && !calledProcessId.isEmpty();
   }
 
   private void reset() {
@@ -111,10 +122,11 @@ public final class JobPollerImpl implements JobPoller {
         maxJobsToActivate,
         workerName,
         jobType);
+    final ActivateJobsCommandStep1 newCommand = jobClient.newActivateJobsCommand();
     final ActivateJobsCommandStep3 activateCommand =
-        jobClient
-            .newActivateJobsCommand()
-            .jobType(jobType)
+        (activatesByCalledProcessId()
+                ? newCommand.calledProcessId(calledProcessId)
+                : newCommand.jobType(jobType))
             .maxJobsToActivate(maxJobsToActivate)
             .timeout(timeout)
             .workerName(workerName)
@@ -127,6 +139,11 @@ public final class JobPollerImpl implements JobPoller {
     // rolling upgrades against a gateway that doesn't yet know this field
     if (withLease) {
       activateCommand.withLease(true);
+    }
+    // only set when present: an empty token sent to a gateway that doesn't yet know this field
+    // would break rolling upgrades
+    if (reservationToken != null && !reservationToken.isEmpty()) {
+      activateCommand.reservationToken(reservationToken);
     }
     activateCommand
         .requestTimeout(requestTimeout)

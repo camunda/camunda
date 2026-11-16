@@ -351,9 +351,21 @@ components:
       additionalProperties: false
       properties:
         type:
-          description: The job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition type="payment-service" />)
+          description: >
+            The job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition type="payment-service" />).
+            Exactly one of `type` or `calledProcessId` must be set; sending both is rejected.
           type: string
           example: create-new-user-record
+        calledProcessId:
+          description: >
+            Activates the stand-in jobs of stubbed call activities that call this BPMN process id,
+            instead of jobs of a given `type` (see the STUB_CALL_ACTIVITIES runtime instruction). It
+            implies the internal stub job type, so `type` must be omitted. No `reservationToken` is
+            needed, since stub jobs are never reserved. This lets one mock worker drain every stub of
+            a stubbed process, a multi-instance call activity included. Exactly one of `type` or
+            `calledProcessId` must be set.
+          allOf:
+            - $ref: "identifiers.yaml#/components/schemas/ProcessDefinitionId"
         worker:
           description: The name of the worker activating the jobs, mostly used for logging purposes.
           type: string
@@ -412,8 +424,16 @@ components:
             recommended. Omit or set to false to activate jobs without a lease.
           type: boolean
           nullable: true
+        reservationToken:
+          description: >
+            The reservation token of a process instance whose jobs were reserved at creation (see
+            the RESERVE_JOBS runtime instruction). A worker presenting the matching token activates
+            those reserved jobs, which are withheld from every other worker; this lets a test drive
+            the reserved job types while real workers keep running the rest. Omit it to activate
+            only unreserved jobs.
+          type: string
+          nullable: true
       required:
-        - type
         - maxJobsToActivate
         - timeout
       x-properties-added-in-version:
@@ -421,6 +441,10 @@ components:
           addedInVersion: "8.9"
         - propertyName: withLease
           addedInVersion: "8.10"
+        - propertyName: reservationToken
+          addedInVersion: "8.11"
+        - propertyName: calledProcessId
+          addedInVersion: "8.11"
 
     JobActivationResult:
       description: The list of activated jobs
@@ -1081,9 +1105,24 @@ components:
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
+        reservationToken:
+          description: >
+            The reservation token the process instance reserved the job with (alpha).
+
+            A reserved job (a job of a type listed in the process instance's `RESERVE_JOBS`
+            instruction) is served to no job worker and only the caller that holds the token may
+            command it, so the matching token must be supplied here; a command with no token, or
+            with a different one, is rejected. A job that is not reserved requires no token.
+
+            This property is an alpha feature and may be subject to change in future releases.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ReservationToken'
       x-properties-added-in-version:
         - propertyName: jobLeaseToken
           addedInVersion: "8.10"
+        - propertyName: reservationToken
+          addedInVersion: "8.11"
 
     JobErrorRequest:
       type: object
@@ -1119,11 +1158,26 @@ components:
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
+        reservationToken:
+          description: >
+            The reservation token the process instance reserved the job with (alpha).
+
+            A reserved job (a job of a type listed in the process instance's `RESERVE_JOBS`
+            instruction) is served to no job worker and only the caller that holds the token may
+            command it, so the matching token must be supplied here; a command with no token, or
+            with a different one, is rejected. A job that is not reserved requires no token.
+
+            This property is an alpha feature and may be subject to change in future releases.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ReservationToken'
       required:
         - errorCode
       x-properties-added-in-version:
         - propertyName: jobLeaseToken
           addedInVersion: "8.10"
+        - propertyName: reservationToken
+          addedInVersion: "8.11"
 
     JobCompletionRequest:
       type: object
@@ -1151,6 +1205,19 @@ components:
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
+        reservationToken:
+          description: >
+            The reservation token the process instance reserved the job with (alpha).
+
+            A reserved job (a job of a type listed in the process instance's `RESERVE_JOBS`
+            instruction) is served to no job worker and only the caller that holds the token may
+            command it, so the matching token must be supplied here; a command with no token, or
+            with a different one, is rejected. A job that is not reserved requires no token.
+
+            This property is an alpha feature and may be subject to change in future releases.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ReservationToken'
         businessId:
           nullable: true
           description: >
@@ -1173,6 +1240,8 @@ components:
           addedInVersion: "8.10"
         - propertyName: businessId
           addedInVersion: "8.10"
+        - propertyName: reservationToken
+          addedInVersion: "8.11"
 
     JobResult:
       description: >
@@ -1324,12 +1393,26 @@ components:
 
             An update without a token always applies to support operator and bulk updates of
             leased jobs. Note that this is different from lifecycle requests like complete, fail, and
-            throw-error that always require a token for leased jobs.
+            throw-error that always require a token for leased jobs, and from `reservationToken`,
+            which a reserved job's update requires like every other command on it.
 
             A job that was activated without a lease requires no token.
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/JobLeaseToken'
+        reservationToken:
+          description: >
+            The reservation token the process instance reserved the job with (alpha).
+
+            A reserved job (a job of a type listed in the process instance's `RESERVE_JOBS`
+            instruction) is served to no job worker and only the caller that holds the token may
+            command it, so the matching token must be supplied here; a command with no token, or
+            with a different one, is rejected. A job that is not reserved requires no token.
+
+            This property is an alpha feature and may be subject to change in future releases.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ReservationToken'
       required:
         - changeset
       x-properties-added-in-version:
@@ -1337,6 +1420,8 @@ components:
           addedInVersion: "8.8"
         - propertyName: jobLeaseToken
           addedInVersion: "8.10"
+        - propertyName: reservationToken
+          addedInVersion: "8.11"
 
     JobChangeset:
       description: JSON object with changed job attribute values. The job cannot be completed or failed with this endpoint, use the complete job or fail job endpoints instead.
@@ -1424,6 +1509,7 @@ components:
         - EXECUTION_LISTENER
         - TASK_LISTENER
         - AD_HOC_SUB_PROCESS
+        - CALL_ACTIVITY_STUB
 
     JobListenerEventTypeEnum:
       example: UNSPECIFIED

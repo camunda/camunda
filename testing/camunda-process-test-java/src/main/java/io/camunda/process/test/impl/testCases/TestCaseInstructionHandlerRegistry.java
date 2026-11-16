@@ -46,6 +46,7 @@ import io.camunda.process.test.impl.testCases.instructions.PublishMessageInstruc
 import io.camunda.process.test.impl.testCases.instructions.ResolveIncidentInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.SetTimeInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.ThrowBpmnErrorFromJobInstructionHandler;
+import io.camunda.process.test.impl.testCases.instructions.TriggerTimerInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.UpdateVariablesInstructionHandler;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -62,35 +63,56 @@ public class TestCaseInstructionHandlerRegistry {
       new HashMap<>();
 
   public TestCaseInstructionHandlerRegistry() {
+    this(new CreatedProcessInstanceRegistry(), TestRunContext.create());
+  }
+
+  public TestCaseInstructionHandlerRegistry(
+      final CreatedProcessInstanceRegistry createdProcessInstances) {
+    this(createdProcessInstances, TestRunContext.create());
+  }
+
+  public TestCaseInstructionHandlerRegistry(final TestRunContext runContext) {
+    this(new CreatedProcessInstanceRegistry(), runContext);
+  }
+
+  /**
+   * @param createdProcessInstances records the process instances the test case creates, so that an
+   *     instruction addressing one of them resolves it without querying the cluster
+   * @param runContext resolves reservation-token placeholders for this test case
+   */
+  public TestCaseInstructionHandlerRegistry(
+      final CreatedProcessInstanceRegistry createdProcessInstances,
+      final TestRunContext runContext) {
     register(new AssertDecisionInstructionHandler());
-    register(new AssertElementInstanceInstructionHandler());
-    register(new AssertElementInstancesInstructionHandler());
+    register(new AssertElementInstanceInstructionHandler(runContext));
+    register(new AssertElementInstancesInstructionHandler(runContext));
     register(new AssertIncidentInstructionHandler());
-    register(new AssertProcessInstanceInstructionHandler());
-    register(new AssertProcessInstanceMessageSubscriptionInstructionHandler());
-    register(new AssertUserTaskInstructionHandler());
-    register(new AssertVariableInstructionHandler());
-    register(new AssertVariablesInstructionHandler());
+    register(new AssertProcessInstanceInstructionHandler(runContext));
+    register(new AssertProcessInstanceMessageSubscriptionInstructionHandler(runContext));
+    register(new AssertUserTaskInstructionHandler(runContext));
+    register(new AssertVariableInstructionHandler(runContext));
+    register(new AssertVariablesInstructionHandler(runContext));
     register(new BroadcastSignalInstructionHandler());
-    register(new CompleteJobInstructionHandler());
-    register(new CompleteJobAdHocSubProcessInstructionHandler());
-    register(new CompleteJobUserTaskListenerInstructionHandler());
-    register(new CompleteUserTaskInstructionHandler());
+    register(new CompleteJobInstructionHandler(runContext));
+    register(new CompleteJobAdHocSubProcessInstructionHandler(runContext));
+    register(new CompleteJobUserTaskListenerInstructionHandler(runContext));
+    register(new CompleteUserTaskInstructionHandler(runContext));
     register(new ConditionalBehaviorInstructionHandler(this));
-    register(new CreateProcessInstanceInstructionHandler());
+    register(new CreateProcessInstanceInstructionHandler(createdProcessInstances, runContext));
     register(new EvaluateConditionalStartEventInstructionHandler());
     register(new EvaluateDecisionInstructionHandler());
     register(new IncreaseTimeInstructionHandler());
     register(new MockChildProcessInstructionHandler());
     register(new MockDmnDecisionInstructionHandler());
-    register(new MockJobWorkerCompleteJobInstructionHandler());
-    register(new MockJobWorkerThrowBpmnErrorInstructionHandler());
+    register(new MockJobWorkerCompleteJobInstructionHandler(runContext));
+    register(new MockJobWorkerThrowBpmnErrorInstructionHandler(runContext));
     register(new PublishMessageInstructionHandler());
     register(new CorrelateMessageInstructionHandler());
-    register(new ResolveIncidentInstructionHandler());
+    register(new ResolveIncidentInstructionHandler(runContext));
     register(new SetTimeInstructionHandler());
-    register(new ThrowBpmnErrorFromJobInstructionHandler());
-    register(new UpdateVariablesInstructionHandler());
+    register(new ThrowBpmnErrorFromJobInstructionHandler(runContext));
+    register(new TriggerTimerInstructionHandler(runContext));
+    register(new UpdateVariablesInstructionHandler(runContext));
   }
 
   /** Registers the given handler under the instruction interface it declares. */

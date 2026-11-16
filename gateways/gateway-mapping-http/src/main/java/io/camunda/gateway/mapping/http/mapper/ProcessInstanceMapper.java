@@ -36,6 +36,8 @@ import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByVersionTag;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationReserveJobsInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceCreationStubCallActivitiesInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationInstruction;
@@ -121,7 +123,10 @@ public class ProcessInstanceMapper {
                     toRuntimeInstructions(request.getRuntimeInstructions()),
                     request.getFetchVariables(),
                     request.getTags(),
-                    request.getBusinessId()));
+                    request.getBusinessId(),
+                    stubbedCallActivityProcessIdsOf(request.getRuntimeInstructions()),
+                    reservedJobTypesOf(request.getRuntimeInstructions()),
+                    reservationTokenOf(request.getRuntimeInstructions())));
   }
 
   public Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
@@ -147,7 +152,10 @@ public class ProcessInstanceMapper {
                     toRuntimeInstructions(request.getRuntimeInstructions()),
                     request.getFetchVariables(),
                     request.getTags(),
-                    request.getBusinessId()));
+                    request.getBusinessId(),
+                    stubbedCallActivityProcessIdsOf(request.getRuntimeInstructions()),
+                    reservedJobTypesOf(request.getRuntimeInstructions()),
+                    reservationTokenOf(request.getRuntimeInstructions())));
   }
 
   public Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
@@ -172,7 +180,10 @@ public class ProcessInstanceMapper {
                     toRuntimeInstructions(request.getRuntimeInstructions()),
                     request.getFetchVariables(),
                     request.getTags(),
-                    request.getBusinessId()));
+                    request.getBusinessId(),
+                    stubbedCallActivityProcessIdsOf(request.getRuntimeInstructions()),
+                    reservedJobTypesOf(request.getRuntimeInstructions()),
+                    reservationTokenOf(request.getRuntimeInstructions())));
   }
 
   private Either<ProblemDetail, String> validateCreateProcessInstance(
@@ -199,14 +210,70 @@ public class ProcessInstanceMapper {
   }
 
   private static List<ProcessInstanceCreationRuntimeInstruction> toRuntimeInstructions(
-      final List<ProcessInstanceCreationTerminateInstruction> instructions) {
+      final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
+          instructions) {
+    // The reserve-jobs and stub-call-activities instructions carry instance-wide switches rather
+    // than an element-triggered action; their fields are lifted onto the record (see the *Of
+    // helpers below), so only the element-triggered terminate instructions are kept in the list.
     return instructions.stream()
-        .map(
-            instruction ->
-                new ProcessInstanceCreationRuntimeInstruction()
-                    .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
-                    .setAfterElementId(instruction.getAfterElementId()))
+        .filter(ProcessInstanceCreationTerminateInstruction.class::isInstance)
+        .map(ProcessInstanceMapper::toRuntimeInstruction)
         .toList();
+  }
+
+  private static ProcessInstanceCreationRuntimeInstruction toRuntimeInstruction(
+      final io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction
+          instruction) {
+    return switch (instruction) {
+      case final ProcessInstanceCreationTerminateInstruction terminate ->
+          new ProcessInstanceCreationRuntimeInstruction()
+              .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
+              .setAfterElementId(terminate.getAfterElementId());
+      default ->
+          throw new IllegalStateException(
+              "Unexpected runtime instruction type: " + instruction.getType());
+    };
+  }
+
+  private static @Nullable ProcessInstanceCreationReserveJobsInstruction reserveJobsOf(
+      final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
+          instructions) {
+    if (instructions == null) {
+      return null;
+    }
+    return instructions.stream()
+        .filter(ProcessInstanceCreationReserveJobsInstruction.class::isInstance)
+        .map(ProcessInstanceCreationReserveJobsInstruction.class::cast)
+        .findFirst()
+        .orElse(null);
+  }
+
+  private static @Nullable List<String> stubbedCallActivityProcessIdsOf(
+      final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
+          instructions) {
+    if (instructions == null) {
+      return null;
+    }
+    return instructions.stream()
+        .filter(ProcessInstanceCreationStubCallActivitiesInstruction.class::isInstance)
+        .map(ProcessInstanceCreationStubCallActivitiesInstruction.class::cast)
+        .map(ProcessInstanceCreationStubCallActivitiesInstruction::getProcessIds)
+        .findFirst()
+        .orElse(null);
+  }
+
+  private static @Nullable String reservationTokenOf(
+      final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
+          instructions) {
+    final var reserveJobs = reserveJobsOf(instructions);
+    return reserveJobs == null ? null : reserveJobs.getReservationToken();
+  }
+
+  private static @Nullable List<String> reservedJobTypesOf(
+      final List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
+          instructions) {
+    final var reserveJobs = reserveJobsOf(instructions);
+    return reserveJobs == null ? null : reserveJobs.getJobTypes();
   }
 
   public Either<ProblemDetail, ProcessInstanceSuspendRequest> toSuspendProcessInstance(

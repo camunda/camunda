@@ -60,7 +60,7 @@ public class JobBasedWaitStateTransformer implements WaitStateTransformer<JobRec
   private static boolean isListenerJob(final JobKind jobKind) {
     return switch (jobKind) {
       case EXECUTION_LISTENER, TASK_LISTENER -> true;
-      case BPMN_ELEMENT, AD_HOC_SUB_PROCESS -> false;
+      case BPMN_ELEMENT, AD_HOC_SUB_PROCESS, CALL_ACTIVITY_STUB -> false;
     };
   }
 }

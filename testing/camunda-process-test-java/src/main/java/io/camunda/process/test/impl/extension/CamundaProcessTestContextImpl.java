@@ -21,12 +21,14 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
+import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskJobResultStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.JobState;
+import io.camunda.client.api.search.enums.TimerState;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
@@ -36,6 +38,7 @@ import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.api.search.response.Timer;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
@@ -126,6 +129,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   private final Supplier<CamundaDataSource> dataSourceSupplier;
 
+  private String reservationToken;
+
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
       final Consumer<AutoCloseable> clientCreationCallback,
@@ -210,6 +215,15 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
+  public JobWorkerMockBuilder mockCallActivity(final String calledProcessId) {
+    final CamundaClient client = createClient();
+    final BpmnExampleDataReader exampleDataReader =
+        new BpmnExampleDataReader(client, awaitBehaviorSupplier.get());
+
+    return new JobWorkerMockBuilderImpl(null, calledProcessId, client, exampleDataReader);
+  }
+
+  @Override
   public MockChildProcessBuilder mockChildProcess() {
     final CamundaClient client = createClient();
     return new MockChildProcessBuilderImpl(client);
@@ -280,15 +294,11 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                     job.getElementId());
 
             LOGGER.debug("{} with example data {}", logPrefix, exampleDataVariables);
-            client
-                .newCompleteCommand(job.getJobKey())
-                .variables(exampleDataVariables)
-                .send()
-                .join();
+            completeCommand(client, job.getJobKey()).variables(exampleDataVariables).send().join();
           } catch (final BpmnExampleDataReaderException e) {
 
             LOGGER.warn("{} without example data due to errors. {}", logPrefix, e.getMessage());
-            client.newCompleteCommand(job.getJobKey()).send().join();
+            completeCommand(client, job.getJobKey()).send().join();
           }
         });
   }
@@ -372,11 +382,51 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                   .errorCode(errorCode)
                   .variables(variables);
 
+          if (reservationToken != null) {
+            command.withReservationToken(reservationToken);
+          }
+
           if (errorMessage != null) {
             command.errorMessage(errorMessage);
           }
 
           command.send().join();
+        });
+  }
+
+  @Override
+  public void setReservationToken(final String reservationToken) {
+    this.reservationToken = reservationToken;
+  }
+
+  @Override
+  public void triggerTimer(
+      final ProcessInstanceSelector processInstanceSelector, final String elementId) {
+    final CamundaClient client = createClient();
+
+    // resolve and fire the timer inside the await block to absorb eventual consistency: the process
+    // instance or its waiting timer may not be indexed yet (an empty result or a ClientException
+    // retries), and a stale index can 404 the trigger until it catches up
+    awaitProcessInstance(
+        processInstanceSelector,
+        pi -> {
+          final Optional<Timer> waitingTimer = findTimer(pi.getProcessInstanceKey(), elementId);
+
+          assertThat(waitingTimer)
+              .withFailMessage(
+                  "Expected to trigger a waiting timer [elementId: '%s'] of process instance [%s, processInstanceKey: %s], but found none. It may not be indexed yet, or it has already fired.",
+                  elementId, processInstanceSelector.describe(), pi.getProcessInstanceKey())
+              .isPresent();
+
+          final long timerKey = waitingTimer.get().getTimerKey();
+          LOGGER.debug(
+              "Mock: Trigger timer [elementId: '{}', timerKey: '{}'] of process instance [{}, processInstanceKey: '{}']",
+              elementId,
+              timerKey,
+              processInstanceSelector.describe(),
+              pi.getProcessInstanceKey());
+
+          client.newTriggerTimerCommand(timerKey).send().join();
         });
   }
 
@@ -553,8 +603,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
               job.getJobKey(),
               variables);
 
-          client
-              .newCompleteCommand(job.getJobKey())
+          completeCommand(client, job.getJobKey())
               .variables(variables)
               .withResult(
                   result -> {
@@ -651,8 +700,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
               jobSelector.describe(),
               job.getJobKey());
 
-          client
-              .newCompleteCommand(job.getJobKey())
+          completeCommand(client, job.getJobKey())
               .withResult(
                   result -> {
                     final CompleteUserTaskJobResultStep1 userTaskResult = result.forUserTask();
@@ -669,6 +717,15 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     return conditionalBehaviorEngine.when(condition);
   }
 
+  /** Builds a completion that carries this test's reservation token, if it has one. */
+  private CompleteJobCommandStep1 completeCommand(final CamundaClient client, final long jobKey) {
+    final CompleteJobCommandStep1 command = client.newCompleteCommand(jobKey);
+    if (reservationToken != null) {
+      command.withReservationToken(reservationToken);
+    }
+    return command;
+  }
+
   // completing the job inside the await block to handle the eventual consistency of the API
   private void doCompleteJob(
       final CamundaClient client,
@@ -683,7 +740,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
               jobSelector.describe(),
               job.getJobKey(),
               outputVariables);
-          client.newCompleteCommand(job.getJobKey()).variables(outputVariables).send().join();
+          completeCommand(client, job.getJobKey()).variables(outputVariables).send().join();
         });
   }
 
@@ -871,6 +928,19 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         .findFirst();
   }
 
+  private Optional<Timer> findTimer(final long processInstanceKey, final String elementId) {
+    return dataSourceSupplier
+        .get()
+        .findTimers(
+            filter ->
+                filter
+                    .processInstanceKey(processInstanceKey)
+                    .elementId(elementId)
+                    .state(TimerState.CREATED))
+        .stream()
+        .findFirst();
+  }
+
   private Optional<ElementInstance> findElementInstance(
       final long processInstanceKey, final ElementSelector elementSelector) {
     final Consumer<ElementInstanceFilter> filter =
@@ -893,7 +963,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             processInstance -> {
               assertThat(processInstance)
                   .withFailMessage(
-                      "Expected to update variables for process instance [%s] but no process instance is available.",
+                      "Expected to act on process instance [%s] but no process instance is available.",
                       processInstanceSelector.describe())
                   .isPresent();
 

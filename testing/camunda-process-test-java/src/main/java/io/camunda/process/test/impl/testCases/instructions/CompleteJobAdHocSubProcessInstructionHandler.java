@@ -21,9 +21,16 @@ import io.camunda.process.test.api.assertions.JobSelector;
 import io.camunda.process.test.api.testCases.instructions.CompleteJobAdHocSubProcessInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
 
 public class CompleteJobAdHocSubProcessInstructionHandler
     implements TestCaseInstructionHandler<CompleteJobAdHocSubProcessInstruction> {
+
+  private final TestRunContext runContext;
+
+  public CompleteJobAdHocSubProcessInstructionHandler(final TestRunContext runContext) {
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(
@@ -31,6 +38,17 @@ public class CompleteJobAdHocSubProcessInstructionHandler
       final CamundaProcessTestContext context,
       final CamundaClient camundaClient,
       final AssertionFacade assertionFacade) {
+    ReservationTokenScope.run(
+        context,
+        runContext,
+        instruction.getReservationToken(),
+        () -> executeInstruction(instruction, context, camundaClient));
+  }
+
+  private void executeInstruction(
+      final CompleteJobAdHocSubProcessInstruction instruction,
+      final CamundaProcessTestContext context,
+      final CamundaClient camundaClient) {
 
     final JobSelector jobSelector =
         InstructionSelectorFactory.buildJobSelector(instruction.getJobSelector());

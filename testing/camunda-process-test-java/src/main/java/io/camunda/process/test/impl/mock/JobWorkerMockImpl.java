@@ -16,8 +16,11 @@
 package io.camunda.process.test.impl.mock;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobHandler;
+import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep2;
+import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +34,19 @@ public class JobWorkerMockImpl implements JobWorkerMock {
   private final List<ActivatedJob> activatedJobs = new ArrayList<>();
 
   public JobWorkerMockImpl(
-      final String jobType, final CamundaClient camundaClient, final JobHandler jobHandler) {
+      final String jobType,
+      final CamundaClient camundaClient,
+      final JobHandler jobHandler,
+      final String reservationToken) {
+    this(jobType, null, camundaClient, jobHandler, reservationToken);
+  }
+
+  public JobWorkerMockImpl(
+      final String jobType,
+      final String calledProcessId,
+      final CamundaClient camundaClient,
+      final JobHandler jobHandler,
+      final String reservationToken) {
 
     final JobHandler loggingJobHandler =
         (jobClient, job) -> {
@@ -56,11 +71,31 @@ public class JobWorkerMockImpl implements JobWorkerMock {
             System.err.println(failureMessage);
             e.printStackTrace();
 
-            client.newFailCommand(job.getKey()).retries(0).send().join();
+            final FailJobCommandStep2 failCommand = client.newFailCommand(job.getKey()).retries(0);
+            if (reservationToken != null) {
+              failCommand.withReservationToken(reservationToken);
+            }
+            failCommand.send().join();
           }
         };
 
-    camundaClient.newWorker().jobType(jobType).handler(safeLoggingJobHandler).open();
+    final JobWorkerBuilderStep2 subscription =
+        calledProcessId != null
+            ? camundaClient.newWorker().calledProcessId(calledProcessId)
+            : camundaClient.newWorker().jobType(jobType);
+    final JobWorkerBuilderStep3 workerBuilder = subscription.handler(safeLoggingJobHandler);
+    if (calledProcessId != null) {
+      // a stub job is served only over the poll path, and open() rejects a streaming
+      // called-process worker, so disable streaming even when the client enables it by default
+      workerBuilder.streamEnabled(false);
+    }
+    if (reservationToken != null) {
+      // a reserved job is never pushed to a stream, only served over the poll path, so disable
+      // streaming even when the client enables it by default
+      workerBuilder.streamEnabled(false);
+      workerBuilder.reservationToken(reservationToken);
+    }
+    workerBuilder.open();
   }
 
   @Override

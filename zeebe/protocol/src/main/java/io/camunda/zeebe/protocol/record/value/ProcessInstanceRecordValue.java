@@ -18,6 +18,7 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.immutables.value.Value;
@@ -239,5 +240,41 @@ public interface ProcessInstanceRecordValue
    */
   default long getResumeFromUserTaskKey() {
     return -1L;
+  }
+
+  /**
+   * Returns the token that reserves the jobs of the {@link #getReservedJobTypes() reserved job
+   * types} for the caller that created this process instance. Only the root element instance record
+   * carries it.
+   *
+   * @return the job reservation token, or an empty string if not set
+   * @since 8.11
+   */
+  default String getReservationToken() {
+    return "";
+  }
+
+  /**
+   * Returns the job types whose jobs are reserved for the caller that created this process
+   * instance. Only the root element instance record carries it. A job is reserved when its type is
+   * contained in this list.
+   *
+   * @return the reserved job types, or an empty list
+   * @since 8.11
+   */
+  default List<String> getReservedJobTypes() {
+    return Collections.emptyList();
+  }
+
+  /**
+   * Returns the BPMN process ids whose call activities are stubbed for this process instance. Only
+   * the root element instance record of an instance created with the switch carries it. A call
+   * activity is stubbed when the process id it resolves to is contained in this list.
+   *
+   * @return the called-process ids whose call activities are stubbed, or an empty list
+   * @since 8.11
+   */
+  default List<String> getStubbedCallActivityProcessIds() {
+    return Collections.emptyList();
   }
 }

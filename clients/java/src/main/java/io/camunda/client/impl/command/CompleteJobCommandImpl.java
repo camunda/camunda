@@ -57,6 +57,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   private final RequestConfig.Builder httpRequestConfig;
   private final JobCompletionRequest httpRequestObject;
   private boolean useRest;
+  private String restOnlyProperty;
   private final long jobKey;
   private final JsonMapper jsonMapper;
 
@@ -91,6 +92,9 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
 
   @Override
   public CamundaFuture<CompleteJobResponse> send() {
+    if (restOnlyProperty != null) {
+      ArgumentUtil.ensureRestTransport(restOnlyProperty, useRest);
+    }
     if (useRest) {
       return sendRestRequest();
     } else {
@@ -120,6 +124,16 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     }
     grpcRequestObjectBuilder.setJobLeaseToken(jobLeaseToken);
     httpRequestObject.setJobLeaseToken(jobLeaseToken);
+    return this;
+  }
+
+  @Override
+  public CompleteJobCommandStep1 withReservationToken(final String reservationToken) {
+    if (reservationToken == null) {
+      return this;
+    }
+    restOnlyProperty = "withReservationToken";
+    httpRequestObject.setReservationToken(reservationToken);
     return this;
   }
 

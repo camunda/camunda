@@ -19,6 +19,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
 import io.camunda.client.api.command.CompleteUserTaskJobResultStep1;
+import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.IncidentSelector;
 import io.camunda.process.test.api.assertions.JobSelector;
@@ -112,6 +113,21 @@ public interface CamundaProcessTestContext {
    * @return a {@see JobWorkerMock} instance for configuring the mock behavior.
    */
   JobWorkerMockBuilder mockJobWorker(final String jobType);
+
+  /**
+   * Creates a mock worker that stands in for a stubbed call activity's child process, draining the
+   * stub jobs of every call activity that calls {@code calledProcessId} (see {@link
+   * CreateProcessInstanceCommandStep1#stubCallActivities(String...) stubCallActivities}). One such
+   * mock drives every occurrence, a multi-instance call activity included.
+   *
+   * <p>Stub jobs are never reserved, so the mock needs no reservation token. Configure the stand-in
+   * behavior — {@code thenComplete}, {@code thenThrowBpmnError} — on the returned builder, the same
+   * as {@link #mockJobWorker(String)}.
+   *
+   * @param calledProcessId the BPMN process id whose stubbed call activities to stand in for
+   * @return a builder for configuring the mock behavior
+   */
+  JobWorkerMockBuilder mockCallActivity(final String calledProcessId);
 
   /**
    * Returns a builder for constructing a mock child process. Use {@link
@@ -306,6 +322,39 @@ public interface CamundaProcessTestContext {
       final String errorCode,
       final String errorMessage,
       final Map<String, Object> variables);
+
+  /**
+   * Sets the reservation token that the job commands this context issues carry from now on (alpha).
+   *
+   * <p>Use it to drive a reserved job: pass the token the process instance reserved the job with
+   * (see {@link
+   * io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3#reserveJobs(String,
+   * String...) reserveJobs}). The complete and throw-error commands this context then issues carry
+   * the token, so the test drives those jobs itself. The context never mints a token; pass {@code
+   * null} to send none again.
+   *
+   * <p>A reserved job is hidden from every worker, including a {@link #mockJobWorker(String) mock
+   * job worker} this test opens, so do not mock and reserve the same job type.
+   *
+   * @param reservationToken the token to send, or {@code null} to send none
+   */
+  void setReservationToken(final String reservationToken);
+
+  /**
+   * Fires a waiting timer of the selected process instance immediately, without waiting for its due
+   * date (alpha).
+   *
+   * <p>The timer catch event the instance is waiting on is resolved to its timer, and that timer is
+   * fired as if its due date had arrived. The cluster clock is not changed.
+   *
+   * <p>The element id is that of the timer catch event. For a boundary timer it is the boundary
+   * event's own id, not the id of the activity it is attached to.
+   *
+   * @param processInstanceSelector the selector to identify the process instance that owns the
+   *     timer
+   * @param elementId the BPMN element id of the timer catch event
+   */
+  void triggerTimer(final ProcessInstanceSelector processInstanceSelector, final String elementId);
 
   /**
    * Completes a user task with the given BPMN element ID.

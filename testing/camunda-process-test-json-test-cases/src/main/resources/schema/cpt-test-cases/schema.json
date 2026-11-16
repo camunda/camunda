@@ -132,6 +132,9 @@
           "$ref": "#/definitions/ThrowBpmnErrorFromJobInstruction"
         },
         {
+          "$ref": "#/definitions/TriggerTimerInstruction"
+        },
+        {
           "$ref": "#/definitions/UpdateVariablesInstruction"
         }
       ]
@@ -193,6 +196,57 @@
                 "required": [
                   "type",
                   "afterElementId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "description": "An instruction to reserve the process instance's jobs of the listed job types for the test, so that no job worker is served them. Jobs of any other type run for real. Selection is by job type: every job of a listed type is reserved.",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "description": "The type of the runtime instruction.",
+                    "type": "string",
+                    "const": "RESERVE_JOBS"
+                  },
+                  "jobTypes": {
+                    "description": "The job types whose jobs are reserved. A job is reserved when its type is in this list.",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "reservationToken": {
+                    "description": "The token that reserves the listed jobs. Use the placeholder ${reservationToken}: the runner substitutes a fresh token for it on each run. The same token must be given on every job instruction that acts on a reserved job.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "jobTypes",
+                  "reservationToken"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "description": "An instruction to stub the process instance's call activities that call one of the listed BPMN process ids. A stubbed call activity starts no called process; it waits on a job that stands in for it.",
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "description": "The type of the runtime instruction.",
+                    "type": "string",
+                    "const": "STUB_CALL_ACTIVITIES"
+                  },
+                  "processIds": {
+                    "description": "The BPMN process ids whose call activities are stubbed. A call activity is stubbed when the process id it calls is in this list.",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "type",
+                  "processIds"
                 ],
                 "additionalProperties": false
               }
@@ -718,6 +772,10 @@
           "description": "The selector to identify the job to complete.",
           "$ref": "#/definitions/JobSelector"
         },
+        "reservationToken": {
+          "description": "The token the job's process instance reserved the job with. Use the placeholder ${reservationToken}: the runner substitutes the token of the current run for it. Optional; required only to act on a reserved job.",
+          "type": "string"
+        },
         "variables": {
           "description": "The variables to complete the job with. Optional.",
           "type": "object",
@@ -747,6 +805,10 @@
         "jobSelector": {
           "description": "The selector to identify the job to complete.",
           "$ref": "#/definitions/JobSelector"
+        },
+        "reservationToken": {
+          "description": "The token the job's process instance reserved the job with. Use the placeholder ${reservationToken}: the runner substitutes the token of the current run for it. Optional; required only to act on a reserved job.",
+          "type": "string"
         },
         "variables": {
           "description": "The variables to complete the job with. Optional.",
@@ -804,6 +866,10 @@
         "jobSelector": {
           "description": "The selector to identify the job to complete.",
           "$ref": "#/definitions/JobSelector"
+        },
+        "reservationToken": {
+          "description": "The token the job's process instance reserved the job with. Use the placeholder ${reservationToken}: the runner substitutes the token of the current run for it. Optional; required only to act on a reserved job.",
+          "type": "string"
         },
         "denied": {
           "description": "Whether the worker denies the work. Defaults to false.",
@@ -866,6 +932,10 @@
           "description": "The type of the job.",
           "type": "string"
         },
+        "jobKind": {
+          "description": "The kind of the job, e.g. CALL_ACTIVITY_STUB to select the stand-in job of a stubbed call activity.",
+          "type": "string"
+        },
         "elementId": {
           "description": "The ID of the BPMN element.",
           "type": "string"
@@ -879,6 +949,11 @@
         {
           "required": [
             "jobType"
+          ]
+        },
+        {
+          "required": [
+            "jobKind"
           ]
         },
         {
@@ -1130,7 +1205,15 @@
           "const": "MOCK_JOB_WORKER_COMPLETE_JOB"
         },
         "jobType": {
-          "description": "The job type to mock. This should match the zeebeJobType in the BPMN model.",
+          "description": "The job type to mock. This should match the zeebeJobType in the BPMN model. Exactly one of jobType or calledProcessId must be set.",
+          "type": "string"
+        },
+        "calledProcessId": {
+          "description": "The called-process id whose stubbed call activities to stand in for, instead of a job type. Stub jobs are never reserved, so reservationToken is ignored. Exactly one of jobType or calledProcessId must be set.",
+          "type": "string"
+        },
+        "reservationToken": {
+          "description": "The token the jobs of this type were reserved with. Use the placeholder ${reservationToken}: the runner substitutes a fresh token for it on each run. Optional; required only to mock a reserved job type so the mock worker can activate its reserved jobs.",
           "type": "string"
         },
         "variables": {
@@ -1156,8 +1239,19 @@
         }
       },
       "required": [
-        "type",
-        "jobType"
+        "type"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "jobType"
+          ]
+        },
+        {
+          "required": [
+            "calledProcessId"
+          ]
+        }
       ],
       "additionalProperties": false
     },
@@ -1247,7 +1341,7 @@
           "type": "string"
         },
         "threshold": {
-          "description": "The minimum similarity score (0.0–1.0) for the assertion to pass. Optional — when absent the configured default threshold is used.",
+          "description": "The minimum similarity score (0.0\u20131.0) for the assertion to pass. Optional \u2014 when absent the configured default threshold is used.",
           "type": "number",
           "minimum": 0.0,
           "maximum": 1.0
@@ -1289,7 +1383,15 @@
           "const": "MOCK_JOB_WORKER_THROW_BPMN_ERROR"
         },
         "jobType": {
-          "description": "The job type to mock. This should match the zeebeJobType in the BPMN model.",
+          "description": "The job type to mock. This should match the zeebeJobType in the BPMN model. Exactly one of jobType or calledProcessId must be set.",
+          "type": "string"
+        },
+        "calledProcessId": {
+          "description": "The called-process id whose stubbed call activities to stand in for, instead of a job type. Stub jobs are never reserved, so reservationToken is ignored. Exactly one of jobType or calledProcessId must be set.",
+          "type": "string"
+        },
+        "reservationToken": {
+          "description": "The token the jobs of this type were reserved with. Use the placeholder ${reservationToken}: the runner substitutes a fresh token for it on each run. Optional; required only to mock a reserved job type so the mock worker can activate its reserved jobs.",
           "type": "string"
         },
         "errorCode": {
@@ -1308,8 +1410,19 @@
       },
       "required": [
         "type",
-        "jobType",
         "errorCode"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "jobType"
+          ]
+        },
+        {
+          "required": [
+            "calledProcessId"
+          ]
+        }
       ],
       "additionalProperties": false
     },
@@ -1388,6 +1501,10 @@
         "jobSelector": {
           "description": "The selector to identify the job to throw the error from.",
           "$ref": "#/definitions/JobSelector"
+        },
+        "reservationToken": {
+          "description": "The token the job's process instance reserved the job with. Use the placeholder ${reservationToken}: the runner substitutes the token of the current run for it. Optional; required only to act on a reserved job.",
+          "type": "string"
         },
         "errorCode": {
           "description": "The error code to throw.",
@@ -1525,6 +1642,31 @@
         "type",
         "conditions",
         "actions"
+      ],
+      "additionalProperties": false
+    },
+    "TriggerTimerInstruction": {
+      "description": "An instruction to fire a waiting timer immediately, without waiting for its due date.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "TRIGGER_TIMER"
+        },
+        "processInstanceSelector": {
+          "description": "The selector to identify the process instance that owns the waiting timer.",
+          "$ref": "#/definitions/ProcessInstanceSelector"
+        },
+        "elementSelector": {
+          "description": "The selector to identify the timer catch event. A timer is addressed by the element id of its catch event, which for a boundary timer is the boundary event's own id, so the element must be selected by elementId.",
+          "$ref": "#/definitions/ElementSelector"
+        }
+      },
+      "required": [
+        "type",
+        "processInstanceSelector",
+        "elementSelector"
       ],
       "additionalProperties": false
     }

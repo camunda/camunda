@@ -32,6 +32,14 @@ public interface JobSelector {
   Optional<String> getJobType();
 
   /**
+   * The kind of the job, e.g. {@code CALL_ACTIVITY_STUB} to select the stand-in job of a stubbed
+   * call activity.
+   *
+   * @return the job kind or empty if not set
+   */
+  Optional<String> getJobKind();
+
+  /**
    * The ID of the BPMN element.
    *
    * @return the element ID or empty if not set

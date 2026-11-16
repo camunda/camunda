@@ -17,15 +17,31 @@ package io.camunda.process.test.impl.testCases.instructions;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3;
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceReserveJobsRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceRuntimeInstruction;
+import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceStubCallActivitiesRuntimeInstruction;
 import io.camunda.process.test.api.testCases.instructions.createProcessInstance.CreateProcessInstanceTerminateRuntimeInstruction;
 import io.camunda.process.test.impl.testCases.AssertionFacade;
+import io.camunda.process.test.impl.testCases.CreatedProcessInstanceRegistry;
 import io.camunda.process.test.impl.testCases.TestCaseInstructionHandler;
+import io.camunda.process.test.impl.testCases.TestRunContext;
+import java.util.Optional;
 
 public class CreateProcessInstanceInstructionHandler
     implements TestCaseInstructionHandler<CreateProcessInstanceInstruction> {
+
+  private final CreatedProcessInstanceRegistry createdProcessInstances;
+  private final TestRunContext runContext;
+
+  public CreateProcessInstanceInstructionHandler(
+      final CreatedProcessInstanceRegistry createdProcessInstances,
+      final TestRunContext runContext) {
+    this.createdProcessInstances = createdProcessInstances;
+    this.runContext = runContext;
+  }
 
   @Override
   public void execute(
@@ -57,7 +73,38 @@ public class CreateProcessInstanceInstructionHandler
         .getRuntimeInstructions()
         .forEach(runtimeInstruction -> applyRuntimeInstruction(runtimeInstruction, command));
 
-    command.send().join();
+    final Optional<CreateProcessInstanceReserveJobsRuntimeInstruction> reserveJobs =
+        reserveJobsOf(instruction);
+    final Optional<CreateProcessInstanceStubCallActivitiesRuntimeInstruction>
+        stubCallActivitiesOpt = stubCallActivitiesOf(instruction);
+    final boolean isolated = reserveJobs.isPresent() || stubCallActivitiesOpt.isPresent();
+
+    reserveJobs.ifPresent(
+        reserve ->
+            command.reserveJobs(
+                runContext.resolveReservationToken(reserve.getReservationToken()),
+                reserve.getJobTypes().toArray(new String[0])));
+    stubCallActivitiesOpt.ifPresent(
+        stub -> command.stubCallActivities(stub.getProcessIds().toArray(new String[0])));
+
+    final ProcessInstanceEvent processInstance = command.send().join();
+    createdProcessInstances.register(processInstance.getProcessInstanceKey(), isolated);
+  }
+
+  private static Optional<CreateProcessInstanceReserveJobsRuntimeInstruction> reserveJobsOf(
+      final CreateProcessInstanceInstruction instruction) {
+    return instruction.getRuntimeInstructions().stream()
+        .filter(CreateProcessInstanceReserveJobsRuntimeInstruction.class::isInstance)
+        .map(CreateProcessInstanceReserveJobsRuntimeInstruction.class::cast)
+        .findFirst();
+  }
+
+  private static Optional<CreateProcessInstanceStubCallActivitiesRuntimeInstruction>
+      stubCallActivitiesOf(final CreateProcessInstanceInstruction instruction) {
+    return instruction.getRuntimeInstructions().stream()
+        .filter(CreateProcessInstanceStubCallActivitiesRuntimeInstruction.class::isInstance)
+        .map(CreateProcessInstanceStubCallActivitiesRuntimeInstruction.class::cast)
+        .findFirst();
   }
 
   @Override
@@ -74,6 +121,10 @@ public class CreateProcessInstanceInstructionHandler
           (CreateProcessInstanceTerminateRuntimeInstruction) runtimeInstruction;
       command.terminateAfterElement(terminateInstruction.getAfterElementId());
 
+    } else if (runtimeInstruction instanceof CreateProcessInstanceReserveJobsRuntimeInstruction
+        || runtimeInstruction
+            instanceof CreateProcessInstanceStubCallActivitiesRuntimeInstruction) {
+      return;
     } else {
       throw new IllegalArgumentException(
           "Unsupported runtime instruction: " + runtimeInstruction.getClass().getName());

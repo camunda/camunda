@@ -182,6 +182,66 @@ public interface CreateProcessInstanceCommandStep1
     CreateProcessInstanceCommandStep3 terminateAfterElement(final String elementId);
 
     /**
+     * Reserves the process instance's jobs of the given types for the caller, so that no job worker
+     * is served them (alpha).
+     *
+     * <p>A reserved job is created as usual but is offered to no worker, by poll or by stream. The
+     * caller drives it by key instead, proving it holds the reservation by passing the same token
+     * to every command on the job ({@link CompleteJobCommandStep1#withReservationToken(String)} and
+     * its counterparts on fail, throw-error and update). A command without the token, or with a
+     * different one, is rejected.
+     *
+     * <p>Selection is by job type: every job of a listed type is reserved, and every job of any
+     * other type goes to the workers as usual. There is no way to hand a reserved job back to the
+     * workers; to let a job run for real, leave its type off the list. A job whose type is a FEEL
+     * expression is reserved only when its resolved value is listed.
+     *
+     * <p>The reservation is inherited by the instances this one calls, so a called process's jobs
+     * of a listed type are reserved with the same token.
+     *
+     * <p>The token is chosen by the caller and is never returned by any API, so it must be kept for
+     * the life of the instance: without it the instance can only be cancelled. Use a fresh,
+     * unguessable value per instance so that two callers on one cluster cannot collide.
+     *
+     * <p>This method is only supported over REST. This is an alpha feature and may be subject to
+     * change in future releases.
+     *
+     * @param reservationToken the caller-chosen token to stamp on the reserved jobs
+     * @param jobTypes the job types whose jobs are reserved
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker
+     */
+    CreateProcessInstanceCommandStep3 reserveJobs(
+        final String reservationToken, final String... jobTypes);
+
+    /**
+     * Activates the process instance's call activities that call one of the given BPMN process ids
+     * without starting the processes they call (alpha).
+     *
+     * <p>A stubbed call activity activates and waits on a job of type {@code
+     * io.camunda.zeebe:callActivityStub} instead of starting a child process instance, so the
+     * called process need not even be deployed. The stub job is offered to no ordinary worker; the
+     * caller completes it to stand in for the called process, or a worker opened with {@link
+     * io.camunda.client.api.worker.JobWorkerBuilderStep1#calledProcessId(String) calledProcessId}
+     * drains the stubs of one called process — a multi-instance call activity included. Stub jobs
+     * are never reserved, even when {@link #reserveJobs(String, String...) reserveJobs} is also
+     * given.
+     *
+     * <p>A call activity is stubbed when the process id it resolves to is one of {@code
+     * processIds}; call activities calling any other process run their real child. Stubbing is
+     * inherited by the instances this one calls, so a nested call activity calling a listed process
+     * is stubbed too.
+     *
+     * <p>This method is only supported over REST. This is an alpha feature and may be subject to
+     * change in future releases.
+     *
+     * @param processIds the BPMN process ids whose call activities are stubbed
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker
+     */
+    CreateProcessInstanceCommandStep3 stubCallActivities(final String... processIds);
+
+    /**
      * When this method is called, the response to the command will be received after the process is
      * completed. The response consists of a set of variables.
      *

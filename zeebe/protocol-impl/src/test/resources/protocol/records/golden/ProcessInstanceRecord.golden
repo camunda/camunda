@@ -63,6 +63,10 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final StringValue RESUME_FROM_JOB_KEY_KEY = new StringValue("resumeFromJobKey");
   public static final StringValue RESUME_FROM_USER_TASK_KEY_KEY =
       new StringValue("resumeFromUserTaskKey");
+  public static final StringValue RESERVATION_TOKEN_KEY = new StringValue("reservationToken");
+  public static final StringValue STUBBED_CALL_ACTIVITY_PROCESS_IDS_KEY =
+      new StringValue("stubbedCallActivityProcessIds");
+  public static final StringValue RESERVED_JOB_TYPES_KEY = new StringValue("reservedJobTypes");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY, -1);
@@ -109,9 +113,14 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   private final LongProperty resumeFromUserTaskKeyProp =
       new LongProperty(RESUME_FROM_USER_TASK_KEY_KEY, -1L);
+  private final StringProperty reservationTokenProp = new StringProperty(RESERVATION_TOKEN_KEY, "");
+  private final ArrayProperty<StringValue> stubbedCallActivityProcessIdsProp =
+      new ArrayProperty<>(STUBBED_CALL_ACTIVITY_PROCESS_IDS_KEY, StringValue::new);
+  private final ArrayProperty<StringValue> reservedJobTypesProp =
+      new ArrayProperty<>(RESERVED_JOB_TYPES_KEY, StringValue::new);
 
   public ProcessInstanceRecord() {
-    super(20);
+    super(23);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -131,7 +140,10 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(storageOrdinalProp)
         .declareProperty(businessIdProp)
         .declareProperty(resumeFromJobKeyProp)
-        .declareProperty(resumeFromUserTaskKeyProp);
+        .declareProperty(resumeFromUserTaskKeyProp)
+        .declareProperty(reservationTokenProp)
+        .declareProperty(stubbedCallActivityProcessIdsProp)
+        .declareProperty(reservedJobTypesProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -151,6 +163,12 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     businessIdProp.setValue(record.getBusinessId());
     resumeFromJobKeyProp.setValue(record.getResumeFromJobKey());
     resumeFromUserTaskKeyProp.setValue(record.getResumeFromUserTaskKey());
+    reservationTokenProp.setValue(record.getReservationTokenBuffer());
+    stubbedCallActivityProcessIdsProp.reset();
+    record.stubbedCallActivityProcessIdsProp.forEach(
+        processId -> stubbedCallActivityProcessIdsProp.add().wrap(processId.getValue()));
+    reservedJobTypesProp.reset();
+    record.reservedJobTypesProp.forEach(type -> reservedJobTypesProp.add().wrap(type.getValue()));
   }
 
   @JsonIgnore
@@ -322,6 +340,62 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   @Override
   public long getResumeFromJobKey() {
     return resumeFromJobKeyProp.getValue();
+  }
+
+  @Override
+  public String getReservationToken() {
+    return bufferAsString(reservationTokenProp.getValue());
+  }
+
+  @JsonIgnore
+  public DirectBuffer getReservationTokenBuffer() {
+    return reservationTokenProp.getValue();
+  }
+
+  public ProcessInstanceRecord setReservationToken(final String reservationToken) {
+    reservationTokenProp.setValue(reservationToken);
+    return this;
+  }
+
+  public ProcessInstanceRecord setReservationToken(final DirectBuffer reservationToken) {
+    reservationTokenProp.setValue(reservationToken);
+    return this;
+  }
+
+  @Override
+  public List<String> getStubbedCallActivityProcessIds() {
+    return StreamSupport.stream(stubbedCallActivityProcessIdsProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .toList();
+  }
+
+  public ProcessInstanceRecord setStubbedCallActivityProcessIds(
+      final List<String> stubbedCallActivityProcessIds) {
+    stubbedCallActivityProcessIdsProp.reset();
+    if (stubbedCallActivityProcessIds != null) {
+      stubbedCallActivityProcessIds.forEach(
+          processId ->
+              stubbedCallActivityProcessIdsProp.add().wrap(BufferUtil.wrapString(processId)));
+    }
+    return this;
+  }
+
+  @Override
+  public List<String> getReservedJobTypes() {
+    return StreamSupport.stream(reservedJobTypesProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .toList();
+  }
+
+  public ProcessInstanceRecord setReservedJobTypes(final List<String> reservedJobTypes) {
+    reservedJobTypesProp.reset();
+    if (reservedJobTypes != null) {
+      reservedJobTypes.forEach(
+          type -> reservedJobTypesProp.add().wrap(BufferUtil.wrapString(type)));
+    }
+    return this;
   }
 
   public ProcessInstanceRecord setResumeFromJobKey(final long resumeFromJobKey) {

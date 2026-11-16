@@ -17,6 +17,7 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.immutables.value.Value;
@@ -89,6 +90,45 @@ public interface ProcessInstanceCreationRecordValue
    * @since 8.11
    */
   String getVersionTag();
+
+  /**
+   * Returns the BPMN process ids whose call activities are stubbed for this process instance. A
+   * stubbed call activity starts no child process instance: it activates and waits on a job that a
+   * caller completes, either supplying the result variables the called process would have produced,
+   * or asking the engine to start the real child process after all. A call activity is stubbed when
+   * the process id it resolves to is contained in this list; an empty list stubs nothing.
+   *
+   * @return the called-process ids whose call activities are stubbed, or an empty list
+   * @since 8.11
+   */
+  default List<String> getStubbedCallActivityProcessIds() {
+    return Collections.emptyList();
+  }
+
+  /**
+   * Returns the token that reserves this process instance's jobs of the {@link
+   * #getReservedJobTypes() reserved job types} for the caller, set from the {@code RESERVE_JOBS}
+   * runtime instruction. Reserved jobs are not handed to job workers, and their complete, fail,
+   * throw-error and update commands are rejected unless the same token is supplied.
+   *
+   * @return the job reservation token, or an empty string if the instance reserves no jobs
+   * @since 8.11
+   */
+  default String getReservationToken() {
+    return "";
+  }
+
+  /**
+   * Returns the job types whose jobs are reserved for this process instance's caller. Only jobs of
+   * a listed type are hidden from job workers; every other job of the instance runs for real. An
+   * empty list reserves nothing.
+   *
+   * @return the reserved job types, or an empty list
+   * @since 8.11
+   */
+  default List<String> getReservedJobTypes() {
+    return Collections.emptyList();
+  }
 
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableProcessInstanceCreationStartInstructionValue.Builder.class)

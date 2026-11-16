@@ -40,6 +40,11 @@ public final class BrokerThrowErrorRequest extends BrokerExecuteCommand<JobRecor
     return this;
   }
 
+  public BrokerThrowErrorRequest setReservationToken(final String reservationToken) {
+    requestDto.setReservationToken(reservationToken);
+    return this;
+  }
+
   @Override
   public JobRecord getRequestWriter() {
     return requestDto;

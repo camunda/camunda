@@ -55,6 +55,7 @@ import io.camunda.client.api.search.response.SearchResponsePage;
 import io.camunda.client.api.search.response.Tenant;
 import io.camunda.client.api.search.response.TenantGroup;
 import io.camunda.client.api.search.response.TenantUser;
+import io.camunda.client.api.search.response.Timer;
 import io.camunda.client.api.search.response.User;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
@@ -138,6 +139,13 @@ public final class SearchResponseMapper {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<ProcessInstance> instances =
         toSearchResponseInstances(response.getItems(), ProcessInstanceImpl::new);
+
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static SearchResponse<Timer> toTimerSearchResponse(final TimerSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<Timer> instances = toSearchResponseInstances(response.getItems(), TimerImpl::new);
 
     return new SearchResponseImpl<>(instances, page);
   }
