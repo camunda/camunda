@@ -708,6 +708,7 @@ jobs:
           REPO: ${{ github.repository }}
           ACTION: ${{ steps.final.outputs.action }}
           BEST: ${{ steps.final.outputs.best }}
+          RATE: ${{ steps.final.outputs.rate }}
           REASON: ${{ steps.final.outputs.reason }}
           BRANCH: ${{ needs.prepare.outputs.branch }}
           TARGET_REF: ${{ needs.prepare.outputs.target_ref }}
@@ -769,6 +770,19 @@ jobs:
               --title "test: stabilize flaky \"${title}\" (${VERSION})" \
               --body-file "$RUNNER_TEMP/pr-body.md" --label flaky-test-fix)
             echo "Opened ${pr_url}"
+
+            # A 100% shipped rate is a proven fix, so it gets the reviewer hold
+            # that keeps close-stale-fix-prs off it; it waits for a human rather
+            # than being swept the next night. A best-effort PR (every cell at
+            # MIN_PASS_RATE and up MIN_IMPROVEMENT_PP, but not 100%) is NOT
+            # proven and deliberately gets no hold: it goes on the daily clock,
+            # and the ledger re-picks the test later. Stamping every PR would
+            # make the label mean "a bot opened this" instead of "this works".
+            # Compared with awk because `rate` is a float.
+            if awk -v r="$RATE" 'BEGIN { exit !(r >= 100) }'; then
+              gh pr edit "$pr_url" --repo "$REPO" --add-label do-not-close
+              echo "Held: 100% pass rate, do-not-close applied"
+            fi
           elif [[ "$branch_exists" == "true" ]]; then
             gh api -X DELETE "repos/${REPO}/git/refs/heads/${BRANCH}"
             echo "Deleted ${BRANCH}: ${REASON}"
