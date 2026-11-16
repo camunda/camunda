@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import java.util.List;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * The operation entity will have been originally written to the index of the resource being
@@ -22,6 +23,7 @@ import java.util.List;
  * operation entity. Otherwise, we might end up upserting a new operation entity into the wrong
  * index (e.g. one copy in "main" and one in an ordinal index)
  */
+@NullMarked
 public abstract class AbstractHistoryDeletionOperationStatusHandler
     extends AbstractOperationStatusHandler<HistoryDeletionRecordValue> {
 

@@ -15,6 +15,7 @@ import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperatio
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Abstract base class for operation status handlers for storage ordinal related records.
@@ -22,6 +23,7 @@ import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
  * <p>This does not really do anything by default, it's mostly there to bring in the
  * OrdinalIndexExportHandler interface to the hierarchy.
  */
+@NullMarked
 public abstract class AbstractOrdinalOperationStatusHandler<
         R extends RecordValue & StorageOrdinalRelated>
     extends AbstractOperationStatusHandler<R>

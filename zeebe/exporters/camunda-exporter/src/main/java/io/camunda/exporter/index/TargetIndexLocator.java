@@ -9,7 +9,9 @@ package io.camunda.exporter.index;
 
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class TargetIndexLocator {
 
   public TargetIndex locateOrdinalIndex(

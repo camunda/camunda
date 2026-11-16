@@ -14,7 +14,9 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
 import java.util.List;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public interface BatchOperationChunkItemsExportHandler<T extends ExporterEntity<T>>
     extends ExportHandler<T, BatchOperationChunkRecordValue> {
 

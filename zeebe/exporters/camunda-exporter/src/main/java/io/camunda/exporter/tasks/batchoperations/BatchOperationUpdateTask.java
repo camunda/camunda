@@ -24,8 +24,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 
+@NullMarked
 public class BatchOperationUpdateTask implements BackgroundTask {
 
   /**
