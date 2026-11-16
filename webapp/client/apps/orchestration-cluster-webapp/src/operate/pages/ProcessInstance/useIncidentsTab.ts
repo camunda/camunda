@@ -31,6 +31,8 @@ const DEFAULT_SORT: IncidentsSort = [{field: 'creationTime', order: 'DESC'}];
 const NO_DECISION_INSTANCES: DecisionInstanceLookup = {};
 const sortSearchParamSchema = createSortSearchParamSchema(z.enum(['errorType', 'creationTime']));
 
+// A decision requirements graph evaluates several decisions for one element instance, and each retry evaluates
+// them again. Sorting puts the root cause last: the most recent failed evaluation.
 function sortByRootCause(decisionInstances: DecisionInstance[]) {
 	return [...decisionInstances].sort(
 		(a, b) =>

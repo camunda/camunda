@@ -81,7 +81,6 @@ const ProcessInstance: React.FC<Props> = ({
 												<TabsTrigger key={tab} value={tab}>
 													{t(`operate.processInstance.history.${tab}`)}
 													{tab === 'incidents' && incidentsCount !== undefined && incidentsCount > 0 && (
-														// Solid badge until the DS has one: https://github.com/camunda/camunda/issues/64465#issuecomment-6929811344
 														<Badge
 															variant="danger"
 															className="border-transparent bg-[var(--danger-foreground-subtle)] text-[var(--background)]"
