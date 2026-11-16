@@ -30,6 +30,8 @@ import java.util.SortedMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +56,7 @@ final class SegmentsManager implements AutoCloseable {
   private final SegmentLoader segmentLoader;
   private final String name;
   private final JournalMetaStore metaStore;
+  private final ExecutorService segmentPreparationExecutor;
 
   private volatile @Nullable Segment currentSegment;
 
@@ -72,6 +75,9 @@ final class SegmentsManager implements AutoCloseable {
     this.segmentLoader = segmentLoader;
     this.journalMetrics = journalMetrics;
     this.metaStore = metaStore;
+    segmentPreparationExecutor =
+        Executors.newThreadPerTaskExecutor(
+            Thread.ofVirtual().name("zeebe-journal-" + name + "-", 0).factory());
   }
 
   @Override
@@ -94,6 +100,7 @@ final class SegmentsManager implements AutoCloseable {
       nextSegment = null;
     }
 
+    segmentPreparationExecutor.close();
     currentSegment = null;
   }
 
@@ -322,7 +329,9 @@ final class SegmentsManager implements AutoCloseable {
             .withIndex(INITIAL_INDEX)
             .withMaxSegmentSize(maxSegmentSize)
             .build();
-    nextSegment = CompletableFuture.supplyAsync(() -> createUninitializedSegment(descriptor));
+    nextSegment =
+        CompletableFuture.supplyAsync(
+            () -> createUninitializedSegment(descriptor), segmentPreparationExecutor);
   }
 
   SortedMap<Long, Segment> getTailSegments(final long index) {
