@@ -20,6 +20,24 @@ public interface IndexDescriptor {
 
   String getAlias();
 
+  /**
+   * Returns a comma-separated index expression that covers only the indices holding active data:
+   * the main index and any ordinal indices. Dated archive indices are deliberately excluded, so
+   * queries over runtime data don't fan out across the historical indices when the archiver is in
+   * use.
+   *
+   * <p>This is a read expression and can match more than one index. Writes must target the concrete
+   * index a document was found in.
+   */
+  default String getActiveNames() {
+    final var fullQualifiedName = getFullQualifiedName();
+    return fullQualifiedName
+        + ","
+        + fullQualifiedName
+        + IndexTemplateDescriptor.ORDINAL_SUFFIX_START
+        + "*";
+  }
+
   String getIndexName();
 
   String getComponentName();
