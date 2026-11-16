@@ -144,7 +144,8 @@ else to a `@Nullable` field without initializer (`org.jspecify.annotations.Nulla
 needs no knowledge of the values. The generated class behaves like the old one: writing or
 getting the length while one is unset throws the same `MsgpackPropertyException`, reading a map
 without the key throws "Property 'k' has no valid value", `reset()` makes it unset again, and
-`toString` prints `"NO VALID WRITEABLE VALUE"`. The bytes are identical. Translate the accessors:
+`equals` of values with an unset property throws the legacy `MsgpackPropertyException`, and `toString`
+leaves the property out, as the legacy classes do. The bytes are identical. Translate the accessors:
 `prop.getValue()` -> `field.get()` (holder, throws if unset) or `Decoding.required(field, "k")`
 (`@Nullable` field),
 `prop.setValue(v)` -> `field.set(v)` or `field = v`, `prop.hasValue()` -> `field.isSet()` or
@@ -152,8 +153,7 @@ without the key throws "Property 'k' has no valid value", `reset()` makes it uns
 `@Nullable` field it keeps doing so with `return Decoding.required(field, "k");`, whose exception
 is that of the legacy `getValue()`. Differences to
 mention in the commit body: `get()` of an unset holder throws `IllegalStateException` (the legacy
-one a `MsgpackPropertyException` with the key), and `equals` of two objects with unset properties
-does not throw (the legacy one does). In the serde tests, cover the unset write and read like the
+one a `MsgpackPropertyException` with the key). In the serde tests, cover the unset write and read like the
 `NameV1` twin does.
 
 A holder costs one object per instance and a slower copy; a `@MsgpackRequired` primitive costs
