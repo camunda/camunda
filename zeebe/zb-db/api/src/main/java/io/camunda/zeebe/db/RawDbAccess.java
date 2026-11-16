@@ -1,0 +1,53 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.db;
+
+import java.io.File;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * Direct access to the committed state of a database, bypassing transactions, so that layers such
+ * as a write-behind cache can sit between transactions and the storage. Keys are raw, already
+ * prefixed with the column family.
+ *
+ * <p>A recoverable storage error surfaces as a {@link ZeebeDbException}; any other error surfaces
+ * as a {@link RuntimeException}.
+ */
+public interface RawDbAccess {
+
+  /** Reads the committed value, or returns null if there is none. */
+  byte @Nullable [] get(byte[] key, int keyLength);
+
+  /**
+   * Returns false only if the key is certainly not in the database; true means that it may be.
+   * Cheaper than {@link #get} because it can answer from filters and memtables.
+   */
+  boolean keyMayExist(byte[] key, int keyLength);
+
+  /** Iterates over the committed state only, restricted to a prefix by the caller. */
+  DbIterator newIterator();
+
+  /** Starts a batch that {@link RawBatch#write()} applies atomically. */
+  RawBatch newBatch();
+
+  /** Writes a consistent copy of the committed state into {@code directory}. */
+  void createCheckpoint(File directory);
+
+  interface RawBatch extends AutoCloseable {
+
+    void put(byte[] key, byte[] value);
+
+    void delete(byte[] key);
+
+    /** Applies all puts and deletes atomically. */
+    void write();
+
+    @Override
+    void close();
+  }
+}
