@@ -11,25 +11,27 @@ import {Notifications} from './Notifications';
 import {View} from './BasePage';
 
 class Header extends View {
-	private brandingName: string | undefined;
 	readonly notifications: Notifications;
 
-	constructor(page: Page, brandingName?: string) {
+	constructor(page: Page) {
 		super(page);
-		this.brandingName = brandingName;
 		this.notifications = new Notifications(page);
 	}
 
 	get branding() {
-		if (this.brandingName === undefined) {
-			throw new Error('No branding name configured for this page');
-		}
+		return this.page.getByRole('link', {name: 'Camunda logo'});
+	}
 
-		return this.page.getByRole('banner', {name: this.brandingName});
+	environmentBadge(stage: string) {
+		return this.page.getByRole('banner').getByText(`Environment: ${stage}`, {exact: true});
+	}
+
+	get breadcrumbs() {
+		return this.page.getByRole('navigation', {name: 'Camunda context'});
 	}
 
 	get userMenuButton() {
-		return this.page.getByRole('button', {name: /^User menu/});
+		return this.page.getByRole('button', {name: 'Settings'});
 	}
 
 	get menu() {
@@ -44,44 +46,24 @@ class Header extends View {
 		return this.menu.getByText(text, {exact: true});
 	}
 
-	get infoSidebarToggle() {
-		return this.page.getByRole('button', {name: /open info/i});
+	get infoMenuButton() {
+		return this.page.getByRole('button', {name: 'Info'});
 	}
 
 	get logoutMenuItem() {
 		return this.page.getByRole('menuitem', {name: 'Log out'});
 	}
 
-	get documentationLink() {
-		return this.page.getByRole('button', {name: 'Documentation'});
-	}
-
-	get camundaAcademyLink() {
-		return this.page.getByRole('button', {name: 'Camunda Academy'});
-	}
-
-	get communityForumLink() {
-		return this.page.getByRole('button', {name: 'Community Forum'});
-	}
-
-	get feedbackAndSupportLink() {
-		return this.page.getByRole('button', {name: 'Feedback and Support'});
-	}
-
-	languageMenuItem(language: string) {
-		return this.page.getByRole('menuitemradio', {name: language});
+	languageOption(language: string) {
+		return this.page.getByRole('radio', {name: language});
 	}
 
 	async openUserMenu() {
 		await this.userMenuButton.click();
 	}
 
-	async openInfoSidebar() {
-		await this.infoSidebarToggle.click();
-	}
-
 	async selectLanguage(language: string) {
-		await this.languageMenuItem(language).click();
+		await this.languageOption(language).click();
 	}
 }
 

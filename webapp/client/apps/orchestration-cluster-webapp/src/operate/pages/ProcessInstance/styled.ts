@@ -23,7 +23,6 @@ const CarbonBreadcrumb = styled(Breadcrumb)`
 const Container = styled.div`
 	height: 100%;
 	position: relative;
-	padding-top: var(--cds-spacing-09);
 `;
 
 export {Container, ProcessInstanceLink, CarbonBreadcrumb};

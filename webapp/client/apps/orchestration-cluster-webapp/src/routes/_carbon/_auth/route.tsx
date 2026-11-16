@@ -60,7 +60,6 @@ const Route = createFileRoute('/_carbon/_auth')({
 	component: function RouteComponent() {
 		const {initialSaasToken} = Route.useLoaderData();
 		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
-		const {data: license} = useSuspenseQuery(queries.getLicense());
 		const pathname = useRouterState({select: ({location}) => location.pathname});
 		const currentApp = resolveCurrentApp(pathname);
 
@@ -77,10 +76,9 @@ const Route = createFileRoute('/_carbon/_auth')({
 			<>
 				<SessionWatcher />
 				<C3Provider currentApp={currentApp} initialSaasToken={initialSaasToken}>
-					<Header currentUser={currentUser} license={license} />
-					<main id="main-content" tabIndex={-1} className="operate-page-content">
+					<Header currentUser={currentUser} initialSaasToken={initialSaasToken}>
 						<Outlet />
-					</main>
+					</Header>
 				</C3Provider>
 			</>
 		);

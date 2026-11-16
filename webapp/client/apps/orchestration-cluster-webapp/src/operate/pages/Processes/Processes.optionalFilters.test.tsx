@@ -17,6 +17,7 @@ import {
 	mockQueryBatchOperationItemsEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
 	mockQueryProcessDefinitionsEndpoint,
+	mockLicenseEndpoint,
 	mockQueryProcessInstancesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {
@@ -52,10 +53,9 @@ function renderProcessesPage(searchParams?: Record<string, string>) {
 
 function ProcessesWithHeader() {
 	return (
-		<>
-			<Header currentUser={createCurrentUser()} license={createLicense()} />
+		<Header currentUser={createCurrentUser()} initialSaasToken={null}>
 			<ProcessesHarness />
-		</>
+		</Header>
 	);
 }
 
@@ -315,9 +315,12 @@ describe('Optional Filters', () => {
 			worker.use(
 				mockQueryProcessInstancesEndpoint({successResponse: EMPTY_PROCESS_INSTANCES}),
 				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+				mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 			);
 			const screen = await renderProcessesPageWithHeader({processInstanceKey: '2251799813685467'});
-			const processesHeaderLink = screen.getByRole('banner').getByRole('link', {name: 'Processes'});
+			const processesHeaderLink = screen
+				.getByRole('navigation', {name: 'Camunda Apps'})
+				.getByRole('link', {name: 'Processes'});
 
 			await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
 			await userEvent.click(screen.getByRole('menuitem', {name: 'Business ID'}));
@@ -353,6 +356,7 @@ describe('Optional Filters', () => {
 					),
 					failureResponse: EMPTY_PROCESS_INSTANCES,
 				}),
+				mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 			);
 			const screen = await renderProcessesPageWithHeader();
 
@@ -365,7 +369,9 @@ describe('Optional Filters', () => {
 			await expect.element(screen.getByRole('link', {name: 'View instance 1'})).toBeVisible();
 			await expect.element(screen.getByLabelText('Business ID', {exact: true})).toBeVisible();
 
-			await userEvent.click(screen.getByRole('banner').getByRole('link', {name: 'Processes'}));
+			await userEvent.click(
+				screen.getByRole('navigation', {name: 'Camunda Apps'}).getByRole('link', {name: 'Processes'}),
+			);
 
 			await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
 			await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();

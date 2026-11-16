@@ -19,7 +19,7 @@ const Container = styled.div<ContainerProps>`
 			display: grid;
 			height: 100%;
 			grid-template-rows: ${`
-				${$hasBreadcrumb ? 'var(--cds-spacing-07)' : ''} var(--cds-spacing-09) 1fr ${$hasFooter ? 'var(--cds-spacing-09)' : ''}
+				${$hasBreadcrumb ? 'var(--cds-spacing-07)' : ''} var(--cds-spacing-09) 1fr ${$hasFooter ? 'minmax(var(--cds-spacing-09), auto)' : ''}
 			`};
 		`;
 	}}

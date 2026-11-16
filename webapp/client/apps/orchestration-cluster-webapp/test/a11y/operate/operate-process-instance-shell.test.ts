@@ -91,5 +91,7 @@ test('should have no accessibility violations on the process instance shell page
 	await expect(page.getByRole('heading', {name: 'Operate Process Instance'})).toBeAttached();
 	await expect(page.getByRole('button', {name: 'Copy orderId'})).toBeVisible();
 	await page.getByRole('link', {name: 'Dashboard', exact: true}).hover();
+	await page.keyboard.press('Escape');
+	await expect(page.getByRole('tooltip')).toBeHidden();
 	expect((await makeAxeBuilder().analyze()).violations).toEqual([]);
 });

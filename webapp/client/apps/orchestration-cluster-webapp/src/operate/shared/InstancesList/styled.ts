@@ -60,7 +60,6 @@ const Container = styled.div<ContainerProps>`
 	box-sizing: border-box;
 	position: relative;
 	overflow: auto;
-	padding-top: var(--cds-spacing-09);
 
 	${gridColumnLayout}
 	${gridRowLayout}

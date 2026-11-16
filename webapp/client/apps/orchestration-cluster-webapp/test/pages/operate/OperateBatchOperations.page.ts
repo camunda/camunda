@@ -15,7 +15,7 @@ class OperateBatchOperationsPage extends BasePage {
 
 	constructor(page: Page) {
 		super(page);
-		this.header = new Header(page, 'Camunda Operate');
+		this.header = new Header(page);
 	}
 
 	async goto() {

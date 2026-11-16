@@ -6,132 +6,148 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import '@camunda/design-system/styles.css';
+import './Header.css';
+import {useCallback, useLayoutEffect} from 'react';
 import {useTranslation} from 'react-i18next';
-import {t} from 'i18next';
 import {observer} from 'mobx-react-lite';
-import {C3Navigation} from '@camunda/camunda-composite-components';
-import type {AuthenticatedCurrentUser, License} from '@camunda/camunda-api-zod-schemas/8.11';
-import {authenticationStore} from '#/shared/auth/authentication.store';
-import {notificationsStore} from '#/shared/notifications/notifications.store';
-import {getClientConfig} from '#/shared/config/getClientConfig';
-import {getBootConfig} from '#/shared/config/getBootConfig';
-import C3InfoSidebar from '@camunda/camunda-composite-components/lib/esm/src/components/c3-navigation/c3-navigation-sidebar/c3-info-sidebar.js';
-import {C3NotificationSidebar} from '@camunda/camunda-composite-components/lib/esm/src/components/c3-navigation/c3-navigation-sidebar/c3-notification-sidebar.js';
-import {UserMenu} from './UserMenu';
 import {Link} from '@tanstack/react-router';
-import {useNavbar} from '#/shared/header/useNavbar';
+import {
+	AppHeader,
+	AppSidebar,
+	C4Provider,
+	CamundaLogo,
+	SidebarProvider,
+	TooltipProvider,
+	useSidebar,
+} from '@camunda/design-system';
+import type {AuthenticatedCurrentUser} from '@camunda/camunda-api-zod-schemas/8.11';
+import {authenticationStore} from '#/shared/auth/authentication.store';
+import {getClientConfig} from '#/shared/config/getClientConfig';
+import {getC4Dictionary, getC4Locale} from '#/shared/i18n/shadcn.components/c4-dictionaries';
+import {notificationsStore} from '#/shared/notifications/notifications.store';
+import {themeStore} from '#/shared/theme/theme';
+import {AccountMenu} from '#/shared/header/shadcn.components/AccountMenu';
+import {HeaderBadges} from '#/shared/header/shadcn.components/HeaderBadges';
+import {HelpMenu} from '#/shared/header/shadcn.components/HelpMenu';
+import {SaasAccountMenu} from '#/shared/header/shadcn.components/SaasAccountMenu';
+import {useSaasGlobalActions} from '#/shared/header/shadcn.components/useSaasGlobalActions';
+import {useOperateSidebarNavigation} from '#/shared/header/useOperateSidebarNavigation';
+import {Breadcrumbs} from '#/shared/header/shadcn.components/Breadcrumbs';
 
-function getInfoSidebarItems(isPaidPlan: boolean) {
-	const BASE_INFO_SIDEBAR_ITEMS = [
-		{
-			key: 'docs',
-			label: t('headerSidebarDocumentationLink'),
-			onClick: () => {
-				window.open('https://docs.camunda.io/', '_blank');
-			},
-		},
-		{
-			key: 'academy',
-			label: t('headerSidebarCamundaAcademyLink'),
-			onClick: () => {
-				window.open('https://academy.camunda.com/', '_blank');
-			},
-		},
-	];
+const SIDEBAR_COLLAPSED_WIDTH = '3.5rem';
+const LOGOUT_DELAY = 1000;
 
-	const FEEDBACK_AND_SUPPORT_ITEM = {
-		key: 'feedbackAndSupport',
-		label: t('headerSidebarFeedbackAndSupportLink'),
-		onClick: () => {
-			window.open('https://jira.camunda.com/projects/SUPPORT/queues', '_blank');
-		},
-	} as const;
+function getSidebarWidth(hasSidebar: boolean, sidebar: ReturnType<typeof useSidebar>) {
+	if (!hasSidebar || sidebar === null || sidebar.isMobile) {
+		return '0px';
+	}
 
-	const COMMUNITY_FORUM_ITEM = {
-		key: 'communityForum',
-		label: t('headerSidebarCommunityForumLink'),
-		onClick: () => {
-			window.open('https://forum.camunda.io', '_blank');
-		},
-	};
-
-	return isPaidPlan
-		? [...BASE_INFO_SIDEBAR_ITEMS, FEEDBACK_AND_SUPPORT_ITEM, COMMUNITY_FORUM_ITEM]
-		: [...BASE_INFO_SIDEBAR_ITEMS, COMMUNITY_FORUM_ITEM];
+	return sidebar.expanded ? sidebar.width : SIDEBAR_COLLAPSED_WIDTH;
 }
+
+const SidebarWidthSync: React.FC<{hasSidebar: boolean}> = ({hasSidebar}) => {
+	const sidebar = useSidebar();
+	const width = getSidebarWidth(hasSidebar, sidebar);
+
+	useLayoutEffect(() => {
+		document.body.style.setProperty('--app-sidebar-width', width);
+
+		return () => {
+			document.body.style.removeProperty('--app-sidebar-width');
+		};
+	}, [width]);
+
+	return null;
+};
 
 type Props = {
 	currentUser: AuthenticatedCurrentUser;
-	license: License;
+	initialSaasToken: string | null;
+	children: React.ReactNode;
 };
 
-const Header: React.FC<Props> = observer(({currentUser, license}) => {
-	const {t} = useTranslation();
-	const isSaas = getBootConfig().organizationId !== null;
+const Header: React.FC<Props> = observer(({currentUser, initialSaasToken, children}) => {
+	const {t, i18n} = useTranslation();
+	const items = useOperateSidebarNavigation(currentUser);
 	const {canLogout} = getClientConfig().authentication;
-	const {displayName, email, salesPlanType} = currentUser;
-	const [isAppBarOpen, setIsAppBarOpen] = useState(false);
-	const {app, elements} = useNavbar(currentUser);
+	const {isSaas, globalActions} = useSaasGlobalActions(initialSaasToken);
+	const locale = getC4Locale(i18n.resolvedLanguage);
+	const displayName = currentUser.displayName ?? currentUser.username;
 
-	const logoutWithNotification = () => {
+	const handleLogout = useCallback(() => {
 		notificationsStore.displayNotification({
 			kind: 'info',
 			title: t('notificationLogOutTitle'),
 			subtitle: t('notificationLogOutSubtitle'),
 			isDismissable: true,
 		});
-		setTimeout(authenticationStore.handleLogout, 1000);
+		setTimeout(authenticationStore.handleLogout, LOGOUT_DELAY);
+	}, [t]);
+
+	const handleCookiePreferences =
+		window.Osano?.cm !== undefined
+			? () => {
+					window.Osano?.cm?.showDrawer('osano-cm-dom-info-dialog-open');
+				}
+			: undefined;
+
+	const accountMenuProps = {
+		displayName,
+		email: currentUser.email,
+		version: import.meta.env.VITE_VERSION,
+		canLogout,
+		onLogout: handleLogout,
+		onOpenCookiePreferences: handleCookiePreferences,
 	};
 
 	return (
-		<C3Navigation
-			toggleAppbar={(open) => setIsAppBarOpen(open)}
-			appBar={{
-				ariaLabel: t('headerAppBarLabel'),
-				isOpen: isAppBarOpen,
-				appTeaserRouteProps: isSaas ? {} : undefined,
-				elements: isSaas ? undefined : [],
-			}}
-			app={app}
-			// @ts-expect-error - C3 types don't support Tanstack Router links
-			forwardRef={Link}
-			navbar={{
-				elements,
-				licenseTag: {
-					show: license.licenseType !== 'saas',
-					isProductionLicense: license.validLicense,
-					isCommercial: license.isCommercial,
-					expiresAt: license.expiresAt ?? undefined,
-				},
-			}}
-			actionButtons={[
-				...(isSaas ? [{element: <C3NotificationSidebar key="notifications" sideBar={{type: 'notifications'}} />}] : []),
-				{
-					element: (
-						<C3InfoSidebar
-							key="info"
-							sideBar={{
-								type: 'info',
-								ariaLabel: t('headerInfoLabel'),
-								elements: getInfoSidebarItems(['paid-cc', 'enterprise'].includes(salesPlanType ?? '')),
-							}}
+		<>
+			<C4Provider theme={themeStore.actualTheme} dictionary={getC4Dictionary(locale)} locale={locale}>
+				<TooltipProvider>
+					<SidebarProvider collapsedWidth={SIDEBAR_COLLAPSED_WIDTH}>
+						<SidebarWidthSync hasSidebar={items.length > 0} />
+						<AppHeader
+							skipToContentTargetId="main-content"
+							showSidebarTrigger={items.length > 0}
+							logo={
+								<Link aria-label={t('loginLogoLabel')} className="flex items-center" to="/operate">
+									<CamundaLogo className="operate-header-logo block" />
+								</Link>
+							}
+							breadcrumb={
+								<Breadcrumbs
+									currentApp="operate"
+									webappLinks={currentUser.c8Links}
+									operateBase="/operate"
+									className="operate-header-breadcrumb"
+								/>
+							}
+							trailing={<HeaderBadges hideLicenseBelow="48rem" />}
+							globalActions={globalActions}
+							actions={
+								<>
+									<HelpMenu isPaidPlan={['paid-cc', 'enterprise'].includes(currentUser.salesPlanType ?? '')} />
+									{isSaas ? <SaasAccountMenu {...accountMenuProps} /> : <AccountMenu {...accountMenuProps} />}
+								</>
+							}
 						/>
-					),
-				},
-				{
-					element: (
-						<UserMenu
-							key="user-menu"
-							userName={displayName ?? currentUser.username}
-							email={email}
-							canLogout={canLogout}
-							onLogout={logoutWithNotification}
-						/>
-					),
-				},
-			]}
-		/>
+						{items.length > 0 && (
+							<AppSidebar
+								ariaLabel={t('headerAppBarLabel')}
+								items={items}
+								linkComponent={Link}
+								resizable={false}
+								collapsedWidth={SIDEBAR_COLLAPSED_WIDTH}
+							/>
+						)}
+					</SidebarProvider>
+				</TooltipProvider>
+			</C4Provider>
+			<main id="main-content" tabIndex={-1} className="operate-page-content">
+				{children}
+			</main>
+		</>
 	);
 });
 

@@ -21,6 +21,7 @@ import {
 	mockGetDecisionDefinitionXmlEndpoint,
 	mockQueryDecisionDefinitionsEndpoint,
 	mockQueryDecisionInstancesEndpoint,
+	mockLicenseEndpoint,
 } from '#/shared-test-modules/mock-handlers';
 import {
 	createDecisionDefinition,
@@ -52,10 +53,9 @@ const EMPTY_DECISION_INSTANCES = HttpResponse.json(createQueryDecisionInstancesR
 
 function DecisionsWithHeader() {
 	return (
-		<>
-			<Header currentUser={createCurrentUser()} license={createLicense()} />
+		<Header currentUser={createCurrentUser()} initialSaasToken={null}>
 			<DecisionsHarness />
-		</>
+		</Header>
 	);
 }
 
@@ -587,12 +587,15 @@ describe('<Decisions />', () => {
 		worker.use(
 			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
 			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+			mockLicenseEndpoint({successResponse: HttpResponse.json(createLicense())}),
 		);
 		const screen = await renderWithRouter(DecisionsWithHeader, {
 			path: '/operate/decisions',
 			initialEntry: '/operate/decisions?evaluated=true&failed=true',
 		});
-		const decisionsHeaderLink = screen.getByRole('banner').getByRole('link', {name: 'Decisions'});
+		const decisionsHeaderLink = screen
+			.getByRole('navigation', {name: 'Camunda Apps'})
+			.getByRole('link', {name: 'Decisions'});
 
 		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
 		await userEvent.click(screen.getByRole('menuitem', {name: 'Decision Instance Key(s)'}));

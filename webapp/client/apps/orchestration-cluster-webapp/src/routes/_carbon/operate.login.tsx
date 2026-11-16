@@ -15,7 +15,7 @@ import tailwindCss from '#/shared/theme/tailwind.css?url';
 
 // TODO(#64077): temporary DS reskin of the Carbon-hosted /operate/login route, following the
 // same "swap the visual now, cut the route over later" approach already used for the
-// header's C3Navigation. Operate is this route's only remaining consumer (Admin and
+// Operate header. Operate is this route's only remaining consumer (Admin and
 // Tasklist already moved their logins under /_shadcn, and render the packaged
 // `LoginScreen` component via LoginPage.tsx). Operate keeps the hand-composed
 // LegacyLoginPage.tsx markup because it isn't migrated onto the design system yet,

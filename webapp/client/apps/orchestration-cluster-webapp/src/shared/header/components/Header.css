@@ -1,0 +1,26 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+[data-carbon-theme] .c4-ui,
+[data-carbon-theme] .c4-ui.dark {
+	--background: var(--cds-background);
+}
+
+.operate-page-content {
+	height: calc(100dvh - var(--cds-spacing-09));
+	padding-left: var(--app-sidebar-width, 0);
+	transition: padding-left 0.15s ease-out;
+}
+
+@media (width < 48rem) {
+	[data-slot='app-header'] > div:has(.operate-header-logo),
+	.operate-header-breadcrumb [data-slot='nav-breadcrumb-separator'],
+	.operate-header-breadcrumb [data-slot='nav-breadcrumb-item']:not(:last-child) {
+		display: none;
+	}
+}
