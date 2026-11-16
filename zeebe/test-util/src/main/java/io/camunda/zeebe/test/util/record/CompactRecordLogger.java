@@ -371,6 +371,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.AGENT_DEFINITION, this::summarizeAgentDefinition);
     valueLoggers.put(ValueType.AGENT_HISTORY_BATCH, this::summarizeAgentHistoryBatch);
     valueLoggers.put(ValueType.SECRET_REFERENCE, this::summarizeSecretReference);
+    valueLoggers.put(ValueType.CLUSTER_BEHAVIOR, this::summarizeClusterBehavior);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -724,6 +725,11 @@ public class CompactRecordLogger {
     }
 
     return result.toString();
+  }
+
+  private String summarizeClusterBehavior(final Record<?> record) {
+    // the record has no properties yet
+    return "";
   }
 
   private String summarizeDocumentReference(final DocumentReferenceValue ref) {
