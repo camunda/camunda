@@ -1045,6 +1045,24 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   @Override
+  public int getNumberOfShards(final String indexAliasName) throws IOException {
+    final String index = getOptimizeElasticClient().addPrefixesToIndices(indexAliasName).get(0);
+    // getOldIndexSettings works around settings the typed client cannot parse
+    final IndexSettings settings =
+        getOptimizeElasticClient().getOldIndexSettings().settings().entrySet().stream()
+            .filter(entry -> entry.getKey().startsWith(index + "_v"))
+            .findFirst()
+            .orElseThrow(() -> new OptimizeRuntimeException("Index not found: " + index))
+            .getValue()
+            .settings();
+    final String shards =
+        settings.numberOfShards() != null
+            ? settings.numberOfShards()
+            : settings.index().numberOfShards();
+    return Integer.parseInt(shards);
+  }
+
+  @Override
   public boolean templateExists(final String optimizeIndexTemplateNameWithVersion)
       throws IOException {
     return getOptimizeElasticClient()
