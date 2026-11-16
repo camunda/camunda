@@ -20,72 +20,31 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The write-behind key index of the engine tests, per column family, chosen with the environment
- * variable {@code ZEEBE_DB_KEY_INDEX}. zb-db ships no defaults for the engine, so the set lives
- * here.
+ * variable {@code ZEEBE_DB_KEY_INDEX}.
  */
 @NullMarked
 public final class EngineKeyIndexPolicies {
 
   /**
-   * Column families whose scans start at one end of the key space, so a window at that end serves
-   * them although they hold more keys than the cap.
-   *
-   * <p>The {@link KeyIndexPolicy#KEEP_LOWEST} group is scanned from the lowest key (next due
-   * entry). This includes {@code JOB_ACTIVATABLE_BY_PRIORITY}, a queue keyed by job type, inverted
-   * priority and job key: job activation scans a type from its front and every activated job leaves
-   * a delete there, so without the window each scan steps over the deletes of all earlier jobs.
-   * With several job types the window covers the front of the lowest types only. The {@link
-   * KeyIndexPolicy#KEEP_HIGHEST} group has keys that start with an element instance, scope, job or
-   * process instance key, which grows with time, so the engine reads and scans the newest keys.
-   * Most of their lookups and scans find nothing: the engine checks for variables, event triggers,
-   * timers and subscriptions when an element ends. With one tenant the same holds for {@code
-   * COMPENSATION_SUBSCRIPTION}, whose keys start with the tenant. {@code
-   * PROCESS_INSTANCE_KEY_BY_DEFINITION_KEY} is left out, because the definition key comes first.
+   * {@link KeyIndexPolicy#KEEP_LOWEST} for {@link ColumnFamilyAccessPatterns#READ_FROM_LOWEST_KEY}
+   * and {@link KeyIndexPolicy#KEEP_HIGHEST} for {@link
+   * ColumnFamilyAccessPatterns#READ_FROM_HIGHEST_KEY}.
    */
-  public static final Map<ZbColumnFamilies, KeyIndexPolicy> DEFAULT =
-      Collections.unmodifiableMap(
-          new EnumMap<>(
-              Map.ofEntries(
-                  Map.entry(ZbColumnFamilies.TIMER_DUE_DATES, KeyIndexPolicy.KEEP_LOWEST),
-                  Map.entry(ZbColumnFamilies.JOB_DEADLINES, KeyIndexPolicy.KEEP_LOWEST),
-                  Map.entry(ZbColumnFamilies.MESSAGE_DEADLINES, KeyIndexPolicy.KEEP_LOWEST),
-                  Map.entry(ZbColumnFamilies.JOB_BACKOFF, KeyIndexPolicy.KEEP_LOWEST),
-                  Map.entry(
-                      ZbColumnFamilies.JOB_ACTIVATABLE_BY_PRIORITY, KeyIndexPolicy.KEEP_LOWEST),
-                  Map.entry(
-                      ZbColumnFamilies.ELEMENT_INSTANCE_PARENT_CHILD, KeyIndexPolicy.KEEP_HIGHEST),
-                  Map.entry(
-                      ZbColumnFamilies.NUMBER_OF_TAKEN_SEQUENCE_FLOWS, KeyIndexPolicy.KEEP_HIGHEST),
-                  Map.entry(ZbColumnFamilies.ELEMENT_INSTANCE_KEY, KeyIndexPolicy.KEEP_HIGHEST),
-                  Map.entry(
-                      ZbColumnFamilies.ELEMENT_INSTANCE_CHILD_PARENT, KeyIndexPolicy.KEEP_HIGHEST),
-                  Map.entry(ZbColumnFamilies.EVENT_SCOPE, KeyIndexPolicy.KEEP_HIGHEST),
-                  Map.entry(ZbColumnFamilies.EVENT_TRIGGER, KeyIndexPolicy.KEEP_HIGHEST),
-                  Map.entry(ZbColumnFamilies.VARIABLES, KeyIndexPolicy.KEEP_HIGHEST),
-                  Map.entry(ZbColumnFamilies.TIMERS, KeyIndexPolicy.KEEP_HIGHEST),
-                  Map.entry(
-                      ZbColumnFamilies.PROCESS_SUBSCRIPTION_BY_KEY, KeyIndexPolicy.KEEP_HIGHEST),
-                  Map.entry(
-                      ZbColumnFamilies.SIGNAL_SUBSCRIPTION_BY_KEY_AND_NAME,
-                      KeyIndexPolicy.KEEP_HIGHEST),
-                  Map.entry(
-                      ZbColumnFamilies.CONDITIONAL_SUBSCRIPTION_BY_SCOPE_KEY,
-                      KeyIndexPolicy.KEEP_HIGHEST),
-                  Map.entry(ZbColumnFamilies.SECRET_REFERENCES_BY_JOB, KeyIndexPolicy.KEEP_HIGHEST),
-                  Map.entry(ZbColumnFamilies.BANNED_INSTANCE, KeyIndexPolicy.KEEP_HIGHEST),
-                  Map.entry(
-                      ZbColumnFamilies.SUSPENDED_PROCESS_INSTANCES, KeyIndexPolicy.KEEP_HIGHEST),
-                  Map.entry(ZbColumnFamilies.JOBS, KeyIndexPolicy.KEEP_HIGHEST),
-                  Map.entry(ZbColumnFamilies.JOB_STATES, KeyIndexPolicy.KEEP_HIGHEST),
-                  Map.entry(ZbColumnFamilies.RUNTIME_INSTRUCTIONS, KeyIndexPolicy.KEEP_HIGHEST),
-                  Map.entry(ZbColumnFamilies.AWAIT_WORKLOW_RESULT, KeyIndexPolicy.KEEP_HIGHEST),
-                  Map.entry(
-                      ZbColumnFamilies.COMPENSATION_SUBSCRIPTION, KeyIndexPolicy.KEEP_HIGHEST))));
+  public static final Map<ZbColumnFamilies, KeyIndexPolicy> DEFAULT = defaultPolicies();
 
   private static final String DEFAULT_NAME = "default";
   private static final String NONE_NAME = "none";
 
   private EngineKeyIndexPolicies() {}
+
+  private static Map<ZbColumnFamilies, KeyIndexPolicy> defaultPolicies() {
+    final var policies = new EnumMap<ZbColumnFamilies, KeyIndexPolicy>(ZbColumnFamilies.class);
+    ColumnFamilyAccessPatterns.READ_FROM_LOWEST_KEY.forEach(
+        columnFamily -> policies.put(columnFamily, KeyIndexPolicy.KEEP_LOWEST));
+    ColumnFamilyAccessPatterns.READ_FROM_HIGHEST_KEY.forEach(
+        columnFamily -> policies.put(columnFamily, KeyIndexPolicy.KEEP_HIGHEST));
+    return Collections.unmodifiableMap(policies);
+  }
 
   /** Parses {@code ZEEBE_DB_KEY_INDEX}; see {@link #parse}. */
   public static Setting fromEnvironment() {

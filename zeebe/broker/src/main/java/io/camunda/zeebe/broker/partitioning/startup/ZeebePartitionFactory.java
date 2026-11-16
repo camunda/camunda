@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.RocksdbCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.PartitionStartupAndTransitionContextImpl;
@@ -60,6 +61,7 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.db.writebehind.WriteBehindZeebeDbFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -182,7 +184,14 @@ public final class ZeebePartitionFactory {
             () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId)),
             rocksDbResources);
     final StateController stateController =
-        createStateController(raftPartition, zeebeFactory, snapshotStore, snapshotStore);
+        createStateController(
+            raftPartition,
+            selectDbFactory(
+                zeebeFactory,
+                databaseCfg,
+                "%s-%d".formatted(partitionId.group(), partitionId.number())),
+            snapshotStore,
+            snapshotStore);
 
     final var snapshotCopy = new RocksDBSnapshotCopy(zeebeFactory);
     final var context =
@@ -239,6 +248,25 @@ public final class ZeebePartitionFactory {
         new ExporterDirectorPartitionTransitionStep(),
         new BackupApiRequestHandlerStep(),
         new AdminApiRequestHandlerStep());
+  }
+
+  /**
+   * Puts the write-behind cache in front of the partition's runtime DB if it is enabled. Snapshot
+   * copies keep the RocksDB factory: they run as one bulk transaction.
+   *
+   * @param partitionName names the writer thread of the partition's DB
+   */
+  @VisibleForTesting
+  static ZeebeDbFactory<ZbColumnFamilies> selectDbFactory(
+      final ZeebeRocksDbFactory<ZbColumnFamilies> rocksDbFactory,
+      final RocksdbCfg databaseCfg,
+      final String partitionName) {
+    final var writeBehind = databaseCfg.getWriteBehind();
+    if (!writeBehind.isEnabled()) {
+      return rocksDbFactory;
+    }
+    return new WriteBehindZeebeDbFactory<>(
+        rocksDbFactory, writeBehind.createWriteBehindConfiguration(), partitionName);
   }
 
   private StateController createStateController(

@@ -41,6 +41,10 @@ public record WriteBehindConfiguration(
     Map<Long, KeyIndexPolicy> keyIndexPolicies) {
 
   public static final int DEFAULT_KEY_INDEX_MAX_KEYS = 10_000;
+  public static final long DEFAULT_MAX_PENDING_BYTES = 32L << 20;
+  public static final long DEFAULT_CACHE_MAX_BYTES = 64L << 20;
+  public static final Duration DEFAULT_FLUSH_DELAY = Duration.ofMillis(100);
+  public static final long DEFAULT_FLUSH_THRESHOLD_BYTES = 16L << 20;
 
   public WriteBehindConfiguration {
     // a negative limit is always exceeded, so that the first commit would wait for a flush that
@@ -110,8 +114,18 @@ public record WriteBehindConfiguration(
         maxPendingBytes / 2);
   }
 
+  /**
+   * 32 MiB pending, a 64 MiB cache, a 100 ms flush delay, an early flush at 16 MiB pending, and no
+   * key index.
+   */
   public static WriteBehindConfiguration defaults() {
-    return new WriteBehindConfiguration(32L << 20, 64L << 20, 10, Duration.ofSeconds(30));
+    return new WriteBehindConfiguration(
+        DEFAULT_MAX_PENDING_BYTES,
+        DEFAULT_CACHE_MAX_BYTES,
+        10,
+        Duration.ofSeconds(30),
+        DEFAULT_FLUSH_DELAY,
+        DEFAULT_FLUSH_THRESHOLD_BYTES);
   }
 
   public WriteBehindConfiguration withCacheMaxBytes(final long cacheMaxBytes) {

@@ -81,6 +81,13 @@ data.primary-storage.rocks-db.min-write-buffer-number-to-merge
 data.primary-storage.rocks-db.sst-partitioning-enabled
 data.primary-storage.rocks-db.statistics-enabled
 data.primary-storage.rocks-db.wal-disabled
+data.primary-storage.rocks-db.write-behind.cache-size
+data.primary-storage.rocks-db.write-behind.enabled
+data.primary-storage.rocks-db.write-behind.flush-delay
+data.primary-storage.rocks-db.write-behind.flush-threshold
+data.primary-storage.rocks-db.write-behind.key-index
+data.primary-storage.rocks-db.write-behind.key-index-max-keys
+data.primary-storage.rocks-db.write-behind.max-pending
 data.primary-storage.runtime-directory
 data.secondary-storage.autoconfigure-camunda-exporter
 data.secondary-storage.elasticsearch.backup.incomplete-check-timeout

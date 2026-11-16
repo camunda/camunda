@@ -100,3 +100,11 @@ ADR for that domain is written.
   Gradle checks on relevant changes, a complete CI path selectable by build tool,
   scheduled Gradle tests (full CI).
 
+- `../zeebe/zb-db/writebehind/docs/adr/0001-811-write-behind-zeebe-db.md` — the
+  stream processor commits state to memory and a writer thread flushes it to
+  RocksDB in atomic batches; heap-only durability for the flush window, a
+  raw-access SPI under the wrapper, opt-in per broker.
+- `../zeebe/zb-db/writebehind/docs/adr/0002-811-write-behind-key-index.md` — a
+  bounded key index for each column family answers absent lookups and drives
+  scans, with a keep-lowest, keep-highest or disable policy; no cache of absent
+  keys, bloom filters later.

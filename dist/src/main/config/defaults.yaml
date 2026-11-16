@@ -665,6 +665,28 @@ camunda: # Type: io.camunda.configuration.Camunda
         # never from a previously active RocksDB instance, which makes it a good candidate to disable the WAL.
         # WAL is disabled by default as it can improve performance of Zeebe.
         wal-disabled: true # Type: Boolean, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_WALDISABLED
+        write-behind: # Type: io.camunda.configuration.data.primarystorage.WriteBehind  
+          # Size of the read cache for values already written to RocksDB; 0 disables it.
+          cache-size: "64MB" # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_WRITEBEHIND_CACHESIZE
+          # Runs the partition state on the write-behind cache. When disabled, the state runs directly on
+          # RocksDB.
+          enabled: false # Type: Boolean, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_WRITEBEHIND_ENABLED
+          # How long the cache waits after the oldest unwritten commit before it writes to RocksDB. State
+          # deleted within this time never reaches RocksDB. Snapshots and a full pending queue write at once.
+          flush-delay: "100ms" # Type: Duration, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_WRITEBEHIND_FLUSHDELAY
+          # The cache writes to RocksDB without waiting for the flush delay once the unwritten commits hold this
+          # many bytes. Capped at max-pending.
+          flush-threshold: "16MB" # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_WRITEBEHIND_FLUSHTHRESHOLD
+          # The key index policy per column family, by column family name (e.g. VARIABLES). Entries set here
+          # override the defaults, which give the column families that the engine reads from their lowest or
+          # highest keys a KEEP_LOWEST or KEEP_HIGHEST key index; the other default entries stay. DISABLE drops
+          # a key index once its column family holds more than key-index-max-keys keys.
+          key-index: null # Type: Map<String,io.camunda.configuration.data.primarystorage.WriteBehind$KeyIndexPolicy>, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_WRITEBEHIND_KEYINDEX
+          # How many keys the key index of one column family holds at most. The key index keeps the keys of a
+          # column family in memory, so that lookups and scans of keys that do not exist skip RocksDB.
+          key-index-max-keys: 10000 # Type: Integer, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_WRITEBEHIND_KEYINDEXMAXKEYS
+          # Commits wait while the unwritten commits hold more than this many bytes.
+          max-pending: "32MB" # Type: org.springframework.util.unit.DataSize, Env: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_WRITEBEHIND_MAXPENDING
       
       # Specify the directory in which runtime is stored. By default, runtime is stored in `directory` for
       # data. If `runtime-directory` is configured, then the configured directory will be used. It will have

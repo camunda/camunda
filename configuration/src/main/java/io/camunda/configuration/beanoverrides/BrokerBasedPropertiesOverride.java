@@ -31,6 +31,7 @@ import io.camunda.configuration.data.PrimaryStorage;
 import io.camunda.configuration.data.SecondaryStorage;
 import io.camunda.configuration.data.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.data.primarystorage.PrimaryStorageBackup;
+import io.camunda.configuration.data.primarystorage.WriteBehind;
 import io.camunda.configuration.data.primarystorage.backup.Azure;
 import io.camunda.configuration.data.primarystorage.backup.Filesystem;
 import io.camunda.configuration.data.primarystorage.backup.Gcs;
@@ -55,6 +56,7 @@ import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
+import io.camunda.zeebe.broker.system.configuration.WriteBehindCfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.RateLimitCfg;
 import io.camunda.zeebe.broker.system.configuration.backpressure.ThrottleCfg;
@@ -917,6 +919,21 @@ public class BrokerBasedPropertiesOverride {
     brokerRocksDb.setIoRateBytesPerSecond(unifiedRocksDb.getIoRateBytesPerSecond());
     brokerRocksDb.setDisableWal(unifiedRocksDb.isWalDisabled());
     brokerRocksDb.setEnableSstPartitioning(unifiedRocksDb.isSstPartitioningEnabled());
+    populateFromWriteBehind(unifiedRocksDb.getWriteBehind(), brokerRocksDb.getWriteBehind());
+  }
+
+  private static void populateFromWriteBehind(
+      final WriteBehind unifiedWriteBehind, final WriteBehindCfg brokerWriteBehind) {
+    brokerWriteBehind.setEnabled(unifiedWriteBehind.isEnabled());
+    brokerWriteBehind.setFlushDelay(unifiedWriteBehind.getFlushDelay());
+    brokerWriteBehind.setFlushThreshold(unifiedWriteBehind.getFlushThreshold());
+    brokerWriteBehind.setMaxPending(unifiedWriteBehind.getMaxPending());
+    brokerWriteBehind.setCacheSize(unifiedWriteBehind.getCacheSize());
+    brokerWriteBehind.setKeyIndexMaxKeys(unifiedWriteBehind.getKeyIndexMaxKeys());
+    unifiedWriteBehind
+        .getKeyIndex()
+        .forEach(
+            (columnFamily, policy) -> brokerWriteBehind.putKeyIndex(columnFamily, policy.name()));
   }
 
   private static void populateFromS3(final BrokerBasedProperties override, final Camunda camunda) {

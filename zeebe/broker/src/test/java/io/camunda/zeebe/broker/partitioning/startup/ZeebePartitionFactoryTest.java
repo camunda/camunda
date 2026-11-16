@@ -12,6 +12,15 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.RocksdbCfg;
+import io.camunda.zeebe.db.AccessMetricsConfiguration;
+import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.db.writebehind.WriteBehindZeebeDbFactory;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -113,5 +122,42 @@ class ZeebePartitionFactoryTest {
                     ZeebePartitionFactory.resolveRuntimeDirectory(
                         brokerCfg, partitionId, runtimeRoot.toFile())))
         .isInstanceOf(UncheckedIOException.class);
+  }
+
+  @Test
+  void shouldUseRocksDbFactoryWhenWriteBehindIsDisabled() {
+    // given
+    final var rocksDbFactory = rocksDbFactory();
+    final var databaseCfg = new RocksdbCfg();
+
+    // when
+    final var factory =
+        ZeebePartitionFactory.selectDbFactory(rocksDbFactory, databaseCfg, "partition-1");
+
+    // then
+    assertThat(factory).isSameAs(rocksDbFactory);
+  }
+
+  @Test
+  void shouldWrapRocksDbFactoryWhenWriteBehindIsEnabled() {
+    // given
+    final var rocksDbFactory = rocksDbFactory();
+    final var databaseCfg = new RocksdbCfg();
+    databaseCfg.getWriteBehind().setEnabled(true);
+
+    // when
+    final var factory =
+        ZeebePartitionFactory.selectDbFactory(rocksDbFactory, databaseCfg, "partition-1");
+
+    // then
+    assertThat(factory).isInstanceOf(WriteBehindZeebeDbFactory.class);
+  }
+
+  private static ZeebeRocksDbFactory<ZbColumnFamilies> rocksDbFactory() {
+    return new ZeebeRocksDbFactory<>(
+        new RocksDbConfiguration(),
+        new ConsistencyChecksSettings(),
+        new AccessMetricsConfiguration(Kind.NONE),
+        SimpleMeterRegistry::new);
   }
 }
