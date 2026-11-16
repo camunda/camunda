@@ -7,6 +7,10 @@ dependencies {
   api(project(":zeebe-util"))
   implementation(libs.org.jspecify.jspecify)
 
+  // run the processor from this module's own main output on test sources
+  testAnnotationProcessor(sourceSets.main.get().output)
+  testAnnotationProcessor(sourceSets.main.get().runtimeClasspath)
+
   testImplementation(libs.net.jqwik.jqwik)
   testImplementation(libs.net.jqwik.jqwik.api)
 }
