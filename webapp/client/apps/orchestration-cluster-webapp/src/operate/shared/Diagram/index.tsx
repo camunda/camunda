@@ -189,6 +189,36 @@ function Diagram({
 		};
 	}, []);
 
+	useEffect(() => {
+		const canvas = diagramCanvasRef.current;
+		if (!isDiagramRendered || canvas === null) {
+			return;
+		}
+
+		let lastSize: {width: number; height: number} | undefined;
+		let frame = 0;
+		const observer = new ResizeObserver(([entry]) => {
+			if (entry === undefined) {
+				return;
+			}
+
+			const {width, height} = entry.contentRect;
+			const hasChanged = lastSize !== undefined && (lastSize.width !== width || lastSize.height !== height);
+			lastSize = {width, height};
+
+			if (hasChanged && width > 0 && height > 0) {
+				cancelAnimationFrame(frame);
+				frame = requestAnimationFrame(() => viewerRef.current?.refitIfFitted());
+			}
+		});
+		observer.observe(canvas);
+
+		return () => {
+			cancelAnimationFrame(frame);
+			observer.disconnect();
+		};
+	}, [isDiagramRendered]);
+
 	return (
 		<DiagramOverlayContext.Provider value={activeOverlays}>
 			<DiagramContainer data-testid="diagram" ref={diagramRef} $isFullscreen={isFullscreen}>

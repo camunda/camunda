@@ -128,6 +128,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
 			addMarker(elementId: BpmnElement['id'], className: string): void;
 			resized(): void;
 			_viewboxChanged?: {cancel?: () => void};
+			viewbox(): {x: number; y: number; scale: number};
 			zoom(newScale: number | 'fit-viewport', center: 'auto' | {x: number; y: number} | null): void;
 		};
 		get(module: 'graphicsFactory'): {
