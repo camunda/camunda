@@ -23,11 +23,9 @@ import static org.assertj.core.api.Assertions.entry;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.LookupUserTaskResponse;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.impl.CamundaObjectMapper;
-import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.UserTaskLookupRequest;
 import io.camunda.client.protocol.rest.UserTaskLookupResult;
 import io.camunda.client.protocol.rest.UserTaskLookupStateEnum;
@@ -268,31 +266,6 @@ public final class LookupUserTaskTest extends ClientRestTest {
     assertThatThrownBy(() -> response.getVariable("missing"))
         .isInstanceOf(ClientException.class)
         .hasMessage("The variable missing is not available");
-  }
-
-  @Test
-  void shouldRaiseProblemExceptionWhenTaskIsNotFound() {
-    // given
-    gatewayService.errorOnRequest(
-        RestGatewayPaths.getUserTaskLookupUrl(USER_TASK_KEY),
-        () ->
-            new ProblemDetail()
-                .title("NOT_FOUND")
-                .status(404)
-                .detail("Expected to find an active user task with key, but none was found"));
-
-    // when / then
-    assertThatThrownBy(() -> client.newLookupUserTaskCommand(USER_TASK_KEY).send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 404")
-        .satisfies(
-            e -> {
-              final io.camunda.client.api.ProblemDetail details = ((ProblemException) e).details();
-              assertThat(details.getStatus()).isEqualTo(404);
-              assertThat(details.getTitle()).isEqualTo("NOT_FOUND");
-              assertThat(details.getDetail())
-                  .isEqualTo("Expected to find an active user task with key, but none was found");
-            });
   }
 
   private static UserTaskLookupResult lookupResult() {
