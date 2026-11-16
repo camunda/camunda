@@ -570,8 +570,25 @@ class OperateProcessesPage {
     // The toolbar click can be lost under load and leave the confirmation
     // dialog unopened; retry until the dialog is present, but do not re-click
     // the toolbar button once the dialog (and its backdrop) is already up.
+    //
+    // The batch toolbar only renders while rows are selected. A selection made
+    // (by the preceding selectAllProcessInstances) while the instances query
+    // is still in flight is dropped when the result lands, which unmounts the
+    // toolbar even though the row checkboxes can still read as checked — so
+    // waiting for the button alone never recovers. Re-select inside the retry
+    // when the toolbar is gone, mirroring applyBatchOperationToAllInstances.
+    const selectAll = this.selectAllRowsCheckbox.locator('label');
     await expect(async () => {
       if (!(await this.cancelProcessInstanceDialogButton.isVisible())) {
+        if (!(await this.cancelBatchOperationButton.isVisible())) {
+          // Clear a stale checked header before re-selecting: the box can still
+          // read as checked after the selection behind it was reset, and
+          // clicking it again would then deselect instead of select.
+          if (await selectAll.isChecked()) {
+            await selectAll.click();
+          }
+          await selectAll.click();
+        }
         await expect(this.cancelBatchOperationButton).toBeVisible({
           timeout: 5000,
         });
