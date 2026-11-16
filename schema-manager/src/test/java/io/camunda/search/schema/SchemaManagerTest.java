@@ -426,14 +426,14 @@ class SchemaManagerTest {
     when(searchEngineClient.getMappings(anyString(), eq(MappingSource.INDEX_TEMPLATE)))
         .thenReturn(Map.of());
     doAnswer(
-        invocation -> {
-          mutationStarted.countDown();
-          while (!releaseMutation.get()) {
-            LockSupport.parkNanos(Duration.ofMillis(10).toNanos());
-          }
-          mutationFinished.set(true);
-          return null;
-        })
+            invocation -> {
+              mutationStarted.countDown();
+              while (!releaseMutation.get()) {
+                LockSupport.parkNanos(Duration.ofMillis(10).toNanos());
+              }
+              mutationFinished.set(true);
+              return null;
+            })
         .when(searchEngineClient)
         .createIndexTemplate(eq(testTemplateDescriptor), any(), eq(true));
 
@@ -509,9 +509,7 @@ class SchemaManagerTest {
     verify(client, never()).putSettings(any(), any());
   }
 
-  /**
-   * Regression test for #63543, see {@link #shouldSkipReplicaSettingsWriteWhenAlreadyUpToDate}.
-   */
+  /** Regression test for #63543, see {@link #shouldSkipReplicaSettingsWriteWhenAlreadyUpToDate}. */
   @RegressionTest("https://github.com/camunda/zeebe/issues/63543")
   void shouldWriteReplicaSettingsOnlyForTheDriftedDescriptor() {
     // given - only one of the two indices currently has a different replica count than configured
@@ -656,7 +654,7 @@ class SchemaManagerTest {
             ? null
             : Map.<String, Object>of(ID, SCHEMA_VERSION_METADATA_ID, VALUE, version);
     when(searchEngineClient.getDocument(
-        metadataIndex.getFullQualifiedName(), SCHEMA_VERSION_METADATA_ID))
+            metadataIndex.getFullQualifiedName(), SCHEMA_VERSION_METADATA_ID))
         .thenReturn(versionDoc);
   }
 
