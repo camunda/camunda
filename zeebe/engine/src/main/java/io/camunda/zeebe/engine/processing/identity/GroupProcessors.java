@@ -31,11 +31,14 @@ public class GroupProcessors {
       final EngineSecurityConfig securityConfig,
       final MembershipStateAdapter membershipStateAdapter) {
     final var permissionsBehavior = new PermissionsBehavior(processingState, cslCheck);
+    final var groupValidator =
+        new GroupValidator(new StateIdentityView(processingState), securityConfig);
     typedRecordProcessors.onCommand(
         ValueType.GROUP,
         GroupIntent.CREATE,
         new GroupCreateProcessor(
             processingState,
+            groupValidator,
             permissionsBehavior,
             keyGenerator,
             writers,
@@ -47,6 +50,7 @@ public class GroupProcessors {
         GroupIntent.UPDATE,
         new GroupUpdateProcessor(
             processingState.getGroupState(),
+            groupValidator,
             keyGenerator,
             permissionsBehavior,
             writers,
@@ -55,18 +59,19 @@ public class GroupProcessors {
         ValueType.GROUP,
         GroupIntent.ADD_ENTITY,
         new GroupAddEntityProcessor(
-            processingState,
+            processingState.getGroupState(),
+            groupValidator,
             permissionsBehavior,
             keyGenerator,
             writers,
             commandDistributionBehavior,
-            securityConfig,
             membershipStateAdapter));
     typedRecordProcessors.onCommand(
         ValueType.GROUP,
         GroupIntent.REMOVE_ENTITY,
         new GroupRemoveEntityProcessor(
-            processingState,
+            processingState.getGroupState(),
+            groupValidator,
             permissionsBehavior,
             keyGenerator,
             writers,
@@ -77,6 +82,7 @@ public class GroupProcessors {
         GroupIntent.DELETE,
         new GroupDeleteProcessor(
             processingState,
+            groupValidator,
             permissionsBehavior,
             keyGenerator,
             writers,

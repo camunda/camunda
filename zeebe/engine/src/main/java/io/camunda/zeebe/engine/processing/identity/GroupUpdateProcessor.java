@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -17,7 +18,6 @@ import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.group.PersistedGroup;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -29,6 +29,7 @@ import org.jspecify.annotations.NullMarked;
 public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
 
   private final GroupState groupState;
+  private final GroupValidator groupValidator;
   private final KeyGenerator keyGenerator;
   private final PermissionsBehavior permissionsBehavior;
   private final StateWriter stateWriter;
@@ -38,11 +39,13 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
 
   public GroupUpdateProcessor(
       final GroupState groupState,
+      final GroupValidator groupValidator,
       final KeyGenerator keyGenerator,
       final PermissionsBehavior permissionsBehavior,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     this.groupState = groupState;
+    this.groupValidator = groupValidator;
     this.keyGenerator = keyGenerator;
     this.permissionsBehavior = permissionsBehavior;
     this.commandDistributionBehavior = commandDistributionBehavior;
@@ -60,24 +63,19 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
         permissionsBehavior.isAuthorized(
             command, AuthorizationResourceType.GROUP, PermissionType.UPDATE, groupId);
     if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      reject(command, isAuthorized.getLeft());
       return;
     }
 
-    final var persistedRecord = groupState.get(groupId);
-    if (persistedRecord.isEmpty()) {
-      final var errorMessage =
-          "Expected to update group with ID '%s', but a group with this ID does not exist."
-              .formatted(groupId);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+    final var validation = groupValidator.validateUpdate(record);
+    if (validation.isLeft()) {
+      reject(command, validation.getLeft());
       return;
     }
 
-    updateExistingGroup(persistedRecord.get(), record);
-    updateState(command, persistedRecord.get());
+    final var persistedGroup = groupState.get(groupId).orElseThrow();
+    updateExistingGroup(persistedGroup, record);
+    updateState(command, persistedGroup);
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
@@ -118,5 +116,10 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
     responseWriter.writeAcceptedResponseOnCommand(
         persistedGroup.getGroupKey(), GroupIntent.UPDATED, updatedRecord, command);
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private void reject(final TypedRecord<GroupRecord> command, final Rejection rejection) {
+    rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+    responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
   }
 }
