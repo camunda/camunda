@@ -214,7 +214,7 @@ final class GeneratedSentinelPropertiesTest {
   }
 
   @Test
-  void shouldBeEqualToANewInstanceAfterAReset() throws Exception {
+  void shouldPrintAndHashLikeANewInstanceAfterAReset() throws Exception {
     // given
     final var sample = sample("");
 
@@ -222,11 +222,11 @@ final class GeneratedSentinelPropertiesTest {
     sample.reset();
 
     // then
-    assertThat(sample).isEqualTo(unsetSample()).hasSameHashCodeAs(unsetSample());
+    assertThat(sample).hasToString(unsetSample().toString()).hasSameHashCodeAs(unsetSample());
   }
 
   @Test
-  void shouldPrintUnsetPropertiesAndBeUnsetAfterAReset() throws Exception {
+  void shouldPrintLikeLegacyAfterAReset() throws Exception {
     // given
     final var sample = sample("");
 
@@ -234,13 +234,11 @@ final class GeneratedSentinelPropertiesTest {
     sample.reset();
 
     // then
-    assertThat(sample.toString())
-        .contains("\"key\":\"NO VALID WRITEABLE VALUE\"")
-        .contains("\"count\":\"NO VALID WRITEABLE VALUE\"");
+    assertThat(sample).hasToString(unsetLegacy().toString());
   }
 
   @Test
-  void shouldCopyAndCompareUnsetPropertiesByValue() throws Exception {
+  void shouldCopyUnsetPropertiesAndFailToCompareThem() throws Exception {
     // given
     final var source = sample("count");
     final var target = sample("");
@@ -248,11 +246,15 @@ final class GeneratedSentinelPropertiesTest {
     // when
     copy(target, source);
 
-    // then
-    assertThat(target).isEqualTo(source).hasSameHashCodeAs(source);
-    assertThat(target).isNotEqualTo(sample(""));
+    // then the copy is unset where the source is, and prints like it
+    assertThat(target.toString()).isEqualTo(source.toString());
     assertThat(sample("")).isEqualTo(sample("")).hasSameHashCodeAs(sample(""));
-    assertThat(sample("key")).isNotEqualTo(sample("count"));
+
+    // and comparing an unset property fails like in the legacy record
+    final var legacyFailure = catchThrowable(() -> legacy("count").equals(legacy("count")));
+    assertThat(catchThrowable(() -> target.equals(source)))
+        .isExactlyInstanceOf(legacyFailure.getClass())
+        .hasMessage(legacyFailure.getMessage());
   }
 
   @Test

@@ -67,7 +67,8 @@ public final class Decoding {
     return value;
   }
 
-  private static MsgpackPropertyException unset(final String key) {
+  /** The exception of the {@code getValue()} of a legacy property that is unset. */
+  public static MsgpackPropertyException unset(final String key) {
     return new MsgpackPropertyException(
         new StringValue(key), "Expected a value or default value to be specified, but has nothing");
   }

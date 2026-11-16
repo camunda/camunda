@@ -608,6 +608,11 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
                     ? "!equalItems_%s(%s, %s)".formatted(p.field(), x, y)
                     : "!%s.equals(%s)".formatted(x, y);
           };
+      if (p.canBeUnset()) {
+        s.append(
+            "    if (%s || %s) {\n      throw Decoding.unset(%s);\n    }\n"
+                .formatted(p.unset("a"), p.unset("b"), p.keyLiteral()));
+      }
       s.append("    if (%s) {\n      return false;\n    }\n".formatted(differs));
     }
     if (m.unknownField() != null) {
@@ -651,18 +656,18 @@ public final class MsgpackPojoProcessor extends AbstractProcessor {
     s.append(
         "  public static void appendTo(final StringBuilder sb, final %s v) {\n"
             .formatted(m.name()));
+    s.append("    sb.append('{');\n");
     boolean first = true;
     for (final var p : m.properties()) {
       final var x = "v." + p.field();
-      s.append(
-          "    sb.append(\"%s\\\"\").append(%s).append(\"\\\":\");\n"
-              .formatted(first ? "{" : ",", p.keyLiteral()));
+      if (!first) {
+        s.append("    sb.append(',');\n");
+      }
       first = false;
       if (p.canBeUnset()) {
-        s.append(
-            "    if (%s) {\n      sb.append(\"\\\"NO VALID WRITEABLE VALUE\\\"\");\n    } else {\n"
-                .formatted(p.unset("v")));
+        s.append("    if (!(%s)) {\n".formatted(p.unset("v")));
       }
+      s.append("    sb.append(\"\\\"\").append(%s).append(\"\\\":\");\n".formatted(p.keyLiteral()));
       if (p.sanitized()) {
         s.append("    sb.append(\"\\\"***\\\"\");\n");
         if (p.canBeUnset()) {

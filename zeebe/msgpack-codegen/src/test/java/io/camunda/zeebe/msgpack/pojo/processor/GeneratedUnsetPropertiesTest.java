@@ -208,13 +208,10 @@ final class GeneratedUnsetPropertiesTest {
     assertThat(sample).hasToString(legacy("").toString());
   }
 
-  /**
-   * ObjectValue leaves unset properties out of its string and keeps their comma, which is not valid
-   * JSON; only BaseProperty#writeJSON prints the placeholder, and the generated class does as well.
-   */
+  /** Like ObjectValue, an unset property is left out of the string and its comma is kept. */
   @ParameterizedTest
   @ValueSource(strings = {"key", "count", "name", "payload", "kind", "accepting"})
-  void shouldPrintAnUnsetPropertyAsNoValidWriteableValue(final String unset) throws Exception {
+  void shouldLeaveAnUnsetPropertyOutOfTheString(final String unset) throws Exception {
     // given
     final var sample = sample(unset);
 
@@ -222,8 +219,9 @@ final class GeneratedUnsetPropertiesTest {
     final var string = sample.toString();
 
     // then
-    assertThat(string).contains("\"%s\":\"NO VALID WRITEABLE VALUE\"".formatted(unset));
-    assertThat(string.split("NO VALID WRITEABLE VALUE", -1)).hasSize(2);
+    assertThat(string)
+        .isEqualTo(legacy(unset).toString())
+        .doesNotContain("\"%s\"".formatted(unset));
   }
 
   @Test
@@ -235,9 +233,7 @@ final class GeneratedUnsetPropertiesTest {
     sample.reset();
 
     // then
-    for (final var key : KEYS) {
-      assertThat(sample.toString()).contains("\"%s\":\"NO VALID WRITEABLE VALUE\"".formatted(key));
-    }
+    assertThat(sample).hasToString(unsetLegacy().toString());
     assertThatThrownBy(sample::getLength).hasMessageContaining("Property 'key' is invalid");
   }
 
@@ -250,36 +246,41 @@ final class GeneratedUnsetPropertiesTest {
     // when
     copy(target, source);
 
-    // then the target is unset where the source is, and equal to it elsewhere
-    assertThat(target.toString()).contains("\"name\":\"NO VALID WRITEABLE VALUE\"");
-    assertThat(target).isEqualTo(source);
+    // then the target is unset where the source is
+    assertThat(target).hasToString(source.toString());
+    assertThat(target.toString()).doesNotContain("\"name\"");
   }
 
   @Test
-  void shouldTellApartUnsetAndSetValues() throws Exception {
+  void shouldFailToCompareAnUnsetValueLikeTheLegacyRecord() throws Exception {
     // given
     final var set = sample("");
     final var unset = sample("key");
-    final var sameUnset = sample("key");
-    final var otherUnset = sample("name");
+    final var legacyFailure = catchThrowable(() -> legacy("").equals(legacy("key")));
+
+    // when
+    final var failure = catchThrowable(() -> set.equals(unset));
+    final var failureOfTheOtherSide = catchThrowable(() -> unset.equals(set));
 
     // then
-    assertThat(set).isNotEqualTo(unset);
-    assertThat(unset).isEqualTo(sameUnset).hasSameHashCodeAs(sameUnset);
-    assertThat(unset).isNotEqualTo(otherUnset);
+    assertThat(failure)
+        .isExactlyInstanceOf(legacyFailure.getClass())
+        .hasMessage(legacyFailure.getMessage());
+    assertThat(failureOfTheOtherSide).hasMessage(legacyFailure.getMessage());
     assertThat(set).isEqualTo(sample("")).hasSameHashCodeAs(sample(""));
     assertThat(set.hashCode()).isNotEqualTo(unset.hashCode());
   }
 
   @Test
-  void shouldTellApartAnUnsetHolderFromOneSetToZero() throws Exception {
+  void shouldWriteAHolderSetToZeroButNotAnUnsetOne() throws Exception {
     // given
     final var unset = sample("key");
     final var zero = sample("key");
     ((io.camunda.zeebe.msgpack.pojo.RequiredLong) field(zero, "key")).set(0L);
 
     // then
-    assertThat(zero).isNotEqualTo(unset);
+    assertThat(write(zero)).isNotEmpty();
+    assertThatThrownBy(() -> write(unset)).hasMessageContaining("Property 'key' is invalid");
   }
 
   @Test

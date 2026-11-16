@@ -204,6 +204,25 @@ final class BigRecordTest {
     }
   }
 
+  @ParameterizedTest
+  @MethodSource("unsetCases")
+  void shouldPrintAndCompareLikeTheLegacyRecordWhenARequiredPropertyIsUnset(
+      final Variant variant, final String unset) {
+    // given
+    final var legacy = legacyExcept(unset);
+    final var generated = variant.filledExcept(unset);
+
+    // when
+    final var legacyFailure = catchThrowable(() -> legacy.equals(legacyExcept(unset)));
+    final var failure = catchThrowable(() -> generated.equals(variant.filledExcept(unset)));
+
+    // then
+    assertThat(generated.toString()).isEqualTo(legacy.toString());
+    assertThat(failure)
+        .isExactlyInstanceOf(legacyFailure.getClass())
+        .hasMessage(legacyFailure.getMessage());
+  }
+
   static Stream<Arguments> unsetCases() {
     return Stream.of(Variant.values())
         .flatMap(v -> REQUIRED.stream().map(field -> Arguments.of(v, field)));

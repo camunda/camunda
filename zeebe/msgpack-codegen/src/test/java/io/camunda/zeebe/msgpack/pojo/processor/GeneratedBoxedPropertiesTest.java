@@ -179,7 +179,7 @@ final class GeneratedBoxedPropertiesTest {
   }
 
   @Test
-  void shouldPrintUnsetBoxedPropertiesAndBeUnsetAfterAReset() throws Exception {
+  void shouldPrintLikeLegacyAfterAReset() throws Exception {
     // given
     final var sample = sample("");
 
@@ -187,13 +187,12 @@ final class GeneratedBoxedPropertiesTest {
     sample.reset();
 
     // then
-    assertThat(sample.toString())
-        .contains("\"key\":\"NO VALID WRITEABLE VALUE\"")
-        .contains("\"count\":\"NO VALID WRITEABLE VALUE\"");
+    // the enum of the sample has a default, the legacy one has none
+    assertThat(sample.toString()).doesNotContain("\"key\"").doesNotContain("\"count\"");
   }
 
   @Test
-  void shouldCopyAndCompareBoxedPropertiesByValue() throws Exception {
+  void shouldCopyUnsetPropertiesAndFailToCompareThem() throws Exception {
     // given
     final var source = sample("count");
     final var target = sample("");
@@ -201,11 +200,15 @@ final class GeneratedBoxedPropertiesTest {
     // when
     copy(target, source);
 
-    // then
-    assertThat(target).isEqualTo(source).hasSameHashCodeAs(source);
-    assertThat(target).isNotEqualTo(sample(""));
+    // then the copy is unset where the source is, and prints like it
+    assertThat(target.toString()).isEqualTo(source.toString());
     assertThat(sample("")).isEqualTo(sample("")).hasSameHashCodeAs(sample(""));
-    assertThat(sample("key")).isNotEqualTo(sample("count"));
+
+    // and comparing an unset property fails like in the legacy record
+    final var legacyFailure = catchThrowable(() -> legacy("count").equals(legacy("count")));
+    assertThat(catchThrowable(() -> target.equals(source)))
+        .isExactlyInstanceOf(legacyFailure.getClass())
+        .hasMessage(legacyFailure.getMessage());
   }
 
   @Test

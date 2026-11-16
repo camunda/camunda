@@ -92,10 +92,11 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   value to be set before writing, but has nothing", and "... to be specified, ..." for the
   length), before anything is written. `read` fails with "Property 'key' has no valid value" if
   the key is missing (`reset` makes every one unset again), and `get()` of an unset holder fails
-  with an `IllegalStateException` with the message of the legacy `getValue`. `toString` prints
-  `"NO VALID WRITEABLE VALUE"` for it. `copyFrom` copies the unset state too. `equals` treats two
-  unset values as equal and an unset one as different from any set one, and `hashCode` agrees;
-  `UnpackedObject#equals` throws instead if a property is unset.
+  with an `IllegalStateException` with the message of the legacy `getValue`. `toString` leaves an
+  unset property out and keeps its comma, like `ObjectValue#toString`, which is not valid JSON.
+  `copyFrom` copies the unset state too. `equals` fails with the `MsgpackPropertyException` of the
+  legacy `getValue()` if a property of either value is unset (not if both are the same instance),
+  like `UnpackedObject#equals`; `hashCode` does not fail.
 - A string, binary and raw field that is not `@Nullable` needs an initializer. `reset` assigns (or
   wraps) the default of a shared prototype instance, so a default buffer must never be modified in
   place. An enum that is not `@Nullable` needs one too; if it is `null` anyway, `write` and
