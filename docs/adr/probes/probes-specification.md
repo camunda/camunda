@@ -536,6 +536,11 @@ Notes:
    worker that collected it.
 4. The `worker` in the answer (D20) is the worker name of the poll that collected the probe,
    recorded in `PROBE_BATCH:ACTIVATED`.
+5. The deadline counts when a command is processed, not only when `TIME_OUT` is: a poll skips a
+   probe past its deadline, and an `ANSWER` or `YIELD` past it is rejected with `NOT_FOUND` (F4),
+   even while its `TIME_OUT` is still queued. So the reason of the time-out is the state at the
+   deadline (note 1). Divergence from jobs, whose completion is accepted until the time-out is
+   processed: the client's response must reach the gateway before it gives up (section 10.1).
 
 - The engine keeps the client request with the probe and answers it when the probe ends
   (`AsyncRequestBehavior`).
