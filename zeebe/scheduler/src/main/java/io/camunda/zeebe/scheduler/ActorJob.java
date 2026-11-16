@@ -38,7 +38,13 @@ public final class ActorJob {
 
   @Async.Execute
   void execute(final ActorThread runner) {
-    observeSchedulingLatency(runner.getActorMetrics());
+    try {
+      observeSchedulingLatency(runner.getActorMetrics());
+    } catch (final Throwable e) {
+      FATAL_ERROR_HANDLER.handleError(e);
+      LOG.error("Actor {} failed to observe a job's scheduling latency", task.actor.getName(), e);
+    }
+
     try {
       invoke();
     } catch (final Throwable e) {
@@ -171,7 +177,7 @@ public final class ActorJob {
   }
 
   public void failFuture(final Throwable cause) {
-    if (resultFuture != null) {
+    if (resultFuture != null && !resultFuture.isDone()) {
       resultFuture.completeExceptionally(cause);
     }
   }
