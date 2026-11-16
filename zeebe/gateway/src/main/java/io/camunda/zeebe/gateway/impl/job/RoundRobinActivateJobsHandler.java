@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -52,13 +53,7 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
 
   // Bounded because job types are user input, so their domain is unbounded and tracking every
   // type seen over the gateway's lifetime would leak memory.
-  private final Cache<String, RoundRobinDispatchStrategy> jobTypeToNextPartitionId =
-      Caffeine.newBuilder()
-          .maximumSize(MAX_TRACKED_JOB_TYPES)
-          // Keeps cache maintenance off the JVM-wide common pool, which other components share and
-          // could starve; with at most 1024 tiny entries, evicting inline adds negligible latency.
-          .executor(Runnable::run)
-          .build();
+  private final Cache<String, RoundRobinDispatchStrategy> jobTypeToNextPartitionId;
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
   private final long maxMessageSize;
@@ -72,6 +67,28 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
       final long maxMessageSize,
       final Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper,
       final Function<String, Throwable> requestCanceledExceptionProvider) {
+    this(
+        brokerClient,
+        maxMessageSize,
+        activationResultMapper,
+        requestCanceledExceptionProvider,
+        Caffeine.newBuilder()
+            .maximumSize(MAX_TRACKED_JOB_TYPES)
+            // Keeps cache maintenance off the JVM-wide common pool, which other components share
+            // and could starve; with at most 1024 tiny entries, evicting inline adds negligible
+            // latency.
+            .executor(Runnable::run)
+            .build());
+  }
+
+  @VisibleForTesting
+  RoundRobinActivateJobsHandler(
+      final BrokerClient brokerClient,
+      final long maxMessageSize,
+      final Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper,
+      final Function<String, Throwable> requestCanceledExceptionProvider,
+      final Cache<String, RoundRobinDispatchStrategy> jobTypeToNextPartitionId) {
+    this.jobTypeToNextPartitionId = jobTypeToNextPartitionId;
     this.brokerClient = brokerClient;
     topologyManager = brokerClient.getTopologyManager();
     this.maxMessageSize = maxMessageSize;
@@ -337,10 +354,6 @@ public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandl
         jobType,
         jobKeys,
         reason);
-  }
-
-  long trackedJobTypesCount() {
-    return jobTypeToNextPartitionId.estimatedSize();
   }
 
   private PartitionIdIterator partitionIdIteratorForType(
