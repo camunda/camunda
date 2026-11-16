@@ -96,7 +96,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Please check this <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|GHA workflow run> for details, verify that the version of Hosted Renovate we're using actually supports the new config and create a ticket."
+                    "text": "<!subteam^S07D6C6B18T|monorepo-ci-medic> please check this <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|GHA workflow run> for details, verify that the version of Hosted Renovate we're using actually supports the new config and create a ticket."
                   }
                 }
               ]
