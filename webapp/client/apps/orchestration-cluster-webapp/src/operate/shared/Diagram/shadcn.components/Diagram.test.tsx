@@ -613,7 +613,7 @@ describe('<Diagram />', () => {
 		expect(flowStroke('flow_1')).toBe(defaultStroke);
 	});
 
-	it('should announce the drill-down shortcut in the name of drill-down elements', async () => {
+	it('should describe drill-down elements with the shortcut and mark loading ones as busy', async () => {
 		const screen = await render(
 			<Diagram
 				xml={BPMN_XML}
@@ -622,48 +622,30 @@ describe('<Diagram />', () => {
 			/>,
 		);
 
+		const element = screen.getByRole('button', {name: 'start event', exact: true});
+		await expect.element(element).toHaveAccessibleDescription(/Press Shift\+Enter to drill down\./);
+		await expect.element(element).not.toHaveAttribute('aria-busy');
 		await expect
-			.element(screen.getByRole('button', {name: 'start event, Press Shift+Enter to drill down.', exact: true}))
-			.toHaveAttribute('aria-keyshortcuts', 'Shift+Enter');
-		await expect.element(screen.getByRole('button', {name: 'end event', exact: true})).toBeInTheDocument();
-	});
+			.element(screen.getByRole('button', {name: 'end event', exact: true}))
+			.not.toHaveAccessibleDescription(/Shift\+Enter/);
 
-	it('should announce that a drill-down element is loading', async () => {
-		const screen = await render(
+		await screen.rerender(
 			<Diagram
 				xml={BPMN_XML}
-				selectableElements={['startEvent_1']}
+				selectableElements={['startEvent_1', 'endEvent_1']}
 				customElementClasses={[
 					['startEvent_1', 'op-drilldown'],
 					['startEvent_1', 'op-drilldown-loading'],
 				]}
 			/>,
 		);
+		await expect.element(element).toHaveAttribute('aria-busy', 'true');
 
-		await expect
-			.element(
-				screen.getByRole('button', {name: 'start event, Loading, Press Shift+Enter to drill down.', exact: true}),
-			)
-			.toBeInTheDocument();
-	});
-
-	it('should drop the drill-down announcement when drill-down is no longer set', async () => {
-		const screen = await render(
-			<Diagram
-				xml={BPMN_XML}
-				selectableElements={['startEvent_1']}
-				customElementClasses={[['startEvent_1', 'op-drilldown']]}
-			/>,
+		await screen.rerender(
+			<Diagram xml={BPMN_XML} selectableElements={['startEvent_1', 'endEvent_1']} customElementClasses={[]} />,
 		);
-		await expect
-			.element(screen.getByRole('button', {name: 'start event, Press Shift+Enter to drill down.', exact: true}))
-			.toBeInTheDocument();
-
-		await screen.rerender(<Diagram xml={BPMN_XML} selectableElements={['startEvent_1']} customElementClasses={[]} />);
-
-		const element = screen.getByRole('button', {name: 'start event', exact: true});
-		await expect.element(element).toBeInTheDocument();
-		await expect.element(element).not.toHaveAttribute('aria-keyshortcuts');
+		await expect.element(element).not.toHaveAccessibleDescription(/Shift\+Enter/);
+		await expect.element(element).not.toHaveAttribute('aria-busy');
 	});
 
 	it('should drill down on Shift+Enter without selecting the element', async () => {
@@ -678,34 +660,15 @@ describe('<Diagram />', () => {
 				onElementSelection={onElementSelection}
 			/>,
 		);
-		await expect.element(screen.getByRole('button', {name: /Press Shift\+Enter/})).toBeInTheDocument();
+		await expect
+			.element(screen.getByRole('button', {name: 'start event', exact: true}))
+			.toHaveAccessibleDescription(/Shift\+Enter/);
 
 		await userEvent.tab();
 		await userEvent.keyboard('{Shift>}{Enter}{/Shift}');
 
 		expect(onElementDoubleClick).toHaveBeenCalledExactlyOnceWith('startEvent_1');
 		expect(onElementSelection).not.toHaveBeenCalled();
-	});
-
-	it('should select a drill-down element on Enter without drilling down', async () => {
-		const onElementDoubleClick = vi.fn();
-		const onElementSelection = vi.fn();
-		const screen = await render(
-			<Diagram
-				xml={BPMN_XML}
-				selectableElements={['startEvent_1']}
-				customElementClasses={[['startEvent_1', 'op-drilldown']]}
-				onElementDoubleClick={onElementDoubleClick}
-				onElementSelection={onElementSelection}
-			/>,
-		);
-		await expect.element(screen.getByRole('button', {name: /Press Shift\+Enter/})).toBeInTheDocument();
-
-		await userEvent.tab();
-		await userEvent.keyboard('{Enter}');
-
-		expect(onElementSelection).toHaveBeenCalledOnce();
-		expect(onElementDoubleClick).not.toHaveBeenCalled();
 	});
 
 	it('should not drill down on Shift+Enter for elements without drill-down', async () => {

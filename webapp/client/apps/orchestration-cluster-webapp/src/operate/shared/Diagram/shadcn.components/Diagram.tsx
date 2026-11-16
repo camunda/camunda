@@ -152,6 +152,7 @@ function Diagram({
 }: Props) {
 	const {t} = useTranslation();
 	const keyboardHintId = useId();
+	const drillDownHintId = useId();
 	const diagramCanvasRef = useRef<HTMLDivElement | null>(null);
 	const diagramRef = useRef<HTMLDivElement | null>(null);
 	const [isDiagramRendered, setIsDiagramRendered] = useState(false);
@@ -300,7 +301,7 @@ function Diagram({
 
 		const canvas = diagramCanvasRef.current;
 		canvas.querySelectorAll('[role="button"]:not(.op-selectable)').forEach((element) => {
-			['tabindex', 'role', 'aria-pressed', 'aria-label', 'aria-describedby', 'aria-keyshortcuts'].forEach((attribute) =>
+			['tabindex', 'role', 'aria-pressed', 'aria-label', 'aria-describedby', 'aria-busy'].forEach((attribute) =>
 				element.removeAttribute(attribute),
 			);
 		});
@@ -314,21 +315,13 @@ function Diagram({
 			element.setAttribute('tabindex', element === tabStop ? '0' : '-1');
 			element.setAttribute('role', 'button');
 			element.setAttribute('aria-pressed', String(element.classList.contains('op-selected')));
-			element.setAttribute('aria-describedby', keyboardHintId);
-			if (element.classList.contains('op-drilldown')) {
-				const loading = element.classList.contains('op-drilldown-loading')
-					? t('operate.shared.diagram.drillDownLoading')
-					: undefined;
-				element.setAttribute('aria-keyshortcuts', 'Shift+Enter');
-				element.setAttribute(
-					'aria-label',
-					[getElementLabel(element), loading, t('operate.shared.diagram.drillDownHint')]
-						.filter((part) => part !== undefined)
-						.join(', '),
-				);
+			const isDrillDown = element.classList.contains('op-drilldown');
+			element.setAttribute('aria-describedby', isDrillDown ? `${keyboardHintId} ${drillDownHintId}` : keyboardHintId);
+			element.setAttribute('aria-label', getElementLabel(element));
+			if (isDrillDown && element.classList.contains('op-drilldown-loading')) {
+				element.setAttribute('aria-busy', 'true');
 			} else {
-				element.removeAttribute('aria-keyshortcuts');
-				element.setAttribute('aria-label', getElementLabel(element));
+				element.removeAttribute('aria-busy');
 			}
 		});
 	}, [
@@ -338,8 +331,8 @@ function Diagram({
 		selectedElementIds,
 		customElementClasses,
 		keyboardHintId,
+		drillDownHintId,
 		getElementLabel,
-		t,
 	]);
 
 	const handleCanvasKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -557,6 +550,9 @@ function Diagram({
 					)}
 				>
 					{t('operate.shared.diagram.keyboardHint')}
+				</span>
+				<span id={drillDownHintId} className="sr-only">
+					{t('operate.shared.diagram.drillDownHint')}
 				</span>
 				{nonSelectableNodeTooltipText !== undefined && (
 					<Tooltip
