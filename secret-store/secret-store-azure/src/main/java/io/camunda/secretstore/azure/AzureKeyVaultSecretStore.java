@@ -7,11 +7,19 @@
  */
 package io.camunda.secretstore.azure;
 
+import com.azure.core.credential.TokenCredential;
+import com.azure.core.http.HttpClient;
+import com.azure.core.util.Configuration;
+import com.azure.security.keyvault.secrets.SecretClient;
+import com.azure.security.keyvault.secrets.SecretClientBuilder;
 import io.camunda.secretstore.SecretResolutionResult;
 import io.camunda.secretstore.SecretStore;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A {@link SecretStore} backed by Azure Key Vault.
@@ -22,27 +30,101 @@ import java.util.Set;
  * OneByOneSecretResolver} otherwise (one Key Vault secret per reference). Adding a resolution mode
  * means adding a resolver, not touching this class.
  *
- * <p>Signing in and reading the vault are not implemented yet (camunda/camunda#67225,
- * camunda/camunda#67226): until then {@link #resolve} reports every name as not found and {@link
- * #list} returns no names.
+ * <p>Each instance signs in with its own {@link AzureCredentialChain credential chain} and talks to
+ * the vault through its own {@link SecretClient}, so two physical tenants never share an identity
+ * or a cached token. No credential is read from the configuration.
+ *
+ * <p>Reading the vault is not implemented yet (camunda/camunda#67226): until then {@link #resolve}
+ * reports every name as not found and {@link #list} returns no names.
  *
  * <p>This class is thread-safe: it and its resolvers keep no mutable state.
  */
 public final class AzureKeyVaultSecretStore implements SecretStore {
 
   private final AzureSecretResolver resolver;
+  private final SecretClient client;
+  private final ExecutorService credentialExecutor;
 
-  AzureKeyVaultSecretStore(final AzureSecretResolver resolver) {
+  AzureKeyVaultSecretStore(
+      final AzureSecretResolver resolver,
+      final SecretClient client,
+      final ExecutorService credentialExecutor) {
     this.resolver = resolver;
+    this.client = client;
+    this.credentialExecutor = credentialExecutor;
   }
 
-  /** Builds a store from configuration, with the resolver its container secret setting selects. */
+  /**
+   * Builds a store from configuration, with the resolver its container secret setting selects. It
+   * signs in with the {@code AZURE_*} variables of this process's environment.
+   */
   public static AzureKeyVaultSecretStore fromConfig(final AzureKeyVaultStoreConfig config) {
+    return fromConfig(config, Configuration.getGlobalConfiguration(), null);
+  }
+
+  /**
+   * @param environment where sign-in reads the {@code AZURE_*} variables from
+   * @param httpClient the client every call to Entra ID, IMDS and the vault goes through; {@code
+   *     null} for the SDK default
+   */
+  static AzureKeyVaultSecretStore fromConfig(
+      final AzureKeyVaultStoreConfig config,
+      final Configuration environment,
+      final @Nullable HttpClient httpClient) {
     final AzureSecretResolver resolver =
         config.containerSecretId() != null
             ? new ContainerSecretResolver()
             : new OneByOneSecretResolver();
-    return new AzureKeyVaultSecretStore(resolver);
+    final var credentialExecutor = newCredentialExecutor();
+    try {
+      final var credential =
+          AzureCredentialChain.build(
+              config,
+              environment,
+              httpClient,
+              credentialExecutor,
+              new SignInMonitor(config.vaultUrl()));
+      return new AzureKeyVaultSecretStore(
+          resolver, buildClient(config, credential, httpClient), credentialExecutor);
+    } catch (final RuntimeException e) {
+      credentialExecutor.shutdownNow();
+      throw e;
+    }
+  }
+
+  /**
+   * Token acquisition runs on platform threads the store owns. The resolution pool calls the store
+   * on virtual threads ({@link io.camunda.secretstore.ConcurrentSecretStore}), and the SDK's shared
+   * pool can deadlock there when every carrier is pinned (Azure/azure-sdk-for-java#46231), as the
+   * Azure backup store also works around. The pool creates threads on demand, reaps them after 60s
+   * idle, and is shut down in {@link #close()}.
+   */
+  static ExecutorService newCredentialExecutor() {
+    return Executors.newCachedThreadPool(
+        Thread.ofPlatform().daemon().name("secret-store-azure-credential-", 0).factory());
+  }
+
+  private static SecretClient buildClient(
+      final AzureKeyVaultStoreConfig config,
+      final TokenCredential credential,
+      final @Nullable HttpClient httpClient) {
+    final var builder =
+        new SecretClientBuilder().vaultUrl(config.vaultUrl()).credential(credential);
+    if (httpClient != null) {
+      builder.httpClient(httpClient);
+    }
+    return builder.buildClient();
+  }
+
+  /**
+   * The client {@link #resolve} and {@link #list} will read the vault with (camunda/camunda#67226).
+   */
+  SecretClient client() {
+    return client;
+  }
+
+  ExecutorService credentialExecutor() {
+    return credentialExecutor;
   }
 
   @Override
@@ -58,5 +140,10 @@ public final class AzureKeyVaultSecretStore implements SecretStore {
   @Override
   public int namesPerCall() {
     return resolver.namesPerCall();
+  }
+
+  @Override
+  public void close() {
+    credentialExecutor.shutdownNow();
   }
 }
