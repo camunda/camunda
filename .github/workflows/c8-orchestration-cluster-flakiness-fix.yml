@@ -1193,6 +1193,8 @@ jobs:
       && needs.flaky-review-fetch.outputs.threads != '0'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    outputs:
+      job_id: ${{ job.check_run_id }}
     env:
       SUITE_PATH: qa/c8-orchestration-cluster-e2e-test-suite
     steps:
@@ -1420,6 +1422,7 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           job_name: "c8-orchestration-cluster-flakiness-fix/flaky-review-agent"
+          job_id: ${{ needs.flaky-review-agent.outputs.job_id }}
           build_status: ${{ needs.flaky-review-agent.result }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
