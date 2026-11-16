@@ -41,7 +41,9 @@ public interface JobWorkerMetrics {
 
   /**
    * Called every time one or more jobs are refused by the executor that runs the job handler,
-   * before the handler had a chance to run.
+   * before the handler had a chance to run. A job that failed to be handed to that executor for
+   * another reason, for example because the executor threw something other than a rejection, is
+   * reported here as well.
    *
    * <p>A refused job is neither worked on nor kept: one the worker polled for is handed straight
    * back to the broker, and one the broker pushed to it is left to time out. Such a job is reported

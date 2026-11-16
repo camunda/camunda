@@ -99,9 +99,10 @@ final class BlockingExecutor implements JobExecutor {
               releaseCapacity(capacityHeld);
             }
           });
-    } catch (final RuntimeException | Error e) {
+    } catch (final Throwable e) {
       // nothing else will give the capacity back, unless the command ran on the calling thread and
-      // its finalizer already did, which is what the flag above is there to catch
+      // its finalizer already did, which is what the flag above is there to catch. Throwable, as a
+      // wrapped executor written in Kotlin, for example, can throw an undeclared checked exception
       releaseCapacity(capacityHeld);
       throw e;
     }
