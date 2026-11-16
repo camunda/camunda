@@ -49,33 +49,35 @@ public class ElasticsearchEngineClientPermissionIT {
     // given an existing index and a user who can access indices but lacks the cluster privilege
     // required by the cluster health API
     final var indexName = "await_forbidden-" + ENGINE_CLIENT_TEST_MARKERS;
-    final var adminClient = createConnector(ELASTIC_USER, ELASTIC_PASSWORD).createClient();
-    adminClient.indices().create(req -> req.index(indexName));
-    adminClient
-        .security()
-        .putRole(
-            role ->
-                role.name(ROLE_WITHOUT_MONITOR)
-                    .indices(indices -> indices.names("*").privileges("all")));
-    adminClient
-        .security()
-        .putUser(
-            user ->
-                user.username(USER_WITHOUT_MONITOR)
-                    .password(USER_WITHOUT_MONITOR_PASSWORD)
-                    .roles(ROLE_WITHOUT_MONITOR));
+    try (final var adminClient = createConnector(ELASTIC_USER, ELASTIC_PASSWORD).createClient()) {
+      adminClient.indices().create(req -> req.index(indexName));
+      adminClient
+          .security()
+          .putRole(
+              role ->
+                  role.name(ROLE_WITHOUT_MONITOR)
+                      .indices(indices -> indices.names("*").privileges("all")));
+      adminClient
+          .security()
+          .putUser(
+              user ->
+                  user.username(USER_WITHOUT_MONITOR)
+                      .password(USER_WITHOUT_MONITOR_PASSWORD)
+                      .roles(ROLE_WITHOUT_MONITOR));
+    }
 
     final var restrictedConnector =
         createConnector(USER_WITHOUT_MONITOR, USER_WITHOUT_MONITOR_PASSWORD);
-    final var restrictedEngineClient =
+    try (final var restrictedEngineClient =
         new ElasticsearchEngineClient(
-            restrictedConnector.createClient(), restrictedConnector.objectMapper());
+            restrictedConnector.createClient(), restrictedConnector.objectMapper())) {
 
-    // when / then
-    assertThatThrownBy(() -> restrictedEngineClient.awaitActivePrimaries(List.of(indexName)))
-        .isInstanceOf(SearchEngineHealthCheckPermissionException.class);
-    assertThatThrownBy(restrictedEngineClient::isHealthy)
-        .isInstanceOf(SearchEngineHealthCheckPermissionException.class);
+      // when / then
+      assertThatThrownBy(() -> restrictedEngineClient.awaitActivePrimaries(List.of(indexName)))
+          .isInstanceOf(SearchEngineHealthCheckPermissionException.class);
+      assertThatThrownBy(restrictedEngineClient::isHealthy)
+          .isInstanceOf(SearchEngineHealthCheckPermissionException.class);
+    }
   }
 
   private static ElasticsearchConnector createConnector(
