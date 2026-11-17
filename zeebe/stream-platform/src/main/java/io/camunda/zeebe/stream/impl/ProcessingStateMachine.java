@@ -823,6 +823,8 @@ public final class ProcessingStateMachine {
 
     // Ensure auth information is forwarded also to all follow-up commands & events
     // e.g. to attribute changes to the right actor in the audit log
+    // Keep it after the batch operation reference: follow-ups of a batch operation command keep
+    // the full claims only if the reference is already set, because RBAC checks these claims.
     builder.appendAuthInfoToFollowUps(command.getAuthInfo());
 
     // Ensure agent information is forwarded also to all follow-up commands & events
