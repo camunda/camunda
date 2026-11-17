@@ -14,6 +14,7 @@ import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -27,20 +28,30 @@ import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskQuery;
+import io.camunda.tasklist.store.VariableStore;
+import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
 import io.camunda.tasklist.util.ElasticsearchTenantHelper;
+import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.views.TaskSearchView;
+import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
+import org.junit.jupiter.params.provider.NullSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -59,7 +70,17 @@ class TaskStoreElasticSearchTest {
 
   @Spy private TaskTemplate taskTemplate = new TaskTemplate("test", true);
 
+  @Mock private VariableStore variableStoreElasticSearch;
+
+  @Mock private TaskVariableSearchUtil taskVariableSearchUtil;
+
   @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;
+
+  @Spy
+  private SnapshotTaskVariableTemplate taskVariableTemplate =
+      new SnapshotTaskVariableTemplate("test", true);
+
+  @Spy private TasklistProperties tasklistProperties = new TasklistProperties();
 
   @InjectMocks private TaskStoreElasticSearch instance;
 
@@ -134,6 +155,60 @@ class TaskStoreElasticSearchTest {
     // leaking to the generic exception handler (logged at ERROR). See issue #35823.
     assertThatThrownBy(() -> instance.getTask("123456789"))
         .isInstanceOf(TasklistRuntimeException.class);
+  }
+
+  @Test
+  void searchWithTaskVariablesAndCreatedStateShouldNotQueryCompletedTaskVariables()
+      throws IOException {
+    // Given a CREATED search, which is restricted to runtime indices, so snapshot variables of
+    // completed tasks can never contribute to the result
+    final TaskQuery taskQuery =
+        new TaskQuery()
+            .setPageSize(50)
+            .setState(TaskState.CREATED)
+            .setTaskVariables(new TaskByVariables[] {taskVariableFilter()});
+
+    // When
+    final List<TaskSearchView> result = instance.getTasks(taskQuery);
+
+    // Then
+    assertThat(result).isEmpty();
+    verify(esClient, never()).search(any(SearchRequest.class), eq(ElasticsearchUtil.MAP_CLASS));
+  }
+
+  @ParameterizedTest
+  @NullSource
+  @EnumSource(value = TaskState.class, names = "CREATED", mode = Mode.EXCLUDE)
+  void searchWithTaskVariablesShouldScrollCompletedTaskVariablesUsingBatchSize(
+      final TaskState taskState) throws IOException {
+    // Given
+    final int batchSize = 321;
+    tasklistProperties.getElasticsearch().setBatchSize(batchSize);
+    final TaskQuery taskQuery =
+        new TaskQuery()
+            .setPageSize(50)
+            .setState(taskState)
+            .setTaskVariables(new TaskByVariables[] {taskVariableFilter()});
+
+    final SearchResponse<Map<String, Object>> emptyResponse = mock(SearchResponse.class);
+    final HitsMetadata<Map<String, Object>> emptyHits = mock(HitsMetadata.class);
+    when(emptyResponse.hits()).thenReturn(emptyHits);
+    when(emptyHits.hits()).thenReturn(List.of());
+    when(esClient.search(searchRequestCaptor.capture(), eq(ElasticsearchUtil.MAP_CLASS)))
+        .thenReturn(emptyResponse);
+
+    // When
+    final List<TaskSearchView> result = instance.getTasks(taskQuery);
+
+    // Then
+    assertThat(result).isEmpty();
+    final SearchRequest searchRequest = searchRequestCaptor.getValue();
+    assertThat(searchRequest.index()).containsExactly(taskVariableTemplate.getAlias());
+    assertThat(searchRequest.size()).isEqualTo(batchSize);
+  }
+
+  private static TaskByVariables taskVariableFilter() {
+    return new TaskByVariables().setName("varName").setValue("\"varValue\"").setOperator("eq");
   }
 
   @SuppressWarnings("unchecked")

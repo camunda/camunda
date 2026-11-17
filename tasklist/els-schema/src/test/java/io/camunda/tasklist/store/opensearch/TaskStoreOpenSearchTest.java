@@ -19,10 +19,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskQuery;
+import io.camunda.tasklist.store.VariableStore;
+import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.views.TaskSearchView;
+import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
@@ -34,12 +40,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
+import org.junit.jupiter.params.provider.NullSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -51,7 +61,21 @@ public class TaskStoreOpenSearchTest {
 
   @Captor private ArgumentCaptor<SearchRequest.Builder> searchRequestCaptor;
 
+  @Captor private ArgumentCaptor<SearchRequest> osSearchRequestCaptor;
+
+  @Mock private OpenSearchClient osClient;
+
   @Mock private TenantAwareOpenSearchClient tenantAwareClient;
+
+  @Mock private VariableStore variableStoreOpensearch;
+
+  @Mock private TaskVariableSearchUtil taskVariableSearchUtil;
+
+  @Spy
+  private SnapshotTaskVariableTemplate taskVariableTemplate =
+      new SnapshotTaskVariableTemplate("test", false);
+
+  @Spy private TasklistProperties tasklistProperties = new TasklistProperties();
 
   @Spy private final TaskTemplate taskTemplate = new TaskTemplate("test", true);
 
@@ -136,6 +160,61 @@ public class TaskStoreOpenSearchTest {
     // leaking to the generic exception handler (logged at ERROR). See issue #35823.
     assertThatThrownBy(() -> instance.getTask("123456789"))
         .isInstanceOf(TasklistRuntimeException.class);
+  }
+
+  @Test
+  void searchWithTaskVariablesAndCreatedStateShouldNotQueryCompletedTaskVariables()
+      throws IOException {
+    // Given a CREATED search, which is restricted to runtime indices, so snapshot variables of
+    // completed tasks can never contribute to the result
+    final TaskQuery taskQuery =
+        new TaskQuery()
+            .setPageSize(50)
+            .setState(TaskState.CREATED)
+            .setTaskVariables(new TaskByVariables[] {taskVariableFilter()});
+
+    // When
+    final List<TaskSearchView> result = instance.getTasks(taskQuery);
+
+    // Then
+    assertThat(result).isEmpty();
+    verify(osClient, never())
+        .search(any(SearchRequest.class), eq(SnapshotTaskVariableEntity.class));
+  }
+
+  @ParameterizedTest
+  @NullSource
+  @EnumSource(value = TaskState.class, names = "CREATED", mode = Mode.EXCLUDE)
+  void searchWithTaskVariablesShouldScrollCompletedTaskVariablesUsingBatchSize(
+      final TaskState taskState) throws IOException {
+    // Given
+    final int batchSize = 321;
+    tasklistProperties.getOpenSearch().setBatchSize(batchSize);
+    final TaskQuery taskQuery =
+        new TaskQuery()
+            .setPageSize(50)
+            .setState(taskState)
+            .setTaskVariables(new TaskByVariables[] {taskVariableFilter()});
+
+    final SearchResponse<SnapshotTaskVariableEntity> emptyResponse = mock();
+    final HitsMetadata<SnapshotTaskVariableEntity> emptyHits = mock();
+    when(emptyResponse.hits()).thenReturn(emptyHits);
+    when(emptyHits.hits()).thenReturn(List.of());
+    when(osClient.search(osSearchRequestCaptor.capture(), eq(SnapshotTaskVariableEntity.class)))
+        .thenReturn(emptyResponse);
+
+    // When
+    final List<TaskSearchView> result = instance.getTasks(taskQuery);
+
+    // Then
+    assertThat(result).isEmpty();
+    final SearchRequest searchRequest = osSearchRequestCaptor.getValue();
+    assertThat(searchRequest.index()).containsExactly(taskVariableTemplate.getAlias());
+    assertThat(searchRequest.size()).isEqualTo(batchSize);
+  }
+
+  private static TaskByVariables taskVariableFilter() {
+    return new TaskByVariables().setName("varName").setValue("\"varValue\"").setOperator("eq");
   }
 
   private static TaskEntity getTaskEntity(final TaskState taskState) {
