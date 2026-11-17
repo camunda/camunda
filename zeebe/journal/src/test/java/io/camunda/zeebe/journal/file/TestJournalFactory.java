@@ -18,6 +18,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AutoClose;
@@ -109,6 +111,18 @@ final class TestJournalFactory {
 
   SegmentsManager segmentsManager(
       final Path directory, final SegmentLoader loader, final JournalMetaStore metaStore) {
+    return segmentsManager(directory, loader, metaStore, ForkJoinPool.commonPool());
+  }
+
+  SegmentsManager segmentsManager(final Path directory, final Executor deletionExecutor) {
+    return segmentsManager(directory, segmentLoader(), metaStore, deletionExecutor);
+  }
+
+  private SegmentsManager segmentsManager(
+      final Path directory,
+      final SegmentLoader loader,
+      final JournalMetaStore metaStore,
+      final Executor deletionExecutor) {
     return new SegmentsManager(
         index,
         maxSegmentSize(),
@@ -116,7 +130,8 @@ final class TestJournalFactory {
         "journal",
         loader,
         metrics,
-        metaStore);
+        metaStore,
+        deletionExecutor);
   }
 
   SegmentedJournal journal(final SegmentsManager segments) {

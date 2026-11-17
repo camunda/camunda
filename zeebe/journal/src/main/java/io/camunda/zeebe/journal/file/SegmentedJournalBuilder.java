@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.util.concurrent.ForkJoinPool;
 import org.jspecify.annotations.Nullable;
 
 /** Raft log builder. */
@@ -180,7 +181,8 @@ public class SegmentedJournalBuilder {
             name,
             segmentLoader,
             journalMetrics,
-            metaStore);
+            metaStore,
+            ForkJoinPool.commonPool());
 
     return new SegmentedJournal(journalIndex, segmentsManager, journalMetrics, metaStore);
   }
