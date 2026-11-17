@@ -76,6 +76,21 @@ class MetaStoreTest {
     }
 
     @Test
+    void shouldKeepEmptyStartProbeTermUntilCleared() throws IOException {
+      // given
+      metaStore.storeEmptyStartProbeTerm(7L);
+
+      // when
+      metaStore.close();
+      metaStore = new MetaStore(storage, meterRegistry);
+
+      // then
+      assertThat(metaStore.loadEmptyStartProbeTerm()).hasValue(7L);
+      metaStore.clearEmptyStartProbeTerm();
+      assertThat(metaStore.loadEmptyStartProbeTerm()).isEmpty();
+    }
+
+    @Test
     void shouldStoreAndLoadVote() {
       // when
       metaStore.storeVote(new MemberId("id"));

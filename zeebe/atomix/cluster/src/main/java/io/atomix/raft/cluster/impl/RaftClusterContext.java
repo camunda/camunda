@@ -133,6 +133,9 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
                   return;
                 }
               }
+              // A member that restarts before its empty-start guard was released must still not
+              // vote.
+              raft.restoreEmptyStartGuard();
               raft.transition(localMember.getType());
               bootstrapFuture.complete(null);
             });
@@ -147,6 +150,9 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
   private CompletableFuture<Void> join(
       final Type type, final Collection<MemberId> cluster, final long configurationVersion) {
+    // Runs after the guard of the join options, if any; else a guard from before a restart
+    // applies.
+    raft.getThreadContext().execute(raft::restoreEmptyStartGuard);
     return new ReconfigurationHelper(raft)
         .join(type, cluster, configurationVersion)
         // Usually the transition is triggered by `onConfigure` when the leader sends the updated

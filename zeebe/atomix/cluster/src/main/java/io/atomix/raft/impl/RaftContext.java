@@ -455,12 +455,31 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   /**
    * Activates the empty-start guard, see {@link EmptyStartGuard}: the member grants no polls or
    * votes and starts no election until it has caught up with a leader of at least {@code
-   * probeTerm}.
+   * probeTerm}. The probe term is stored on disk until the guard is released, so that a restart
+   * keeps the guard, see {@link #restoreEmptyStartGuard()}.
    */
   public void activateEmptyStartGuard(final long probeTerm) {
     checkThread();
     LOGGER.info("Activating the empty-start guard with probe term {}", probeTerm);
+    meta.storeEmptyStartProbeTerm(probeTerm);
     emptyStartGuard = new EmptyStartGuard(probeTerm);
+  }
+
+  /**
+   * Activates the empty-start guard again if it was active before a restart: the member has not
+   * caught up yet, thus it still must not vote.
+   */
+  public void restoreEmptyStartGuard() {
+    checkThread();
+    if (isEmptyStartGuardActive()) {
+      return;
+    }
+    meta.loadEmptyStartProbeTerm()
+        .ifPresent(
+            probeTerm -> {
+              LOGGER.info("Restoring the empty-start guard with probe term {}", probeTerm);
+              emptyStartGuard = new EmptyStartGuard(probeTerm);
+            });
   }
 
   public boolean isEmptyStartGuardActive() {
@@ -486,6 +505,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         "Releasing the empty-start guard (probe term {}) at commit index {}",
         emptyStartGuard.probeTerm(),
         commitIndex);
+    meta.clearEmptyStartProbeTerm();
   }
 
   public JoinAdmission getJoinAdmission() {

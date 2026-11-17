@@ -1033,6 +1033,60 @@ final class SystemPartitionRaftTest {
           .atMost(Duration.ofSeconds(10))
           .untilAsserted(() -> assertThat(leaderOf(m2, rejoined)).isEmpty());
     }
+
+    @Test
+    void shouldKeepGuardWhenGuardedVoterRestartsBeforeCatchingUp() throws IOException {
+      // given - three voters, member 3 lost its disk and joins again with the guard
+      final var members = Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE);
+      final var m1 = createServer(id1, id2, id3);
+      final var m2 = createServer(id2, id1, id3);
+      final var m3 = createServer(id3, id1, id2);
+      CompletableFuture.allOf(m1.bootstrap(members), m2.bootstrap(members), m3.bootstrap(members))
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+      Awaitility.await("member 1 is the leader")
+          .until(
+              () -> {
+                final var leader = awaitLeader(m1, m2, m3);
+                if (leader != m1) {
+                  leader.stepDown().join();
+                  return false;
+                }
+                return true;
+              });
+      appendEntry(m1);
+      m3.shutdown().join();
+      servers.remove(m3);
+      FileUtil.deleteFolderIfExists(tmp.resolve(id3.id()));
+      final var rejoined = createServer(id3, id1, id2);
+      rejoined
+          .join(
+              Type.PASSIVE,
+              List.of(id1, id2),
+              JoinOptions.withIncarnation(34).withEmptyStartGuard(m1.getTerm() + 100))
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+
+      // when - member 3 restarts with its data before it has caught up with a leader of the
+      // probe term
+      rejoined.shutdown().join();
+      servers.remove(rejoined);
+      final var restarted = createServer(id3, id1, id2);
+      restarted.bootstrap(id1, id2, id3).orTimeout(30, TimeUnit.SECONDS).join();
+
+      // then - it is still guarded
+      assertThat(guarded(restarted)).isTrue();
+
+      // when - the leader goes down; member 2 needs the vote of member 3
+      m1.shutdown().join();
+
+      // then - member 3 neither votes for member 2 nor starts an election itself
+      Awaitility.await("no leader while guarded")
+          .during(Duration.ofSeconds(3))
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(leaderOf(m2, restarted)).isEmpty());
+      assertThat(guarded(restarted)).isTrue();
+    }
   }
 
   @Nested
