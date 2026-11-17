@@ -21,6 +21,7 @@ import {
 } from '@camunda/design-system';
 import type {Authorization} from '@camunda/camunda-api-zod-schemas/8.11';
 import {useAuthorizationMutations} from './useAuthorizationMutations';
+import {getResourceTypeLabel} from './resourceTypes';
 
 type Props = {
 	authorization: Authorization | null;
@@ -63,7 +64,10 @@ const DeleteAuthorizationModal: React.FC<Props> = ({authorization, onClose}) => 
 				<AlertDialogDescription>
 					<Trans
 						i18nKey="admin.authorizations.deleteAuthorizationConfirmation"
-						values={{ownerId: authorization?.ownerId, resourceType: authorization?.resourceType}}
+						values={{
+							ownerId: authorization?.ownerId,
+							resourceType: authorization ? getResourceTypeLabel(authorization.resourceType, t) : undefined,
+						}}
 						components={{strong: <strong />}}
 					/>
 				</AlertDialogDescription>

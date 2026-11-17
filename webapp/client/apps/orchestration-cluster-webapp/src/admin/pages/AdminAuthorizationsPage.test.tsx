@@ -144,9 +144,21 @@ describe('<AdminAuthorizationsPage />', () => {
 		const {screen, onSearchChange} = await renderPage({search: {page: 3}, totalItems: 200});
 
 		await userEvent.click(screen.getByLabelText('Resource type'));
-		await userEvent.click(screen.getByRole('option', {name: 'USER_TASK'}));
+		await userEvent.click(screen.getByRole('option', {name: 'User task'}));
 
 		expect(onSearchChange).toHaveBeenCalledWith({resourceType: 'USER_TASK', page: undefined});
+	});
+
+	it('should show the resource type by its readable name', async () => {
+		// given
+		const {screen} = await renderPage();
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Create authorization'}));
+
+		// then
+		await expect.element(screen.getByLabelText('Resource type').first()).toHaveTextContent('Process definition');
+		await expect.element(screen.getByRole('dialog').getByLabelText('Resource type')).toHaveValue('Process definition');
 	});
 
 	it('should keep the toolbar mounted while another resource type loads', async ({worker}) => {

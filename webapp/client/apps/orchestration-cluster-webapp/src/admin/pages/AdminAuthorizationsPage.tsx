@@ -28,6 +28,7 @@ import {DeleteAuthorizationModal} from '#/admin/modules/authorizations/DeleteAut
 import {AuthorizationsTable} from '#/admin/modules/authorizations/AuthorizationsTable';
 import type {AuthorizationsSearch} from '#/admin/modules/authorizations/searchSchema';
 import {GUIDE_URLS} from '#/admin/modules/shared/guideUrls';
+import {getResourceTypeLabel} from '#/admin/modules/authorizations/resourceTypes';
 
 type ModalState = {type: 'create'} | {type: 'delete'; authorization: Authorization} | null;
 
@@ -95,7 +96,7 @@ const AdminAuthorizationsPage: React.FC<AdminAuthorizationsPageProps> = ({
 								<SelectContent>
 									{availableResourceTypes.map((type) => (
 										<SelectItem key={type} value={type}>
-											{type}
+											{getResourceTypeLabel(type, t)}
 										</SelectItem>
 									))}
 								</SelectContent>

@@ -104,10 +104,10 @@ test.describe('Admin authorizations', () => {
 		);
 
 		await adminAuthorizationsPage.resourceTypeSelect.click();
-		await adminAuthorizationsPage.resourceTypeOption('USER_TASK').click();
+		await adminAuthorizationsPage.resourceTypeOption('User task').click();
 
 		await expect(adminAuthorizationsPage.loadingSkeleton).toBeVisible();
-		await expect(adminAuthorizationsPage.resourceTypeSelect).toHaveText('USER_TASK');
+		await expect(adminAuthorizationsPage.resourceTypeSelect).toHaveText('User task');
 		await expect(adminAuthorizationsPage.ownerSearchInput).toBeVisible();
 		await expect(adminAuthorizationsPage.addButton).toBeVisible();
 		await expect(adminAuthorizationsPage.emptyState).not.toBeVisible();
