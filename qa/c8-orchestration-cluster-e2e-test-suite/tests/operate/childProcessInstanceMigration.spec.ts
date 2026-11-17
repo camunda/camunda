@@ -191,7 +191,7 @@ test.describe('Child Process Instance Migration', () => {
         .getOptionByName(targetBpmnProcessId)
         .click();
 
-      await operateProcessMigrationModePage.targetVersionDropdown.click();
+      await operateProcessMigrationModePage.clickTargetVersionDropdown();
       await operateProcessMigrationModePage
         .getOptionByName(targetVersion)
         .click();

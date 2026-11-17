@@ -33,7 +33,9 @@ export async function cleanupUsers(
             `Unexpected response status ${response.status()} for user ${username}`,
           );
         }
-      } catch {}
+      } catch (error) {
+        console.error(`Failed to delete user ${username}:`, error);
+      }
     }),
   );
 }
