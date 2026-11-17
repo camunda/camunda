@@ -21,13 +21,31 @@ const areIdsTooLong = (value: string) => {
 	return parseIds(value).some((id) => id.length > 19);
 };
 
+const areDecisionIdsTooLong = (value: string) => {
+	return parseIds(value).some((id) => {
+		const [firstPart] = id.split('-');
+		return firstPart !== undefined && firstPart.length > 20;
+	});
+};
+
 const areIdsComplete = (value: string) => {
 	return value === '' || parseIds(value).every((id) => /^[0-9]{16,19}$/.test(id));
+};
+
+const areDecisionIdsComplete = (value: string) => {
+	return value === '' || parseIds(value).every((id) => /^[0-9]{16,20}-\d+$/.test(id));
 };
 
 const validateIdsCharacters: FieldValidator<string | undefined> = (value = '') => {
 	if (value !== '' && !/^[0-9]+$/g.test(value.replace(/,/g, '').replace(/\s/g, ''))) {
 		return i18n.t('operate.shared.validators.ids');
+	}
+	return undefined;
+};
+
+const validateDecisionIdsCharacters: FieldValidator<string | undefined> = (value = '') => {
+	if (value !== '' && !/^[0-9-]+$/g.test(value.replace(/,/g, '').replace(/\s/g, ''))) {
+		return i18n.t('operate.shared.validators.decisionIds');
 	}
 	return undefined;
 };
@@ -39,9 +57,23 @@ const validateIdsLength: FieldValidator<string | undefined> = (value = '') => {
 	return undefined;
 };
 
+const validateDecisionIdsLength: FieldValidator<string | undefined> = (value = '') => {
+	if (areDecisionIdsTooLong(value)) {
+		return i18n.t('operate.shared.validators.decisionIds');
+	}
+	return undefined;
+};
+
 const validatesIdsComplete: FieldValidator<string | undefined> = promisifyValidator((value = '') => {
 	if (!areIdsComplete(value)) {
 		return i18n.t('operate.shared.validators.ids');
+	}
+	return undefined;
+}, VALIDATION_TIMEOUT);
+
+const validatesDecisionIdsComplete: FieldValidator<string | undefined> = promisifyValidator((value = '') => {
+	if (!areDecisionIdsComplete(value)) {
+		return i18n.t('operate.shared.validators.decisionIds');
 	}
 	return undefined;
 }, VALIDATION_TIMEOUT);
@@ -133,6 +165,9 @@ export {
 	validateIdsCharacters,
 	validateIdsLength,
 	validatesIdsComplete,
+	validateDecisionIdsCharacters,
+	validateDecisionIdsLength,
+	validatesDecisionIdsComplete,
 	validateParentInstanceIdCharacters,
 	validateParentInstanceIdComplete,
 	validateParentInstanceIdNotTooLong,

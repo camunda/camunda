@@ -2370,6 +2370,7 @@
 				},
 				"validators": {
 					"ids": "Schlüssel muss eine 16- bis 19-stellige Zahl sein, getrennt durch Leerzeichen oder Komma",
+					"decisionIds": "Schlüssel muss eine 16- bis 20-stellige Zahl mit einem Index sein, z. B. 2251799813702856-1",
 					"parentInstanceId": "Schlüssel muss eine 16- bis 19-stellige Zahl sein",
 					"batchOperationKey": "Schlüssel muss eine 16- bis 19-stellige Zahl oder eine UUID sein",
 					"time": "Die Zeit muss im Format hh:mm:ss angegeben werden",

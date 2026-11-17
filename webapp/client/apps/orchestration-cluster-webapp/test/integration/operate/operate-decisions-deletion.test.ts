@@ -18,7 +18,14 @@ import {
 	mockDeleteResourceEndpoint,
 	mockGetProcessDefinitionInstanceStatisticsEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByErrorEndpoint,
+	mockCreateDecisionInstancesDeletionBatchOperationEndpoint,
+	mockGetBatchOperationEndpoint,
+	mockQueryBatchOperationItemsEndpoint,
 } from '#/shared-test-modules/mock-handlers';
+import {
+	createBatchOperation,
+	createQueryBatchOperationItemsResponse,
+} from '#/shared-test-modules/api-mocks/batch-operations';
 import {createCurrentUser} from '#/shared-test-modules/api-mocks/current-user';
 import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {createLicense} from '#/shared-test-modules/api-mocks/license';
@@ -26,7 +33,10 @@ import {
 	createDecisionDefinition,
 	createQueryDecisionDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/decision-definitions';
-import {createQueryDecisionInstancesResponse} from '#/shared-test-modules/api-mocks/decision-instances';
+import {
+	createDecisionInstance,
+	createQueryDecisionInstancesResponse,
+} from '#/shared-test-modules/api-mocks/decision-instances';
 import {DMN_XML} from '#/shared-test-modules/api-mocks/decision-definition-xmls';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 
@@ -108,6 +118,56 @@ test('should delete the selected DRD, refresh decisions and preserve tenant and 
 		(url) => url.searchParams.get('businessId') === 'previous' && !url.searchParams.has('decisionDefinitionId'),
 	);
 	await expect(page.getByText("Couldn't find the decision", {exact: true})).not.toBeVisible();
+});
+
+test('should open the started batch operation from the decision instance deletion notification within a deployment prefix', async ({
+	network,
+	page,
+}) => {
+	network.use(
+		mockQueryDecisionInstancesEndpoint({
+			successResponse: HttpResponse.json(
+				createQueryDecisionInstancesResponse({
+					items: [createDecisionInstance({decisionEvaluationInstanceKey: '2251799813702856-1'})],
+				}),
+			),
+		}),
+		mockCreateDecisionInstancesDeletionBatchOperationEndpoint({
+			successResponse: HttpResponse.json({
+				batchOperationKey: 'decision-deletion-1',
+				batchOperationType: 'DELETE_DECISION_INSTANCE',
+			}),
+		}),
+		mockGetBatchOperationEndpoint({
+			successResponse: HttpResponse.json(
+				createBatchOperation({
+					batchOperationKey: 'decision-deletion-1',
+					batchOperationType: 'DELETE_DECISION_INSTANCE',
+					actorId: 'deletion-actor',
+				}),
+			),
+		}),
+		mockQueryBatchOperationItemsEndpoint({
+			successResponse: HttpResponse.json(createQueryBatchOperationItemsResponse()),
+		}),
+	);
+	await page.route('**/deployment/operate/decisions**', async (route) => {
+		const response = await route.fetch();
+		await route.fulfill({
+			response,
+			body: (await response.text()).replace('<html', '<html data-base-name="/deployment"'),
+		});
+	});
+	await page.goto('/deployment/operate/decisions?evaluated=true&failed=true');
+
+	await page.getByRole('checkbox', {name: 'Select row 2251799813702856-1'}).check({force: true});
+	await page.getByRole('button', {name: 'Delete', exact: true}).click();
+	await page.getByRole('dialog').getByRole('button', {name: 'Delete', exact: true}).click();
+	await page.getByRole('button', {name: 'Go to operation details'}).click();
+
+	await expect(page).toHaveURL('/deployment/operate/batch-operations/decision-deletion-1');
+	await expect(page.getByRole('heading', {name: 'Delete Decision Instance', exact: true})).toBeVisible();
+	await expect(page.getByText('deletion-actor', {exact: true})).toBeVisible();
 });
 
 test('should recover from forbidden deletion without losing the selected version', async ({

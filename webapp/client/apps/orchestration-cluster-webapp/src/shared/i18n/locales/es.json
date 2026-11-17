@@ -2370,6 +2370,7 @@
 				},
 				"validators": {
 					"ids": "La clave debe ser un número de 16 a 19 dígitos, separado por un espacio o una coma",
+					"decisionIds": "La clave debe ser un número de 16 a 20 dígitos con un índice, p. ej. 2251799813702856-1",
 					"parentInstanceId": "La clave debe ser un número de 16 a 19 dígitos",
 					"batchOperationKey": "La clave debe ser un número de 16 a 19 dígitos o un UUID",
 					"time": "La hora debe tener el formato hh:mm:ss",
