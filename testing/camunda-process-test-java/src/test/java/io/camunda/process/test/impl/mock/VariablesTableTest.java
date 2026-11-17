@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.mock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.process.test.api.mock.VariablesTable;
 import io.camunda.process.test.api.mock.VariablesTable.Builder;
@@ -28,6 +29,38 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class VariablesTableTest {
+
+  @Test
+  void shouldCreateEmptyTable() {
+    // when
+    final VariablesTable table = VariablesTable.create();
+
+    // then
+    assertThat(table.getRows()).isEmpty();
+  }
+
+  @Test
+  void shouldCreateTableWithRows() {
+    // given/when
+    final VariablesTable table =
+        VariablesTable.create()
+            .when(Collections.singletonMap("loopCounter", 1))
+            .thenReturn(Collections.singletonMap("sampleType", "regolith"))
+            .when(Collections.singletonMap("loopCounter", 2))
+            .thenReturn(Collections.singletonMap("sampleType", "basalt"));
+
+    // then
+    assertThat(table.getRows())
+        .hasSize(2)
+        .extracting(Row::getWhen, Row::getVariables)
+        .containsExactly(
+            tuple(
+                Collections.singletonMap("loopCounter", 1),
+                Collections.singletonMap("sampleType", "regolith")),
+            tuple(
+                Collections.singletonMap("loopCounter", 2),
+                Collections.singletonMap("sampleType", "basalt")));
+  }
 
   @Test
   void shouldBuildRowsInOrder() {
