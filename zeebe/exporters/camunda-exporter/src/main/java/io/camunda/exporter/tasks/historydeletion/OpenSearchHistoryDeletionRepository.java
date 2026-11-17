@@ -226,7 +226,9 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
   }
 
   @Override
-  public CompletableFuture<List<String>> completeOperations(final List<String> ids) {
+  public CompletableFuture<List<String>> completeOperations(
+      final List<OperationToComplete> operations) {
+    final var ids = operations.stream().map(OperationToComplete::id).toList();
     final var bulkRequestBuilder = new BulkRequest.Builder();
 
     final var fieldsToUpdate =

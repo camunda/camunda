@@ -224,9 +224,13 @@ abstract class HistoryDeletionRepositoryIT {
   void shouldIgnoreDocumentMissingExceptionWhenCompletingNonExistentOperations() {
     // given - non-existent operation IDs that will trigger document_missing_exception
     final var nonExistentIds = List.of(UUID.randomUUID().toString(), UUID.randomUUID().toString());
+    final var operations =
+        nonExistentIds.stream()
+            .map(id -> new OperationToComplete(new HistoryDeletionEntity(), id))
+            .toList();
 
     // when
-    final var result = repository.completeOperations(nonExistentIds);
+    final var result = repository.completeOperations(operations);
 
     // then - should complete successfully
     assertThat(result).succeedsWithin(REQUEST_TIMEOUT);
