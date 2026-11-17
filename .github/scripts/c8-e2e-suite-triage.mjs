@@ -440,6 +440,60 @@ export function render({buckets, missingLegs, errorLegs = [], base, runUrl, ment
   return cap(lines.join('\n') + '\n', runUrl);
 }
 
+// --- The job summary ----------------------------------------------------------
+//
+// One suite job's results for its GitHub job summary, so a run's page shows
+// each job's counts and failing tests without opening its log or reports:
+// totals, then each failing test with its spec, project and error.
+export const SUMMARY_MAX_FAILURES = 50;
+export function runSummary(report, title) {
+  const lines = [`## ${title}`, ''];
+  if (!report) {
+    lines.push('> [!NOTE]', '> No Playwright report: the job failed before or while running the tests.', '');
+    return lines.join('\n');
+  }
+  const tests = allTests(report);
+  const count = (...statuses) => tests.filter((t) => statuses.includes(t.status)).length;
+  const counts = {
+    total: tests.length,
+    passed: count('expected'),
+    flaky: count('flaky'),
+    skipped: count('skipped'),
+  };
+  counts.failed = counts.total - counts.passed - counts.flaky - counts.skipped;
+  lines.push(
+    '| Total | ✅ Passed | ❌ Failed | ⚠️ Flaky | ⏭️ Skipped |',
+    '| ----: | ----: | ----: | ----: | ----: |',
+    `| ${counts.total} | ${counts.passed} | ${counts.failed} | ${counts.flaky} | ${counts.skipped} |`,
+    '',
+  );
+  const code = (text) => `\`${String(text).replace(/`/g, "'")}\``;
+  const errors = reportErrors(report);
+  const failures = tests.filter((t) => !['expected', 'flaky', 'skipped'].includes(t.status));
+  if (failures.length) {
+    lines.push(`### ❌ ${failures.length} failing test${failures.length === 1 ? '' : 's'}`, '');
+    for (const t of failures.slice(0, SUMMARY_MAX_FAILURES)) {
+      lines.push(`- ${code(t.title)}${t.project ? ` _(${t.project})_` : ''}`, `  - file: ${code(t.file)}`);
+      if (t.error) lines.push(`  - ${code(t.error)}`);
+    }
+    if (failures.length > SUMMARY_MAX_FAILURES) {
+      lines.push('', `_…and ${failures.length - SUMMARY_MAX_FAILURES} more: see the job's reports._`);
+    }
+    lines.push('');
+  } else if (counts.passed + counts.flaky === 0) {
+    // Nothing failed, but nothing passed either: no test ran (all skipped,
+    // or none collected). Not a success to celebrate.
+    lines.push('No test passed: every test was skipped or none ran.', '');
+  } else if (!errors.length) {
+    lines.push('All tests passed. 🎉', '');
+  }
+  if (errors.length) {
+    lines.push('### Run errors', '', ...errors.slice(0, SUMMARY_MAX_FAILURES).map((e) => `- ${code(e)}`), '');
+  }
+  if (counts.flaky) lines.push(`_${counts.flaky} test${counts.flaky === 1 ? '' : 's'} passed on retry._`, '');
+  return lines.join('\n');
+}
+
 function findReports(dir) {
   const found = [];
   if (!dir || !fs.existsSync(dir)) return found;
@@ -573,6 +627,8 @@ function main(argv) {
 //     prints {failed, files, grep, serialFiles} for the tests to re-run on the
 //     base code
 // Both read RERUN_PROJECTS: the projects the job selected, comma-separated.
+//   run-summary <results.json> <title>
+//     prints the job summary (markdown) for one suite job's report
 //   rerun-compare <results.json> <base-suite-dir> <base-sha> <out.json> <base-results.json>...
 //     (RERUN_SAME_TEST_CODE=true when the PR does not change the suite)
 //     writes the leg's base-rerun.json from the base run's report
@@ -582,6 +638,11 @@ function cli(argv) {
   const [cmd, ...args] = argv;
   if (cmd === 'rerun-plan') {
     console.log(JSON.stringify(rerunPlan(readReport(args[0]), args[1], rerunProjects())));
+  } else if (cmd === 'run-summary') {
+    // Never fails: a reporting problem must not turn the job red.
+    const [reportPath, title] = args;
+    const report = reportPath && fs.existsSync(reportPath) ? readReport(reportPath) : null;
+    console.log(runSummary(report, title || 'C8 Orchestration Cluster E2E suite'));
   } else if (cmd === 'rerun-compare') {
     const [reportPath, baseSuiteDir, baseSha, outPath, ...baseReportPaths] = args;
     const baseReports = baseReportPaths.filter((p) => fs.existsSync(p)).map(readReport).filter(Boolean);

@@ -222,7 +222,8 @@ When a pull request changes non-Markdown files under `qa/c8-orchestration-cluste
 sized for the PR's target branch, as jobs of the check, so each job's result shows on the PR. On
 `main` it uses the PR's own copy of the test workflow, so changes to it are tested too; on the
 stable branches, which have no suite workflows, it uses `main`'s. A newer push cancels the PR's
-run in progress.
+run in progress. Each suite job, here and in on-demand runs, writes its counts and failing tests
+(spec, project and error) to the run's summary page.
 
 The check is **not** required: a red result does not block the merge, but any failure must be
 reviewed and documented in the PR description. It does not run for pull requests from forks, which

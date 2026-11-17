@@ -21,6 +21,8 @@ import {
   render,
   reportErrors,
   rerunPlan,
+  runSummary,
+  SUMMARY_MAX_FAILURES,
 } from './c8-e2e-suite-triage.mjs';
 
 // A Playwright JSON report: [file, describe, title, status] per test.
@@ -506,4 +508,66 @@ test('passing with identical base test code is intermittent, not a regression', 
     {leg: 'B', failures: [t], rerun: {status: 'done', sameTestCode: false, results: [{...t, base: 'passed'}]}},
   ]);
   assert.equal(mixed.regression.length, 1);
+});
+
+// --- the job summary ---------------------------------------------------------
+
+test('runSummary counts the results and lists failing tests with their spec, project and error', () => {
+  const report = {
+    config: {rootDir: '/w/qa/c8-orchestration-cluster-e2e-test-suite'},
+    suites: [
+      {
+        title: 'tests/a.spec.ts',
+        file: 'tests/a.spec.ts',
+        suites: [
+          {
+            title: 'g',
+            specs: [
+              {title: 'ok', file: 'tests/a.spec.ts', tests: [{projectName: 'api-tests', status: 'expected'}]},
+              {title: 'retried', file: 'tests/a.spec.ts', tests: [{projectName: 'api-tests', status: 'flaky'}]},
+              {title: 'off', file: 'tests/a.spec.ts', tests: [{projectName: 'api-tests', status: 'skipped'}]},
+              {
+                title: 'broken',
+                file: 'tests/a.spec.ts',
+                tests: [
+                  {
+                    projectName: 'api-tests',
+                    status: 'unexpected',
+                    results: [{error: {message: 'Error: expected `200`\nReceived: 500\nCall log:\n- x'}}],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  const md = runSummary(report, 'API Tests (Mode profiles)');
+  assert.match(md, /^## API Tests \(Mode profiles\)/);
+  assert.match(md, /\| 4 \| 1 \| 1 \| 1 \| 1 \|/);
+  assert.match(md, /### ❌ 1 failing test\n/);
+  assert.match(md, /- `g › broken` _\(api-tests\)_\n  - file: `tests\/a\.spec\.ts`\n  - `Error: expected '200' · Received: 500`/);
+  assert.match(md, /_1 test passed on retry\._/);
+});
+
+test('runSummary: all passed, no report, and a capped failure list', () => {
+  const spec = (title, status) => ({title, file: 'tests/a.spec.ts', tests: [{status}]});
+  const one = (...specs) => ({suites: [{title: 'tests/a.spec.ts', file: 'tests/a.spec.ts', specs}]});
+  assert.match(runSummary(one(spec('a', 'expected')), 'T'), /All tests passed/);
+  // Passed on retry counts as passed.
+  assert.match(runSummary(one(spec('a', 'flaky')), 'T'), /All tests passed/);
+  // Only skipped tests: nothing passed, so no success message.
+  const skipped = runSummary(one(spec('a', 'skipped')), 'T');
+  assert.doesNotMatch(skipped, /All tests passed/);
+  assert.match(skipped, /No test passed: every test was skipped or none ran\./);
+  // Passing tests but a run error (e.g. global teardown): no success message.
+  const withError = runSummary({...one(spec('a', 'expected')), errors: [{message: 'Error: teardown failed'}]}, 'T');
+  assert.doesNotMatch(withError, /All tests passed/);
+  assert.match(withError, /### Run errors\n\n- `Error: teardown failed`/);
+  assert.match(runSummary(null, 'T'), /No Playwright report/);
+  const many = one(...Array.from({length: SUMMARY_MAX_FAILURES + 3}, (_, i) => spec(`t${i}`, 'unexpected')));
+  const md = runSummary(many, 'T');
+  assert.match(md, new RegExp(`### ❌ ${SUMMARY_MAX_FAILURES + 3} failing tests`));
+  assert.match(md, /_…and 3 more: see the job's reports\._/);
 });
