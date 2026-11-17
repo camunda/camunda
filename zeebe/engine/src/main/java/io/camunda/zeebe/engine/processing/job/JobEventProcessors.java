@@ -55,7 +55,8 @@ public final class JobEventProcessors {
             processingState.getProcessState(),
             bpmnBehaviors.eventTriggerBehavior(),
             bpmnBehaviors.stateBehavior(),
-            bpmnBehaviors.storageOrdinalProvider());
+            bpmnBehaviors.storageOrdinalProvider(),
+            bpmnBehaviors.caseCreationBehavior());
 
     final var jobBackoffChecker =
         new JobBackoffCheckScheduler(clock, scheduledTaskStateFactory.get().getJobState());

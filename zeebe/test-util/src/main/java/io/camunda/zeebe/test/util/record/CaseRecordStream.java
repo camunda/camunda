@@ -21,4 +21,8 @@ public class CaseRecordStream extends ExporterRecordStream<CaseRecordValue, Case
   protected CaseRecordStream supply(final Stream<Record<CaseRecordValue>> wrappedStream) {
     return new CaseRecordStream(wrappedStream);
   }
+
+  public CaseRecordStream withProcessInstanceKey(final long processInstanceKey) {
+    return valueFilter(v -> v.getProcessInstanceKey() == processInstanceKey);
+  }
 }

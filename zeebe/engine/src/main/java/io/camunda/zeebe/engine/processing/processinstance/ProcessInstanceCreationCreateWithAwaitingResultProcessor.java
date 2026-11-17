@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.cases.CaseCreationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -42,6 +43,7 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
   private final StateWriter stateWriter;
   private final ProcessEngineMetrics metrics;
   private final ProcessInstanceCreationHelper helper;
+  private final CaseCreationBehavior caseCreationBehavior;
   private final MutableElementInstanceState elementInstanceState;
 
   public ProcessInstanceCreationCreateWithAwaitingResultProcessor(
@@ -49,7 +51,8 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
       final Writers writers,
       final ProcessEngineMetrics metrics,
       final ProcessInstanceCreationHelper processInstanceCreationHelper,
-      final MutableElementInstanceState elementInstanceState) {
+      final MutableElementInstanceState elementInstanceState,
+      final CaseCreationBehavior caseCreationBehavior) {
     this.keyGenerator = keyGenerator;
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
@@ -57,6 +60,7 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
     stateWriter = writers.state();
     this.metrics = metrics;
     helper = processInstanceCreationHelper;
+    this.caseCreationBehavior = caseCreationBehavior;
     this.elementInstanceState = elementInstanceState;
   }
 
@@ -116,6 +120,9 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
             process, processInstanceKey, record.getTags(), record.getBusinessIdBuffer());
 
     helper.setVariablesFromDocument(processInstance, record.getVariablesBuffer());
+
+    caseCreationBehavior.createCaseIfMarked(
+        process.getProcess(), processInstance, record.getVariablesBuffer());
 
     if (record.startInstructions().isEmpty()) {
       commandWriter.appendFollowUpCommand(

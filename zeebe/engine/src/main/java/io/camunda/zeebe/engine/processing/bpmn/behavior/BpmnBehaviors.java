@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
+import io.camunda.zeebe.engine.processing.cases.CaseCreationBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
@@ -69,6 +70,8 @@ public interface BpmnBehaviors {
   AgentDefinitionBehavior agentDefinitionBehavior();
 
   BpmnProcessDeletionBehavior processDeletionBehavior();
+
+  CaseCreationBehavior caseCreationBehavior();
 
   StorageOrdinalProvider storageOrdinalProvider();
 }

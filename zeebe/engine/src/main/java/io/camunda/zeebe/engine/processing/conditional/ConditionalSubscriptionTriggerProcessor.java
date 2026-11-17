@@ -64,7 +64,8 @@ public class ConditionalSubscriptionTriggerProcessor
             processState,
             bpmnBehaviors.eventTriggerBehavior(),
             bpmnBehaviors.stateBehavior(),
-            bpmnBehaviors.storageOrdinalProvider());
+            bpmnBehaviors.storageOrdinalProvider(),
+            bpmnBehaviors.caseCreationBehavior());
   }
 
   @Override

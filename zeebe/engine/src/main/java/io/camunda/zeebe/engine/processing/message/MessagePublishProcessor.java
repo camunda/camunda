@@ -12,14 +12,12 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.metrics.MessageCorrelationMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
-import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -73,15 +71,12 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final KeyGenerator keyGenerator,
       final Writers writers,
       final ProcessState processState,
-      final EventTriggerBehavior eventTriggerBehavior,
-      final BpmnStateBehavior stateBehavior,
+      final BpmnBehaviors bpmnBehaviors,
       final CslAuthorizationCheck cslCheck,
       final RoutingInfo routingInfo,
       final ElementInstanceState elementInstanceState,
       final BannedInstanceState bannedInstanceState,
       final boolean businessIdUniquenessEnabled,
-      final VariableBehavior variableBehavior,
-      final StorageOrdinalProvider storageOrdinalProvider,
       final MessageCorrelationMetrics metrics) {
     this.partitionId = partitionId;
     this.messageState = messageState;
@@ -91,7 +86,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     rejectionWriter = writers.rejection();
     this.cslCheck = cslCheck;
     this.routingInfo = routingInfo;
-    this.variableBehavior = variableBehavior;
+    variableBehavior = bpmnBehaviors.variableBehavior();
     this.metrics = metrics;
     final var eventHandle =
         new EventHandle(
@@ -99,9 +94,10 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             eventScopeInstanceState,
             writers,
             processState,
-            eventTriggerBehavior,
-            stateBehavior,
-            storageOrdinalProvider);
+            bpmnBehaviors.eventTriggerBehavior(),
+            bpmnBehaviors.stateBehavior(),
+            bpmnBehaviors.storageOrdinalProvider(),
+            bpmnBehaviors.caseCreationBehavior());
     correlateBehavior =
         new MessageCorrelateBehavior(
             startEventSubscriptionState,

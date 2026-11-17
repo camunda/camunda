@@ -9,16 +9,14 @@ package io.camunda.zeebe.engine.processing.signal;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
-import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
-import io.camunda.zeebe.engine.processing.storageordinals.StorageOrdinalProvider;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -67,13 +65,10 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
-      final BpmnStateBehavior stateBehavior,
-      final EventTriggerBehavior eventTriggerBehavior,
+      final BpmnBehaviors bpmnBehaviors,
       final CommandDistributionBehavior commandDistributionBehavior,
       final CslAuthorizationCheck cslCheck,
-      final CslTenantCheck tenantCheck,
-      final VariableBehavior variableBehavior,
-      final StorageOrdinalProvider storageOrdinalProvider) {
+      final CslTenantCheck tenantCheck) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -84,7 +79,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     elementInstanceState = processingState.getElementInstanceState();
     this.cslCheck = cslCheck;
     this.tenantCheck = tenantCheck;
-    this.variableBehavior = variableBehavior;
+    variableBehavior = bpmnBehaviors.variableBehavior();
     suspensionState = processingState.getSuspensionState();
     eventHandle =
         new EventHandle(
@@ -92,9 +87,10 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
             processingState.getEventScopeInstanceState(),
             writers,
             processState,
-            eventTriggerBehavior,
-            stateBehavior,
-            storageOrdinalProvider);
+            bpmnBehaviors.eventTriggerBehavior(),
+            bpmnBehaviors.stateBehavior(),
+            bpmnBehaviors.storageOrdinalProvider(),
+            bpmnBehaviors.caseCreationBehavior());
   }
 
   @Override

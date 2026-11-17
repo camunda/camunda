@@ -99,7 +99,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
             processState,
             bpmnBehaviors.eventTriggerBehavior(),
             bpmnBehaviors.stateBehavior(),
-            bpmnBehaviors.storageOrdinalProvider());
+            bpmnBehaviors.storageOrdinalProvider(),
+            bpmnBehaviors.caseCreationBehavior());
   }
 
   @Override

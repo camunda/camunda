@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -381,6 +382,35 @@ public final class ReplayStateTest {
                           ProcessInstanceIntent.ELEMENT_COMPLETED)
                       .withElementType(BpmnElementType.PROCESS)
                       .skip(1) // await until the second process instance is completed
+                      .getFirst();
+                }),
+        testCase("case with a late business ID assignment")
+            .withProcess(
+                Bpmn.createExecutableProcess(PROCESS_ID)
+                    .zeebeCase("caseTitle")
+                    .startEvent()
+                    .serviceTask("task", t -> t.zeebeJobType("task"))
+                    .endEvent()
+                    .done())
+            .withExecution(
+                engine -> {
+                  final long piKey =
+                      engine
+                          .processInstance()
+                          .ofBpmnProcessId(PROCESS_ID)
+                          .withVariable("caseTitle", "my case")
+                          .create();
+
+                  engine
+                      .processInstance()
+                      .withInstanceKey(piKey)
+                      .businessIdAssignment()
+                      .withBusinessId("business-id")
+                      .assign();
+
+                  return RecordingExporter.processInstanceBusinessIdRecords(
+                          ProcessInstanceBusinessIdIntent.ASSIGNED)
+                      .withProcessInstanceKey(piKey)
                       .getFirst();
                 }));
   }
