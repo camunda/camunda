@@ -90,6 +90,29 @@ class ClusterConnectionTest {
   }
 
   @Test
+  void shouldStayNotReadyWhenAConnectedListenerFails() {
+    // given — a listener that throws
+    connection =
+        new ClusterConnection(
+            clientAnswering(topologyFuture()),
+            registry,
+            event -> {
+              throw new IllegalStateException("listener failed");
+            },
+            scheduler);
+
+    // when
+    connection.start();
+    connection.connect();
+
+    // then
+    assertThat(connection.isConnected()).isFalse();
+    assertThat(registry.find(AppMetricsDoc.CONNECTED.getName()).gauge().value()).isZero();
+    assertThat(connection.health().getStatus()).isEqualTo(Status.OUT_OF_SERVICE);
+    verify(scheduler, never()).schedule(any(Runnable.class), any(Instant.class));
+  }
+
+  @Test
   void shouldNotRetryAfterStop() {
     // given
     final var pending = new CompletableFuture<Topology>();

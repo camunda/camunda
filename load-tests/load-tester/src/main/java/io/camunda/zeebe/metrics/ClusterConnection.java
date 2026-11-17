@@ -120,8 +120,15 @@ public class ClusterConnection implements SmartLifecycle, HealthIndicator {
                           b.getPartitions()
                               .forEach(p -> LOG.info("{} - {}", p.getPartitionId(), p.getRole()));
                         });
+                // The listeners are not idempotent, so a failure is not retried: the application
+                // stays not ready and the startup probe restarts it.
+                try {
+                  eventPublisher.publishEvent(new Connected());
+                } catch (final RuntimeException e) {
+                  LOG.error("A Connected listener failed, the application stays not ready", e);
+                  return;
+                }
                 connected.set(1);
-                eventPublisher.publishEvent(new Connected());
               } else {
                 THROTTLED_LOGGER.warn("Failed to retrieve topology: ", error);
                 scheduleRetry(attempt + 1);

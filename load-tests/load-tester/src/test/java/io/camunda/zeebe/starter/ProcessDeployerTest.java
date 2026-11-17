@@ -85,6 +85,26 @@ class ProcessDeployerTest {
     assertThat(deployer.health().getStatus()).isEqualTo(Status.UP);
   }
 
+  @Test
+  void shouldStayNotReadyWhenAProcessDeployedListenerFails() {
+    // given — a listener that throws
+    final var deployer =
+        new ProcessDeployer(
+            deployFutures(CompletableFuture.completedFuture(deployment(42L))),
+            properties,
+            mock(StarterLivenessIndicator.class),
+            event -> {
+              throw new IllegalStateException("listener failed");
+            },
+            mock(TaskScheduler.class));
+
+    // when
+    deployer.onConnected();
+
+    // then
+    assertThat(deployer.health().getStatus()).isEqualTo(Status.OUT_OF_SERVICE);
+  }
+
   private ProcessDeployer newDeployer(final CamundaClient client, final TaskScheduler scheduler) {
     return new ProcessDeployer(
         client, properties, mock(StarterLivenessIndicator.class), events::add, scheduler);

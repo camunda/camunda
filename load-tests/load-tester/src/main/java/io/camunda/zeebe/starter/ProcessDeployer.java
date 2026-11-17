@@ -85,7 +85,12 @@ public class ProcessDeployer implements HealthIndicator {
                         .findFirst()
                         .map(Process::getProcessDefinitionKey)
                         .orElse(0L);
-                eventPublisher.publishEvent(new ProcessDeployed(processDefinitionKey));
+                try {
+                  eventPublisher.publishEvent(new ProcessDeployed(processDefinitionKey));
+                } catch (final RuntimeException e) {
+                  LOG.error("A ProcessDeployed listener failed, the starter stays not ready", e);
+                  return;
+                }
                 deployed.set(true);
               } else {
                 THROTTLED_LOGGER.warn("Failed to deploy process, retrying", error);
