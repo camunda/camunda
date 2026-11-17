@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.HashMap;
 import java.util.List;
@@ -161,14 +162,22 @@ public class TenantAwareResourceDeletionTest {
     final var resourceKey =
         deployment.getValue().getProcessesMetadata().get(0).getProcessDefinitionKey();
 
+    final var tenantBUser = Strings.newRandomValidIdentityId();
+    ENGINE.user().newUser(tenantBUser).create();
+    ENGINE
+        .tenant()
+        .addEntity(TENANT_ID_B)
+        .withEntityType(EntityType.USER)
+        .withEntityId(tenantBUser)
+        .add();
+
     // when
     final var rejection =
         ENGINE
             .resourceDeletion()
             .withResourceKey(resourceKey)
-            .withAuthorizedTenantIds(TENANT_ID_B)
             .expectRejection()
-            .delete();
+            .delete(tenantBUser);
 
     // then
     RecordAssert.assertThat(rejection)

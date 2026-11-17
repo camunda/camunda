@@ -102,7 +102,7 @@ public final class UserTaskLookupFetchProcessor
   private Either<Rejection, UserTaskRecord> findUserTask(
       final TypedRecord<UserTaskLookupRecord> command) {
     final long userTaskKey = command.getKey();
-    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthInfo());
+    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command);
     final var userTask = userTaskState.getUserTask(userTaskKey, authorizedTenants);
     if (userTask == null) {
       return Either.left(

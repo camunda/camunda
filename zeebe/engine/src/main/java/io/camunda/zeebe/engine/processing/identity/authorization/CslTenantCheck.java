@@ -71,6 +71,27 @@ public final class CslTenantCheck {
     return TenantAccess.allowed(tenantIds);
   }
 
+  /**
+   * Like {@link #resolveAuthorizedTenants(AuthInfo)} for the claims of the command, but authorizes
+   * an internal command for every tenant, unless it is distributed.
+   */
+  public TenantAccess resolveAuthorizedTenants(final TypedRecord<?> command) {
+    if (securityConfig.isMultiTenancyChecksEnabled() && isInternalNotDistributed(command)) {
+      return TenantAccess.wildcard(List.of());
+    }
+    return resolveAuthorizedTenants(command.getAuthInfo());
+  }
+
+  /**
+   * The engine writes internal commands, so it does not check their tenants. It copies the claims
+   * of a client command to its follow-up commands only to name the actor. A distributed command
+   * also counts as internal on the target partition, but its claims are those of the client
+   * command, and some processors check them.
+   */
+  private static boolean isInternalNotDistributed(final TypedRecord<?> command) {
+    return command.isInternalCommand() && !command.isCommandDistributed();
+  }
+
   /** True when the auth info identifies a principal, i.e. a user or a client. */
   static boolean hasPrincipal(final AuthInfo authInfo) {
     return authInfo.getUsername() != null || authInfo.getClientId() != null;
@@ -86,13 +107,13 @@ public final class CslTenantCheck {
    * whose RBAC check runs at a different granularity (one tenant, many resource checks).
    *
    * <p>Encapsulates the skip-logic hand-rolled across engine processors: when multi-tenancy checks
-   * are disabled the check is a no-op; when no username or clientId claim is present the check is
-   * also a no-op (mirrors {@link CslAuthorizationCheck#resolveForCheck} — a no-principal command is
-   * either an internal command already exempted upstream, or authorizations are disabled and the
-   * primary permission check already let it through; either way there is no principal to hold a
-   * tenant assignment requirement against). Otherwise the authorized tenants are resolved from the
-   * command's claims (anonymous access is authorized for every tenant) and {@code tenantId} must be
-   * among them.
+   * are disabled the check is a no-op; for an internal command that is not distributed the check is
+   * a no-op; when no username or clientId claim is present the check is also a no-op (mirrors
+   * {@link CslAuthorizationCheck#resolveForCheck} — a no-principal command is either an internal
+   * command already exempted upstream, or authorizations are disabled and the primary permission
+   * check already let it through; either way there is no principal to hold a tenant assignment
+   * requirement against). Otherwise the authorized tenants are resolved from the command's claims
+   * (anonymous access is authorized for every tenant) and {@code tenantId} must be among them.
    *
    * <p>This no-principal skip is load-bearing: every caller must ensure a RBAC {@link
    * CslAuthorizationCheck#check} or {@link CslAuthorizationCheck#checkForDistributedCommand} call
@@ -116,7 +137,7 @@ public final class CslTenantCheck {
       final String tenantId,
       final T value,
       final Rejection notAssignedRejection) {
-    if (!securityConfig.isMultiTenancyChecksEnabled()) {
+    if (!securityConfig.isMultiTenancyChecksEnabled() || isInternalNotDistributed(command)) {
       return Either.right(value);
     }
     final var authInfo = command.getAuthInfo();
