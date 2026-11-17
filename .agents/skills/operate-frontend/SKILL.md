@@ -132,7 +132,8 @@ against this list before requesting review.
 
 **Code**
 
-- Use design-system tokens and `Text`, never raw colors.
+- Never use raw colors. In shadcn components use design-system tokens and `Text`; in Carbon
+  components keep Carbon primitives and tokens.
 - Make a prop required when the caller must pass it. Don't add placeholder fallbacks.
 - Don't add test-only `data-testid` attributes. Give elements an accessible name, role, or label.
 - Give every spinner and status an accessible name. Use one persistent live region instead of
@@ -159,8 +160,9 @@ against this list before requesting review.
   Take Linux visual baselines from CI actuals, not from macOS.
 - Give each PR fresh light and dark screenshots, with a Carbon comparison where one exists, and
   refresh them after visual changes.
-- When folding review fixes into a stack, autosquash conflicts. Reset to the pre-fix tip, rebase
-  `--onto` the new base, and apply the fix as one commit. Push with `--force-with-lease`.
+- Push review fixes to a published PR as fast-forward commits. Rewrite history only when the base
+  diverged or the user authorizes it. Before any reset, save the fixes and unrelated changes, then
+  rebase `--onto` the new base and push with `--force-with-lease`.
 
 ## Forms
 
