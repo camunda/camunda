@@ -26,7 +26,6 @@ import java.util.Objects;
 public class AgentRunDto implements OptimizeDto {
 
   private String agentInstanceId;
-  private String agentDefinitionId;
   private String agentId;
   private String agentType;
   private String flowNodeId;
@@ -77,14 +76,6 @@ public class AgentRunDto implements OptimizeDto {
 
   public void setAgentInstanceId(final String agentInstanceId) {
     this.agentInstanceId = agentInstanceId;
-  }
-
-  public String getAgentDefinitionId() {
-    return agentDefinitionId;
-  }
-
-  public void setAgentDefinitionId(final String agentDefinitionId) {
-    this.agentDefinitionId = agentDefinitionId;
   }
 
   public String getAgentId() {
@@ -422,7 +413,6 @@ public class AgentRunDto implements OptimizeDto {
     }
     final AgentRunDto that = (AgentRunDto) o;
     return Objects.equals(agentInstanceId, that.agentInstanceId)
-        && Objects.equals(agentDefinitionId, that.agentDefinitionId)
         && Objects.equals(agentId, that.agentId)
         && Objects.equals(agentType, that.agentType)
         && Objects.equals(flowNodeId, that.flowNodeId)
@@ -470,7 +460,6 @@ public class AgentRunDto implements OptimizeDto {
   public int hashCode() {
     return Objects.hash(
         agentInstanceId,
-        agentDefinitionId,
         agentId,
         agentType,
         flowNodeId,
@@ -519,8 +508,6 @@ public class AgentRunDto implements OptimizeDto {
     return "AgentRunDto("
         + "agentInstanceId="
         + agentInstanceId
-        + ", agentDefinitionId="
-        + agentDefinitionId
         + ", agentId="
         + agentId
         + ", agentType="
@@ -610,7 +597,6 @@ public class AgentRunDto implements OptimizeDto {
   public static final class Fields {
 
     public static final String agentInstanceId = "agentInstanceId";
-    public static final String agentDefinitionId = "agentDefinitionId";
     public static final String agentId = "agentId";
     public static final String agentType = "agentType";
     public static final String flowNodeId = "flowNodeId";
