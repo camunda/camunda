@@ -243,6 +243,13 @@ public interface JobWorkerBuilderStep1 {
      * <p>If the stream is closed, e.g. the server closed the connection, was restarted, etc., it
      * will be immediately recreated as long as the worker is opened.
      *
+     * <p>Jobs are pushed to a stream in the order they are created, so job priority is not taken
+     * into account for streamed jobs. If any worker streams a job type, new jobs of that type are
+     * pushed to the stream instead of being activated by priority.
+     *
+     * <p>If not set, the default is used from the {@link CamundaClientConfiguration}, which is
+     * {@code false} unless configured.
+     *
      * @return the builder for this worker
      */
     JobWorkerBuilderStep3 streamEnabled(boolean isStreamEnabled);

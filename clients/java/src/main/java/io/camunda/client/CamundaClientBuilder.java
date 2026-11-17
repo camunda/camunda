@@ -389,8 +389,12 @@ public interface CamundaClientBuilder {
   CamundaClientBuilder maxMetadataSize(int maxSize);
 
   /**
-   * A custom streamEnabled allows the client to use job stream instead of job poll. The default
-   * value is set as enabled.
+   * Sets whether job workers use job streaming by default, in addition to polling. Individual
+   * workers can override this with {@link JobWorkerBuilderStep3#streamEnabled(boolean)}. Default
+   * value is {@code false}, so job workers only poll unless streaming is enabled.
+   *
+   * @param streamEnabled whether job workers stream jobs by default
+   * @return this builder for chaining
    */
   CamundaClientBuilder defaultJobWorkerStreamEnabled(boolean streamEnabled);
 
