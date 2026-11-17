@@ -42342,7 +42342,7 @@
                       "kind": "DataQuery",
                       "spec": {
                         "editorMode": "code",
-                        "expr": "sum(rate(jvm_gc_memory_allocated_bytes_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", pod=~\".*(zeebe|gateway).*\"}[$__rate_interval])) by (pod)",
+                        "expr": "sum(rate(jvm_gc_memory_allocated_bytes_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", pod=~\".*(orchestration|zeebe|camunda).*\"}[$__rate_interval])) by (pod)",
                         "format": "time_series",
                         "intervalFactor": 1,
                         "legendFormat": "{{pod}}",
@@ -42358,7 +42358,7 @@
               "transformations": []
             }
           },
-          "description": "Rate of heap memory allocated by the JVM per pod, for Zeebe brokers and gateways only.",
+          "description": "Rate of heap memory allocated by the JVM per pod, for Zeebe and gateway pods only (orchestration, zeebe or camunda in the pod name).",
           "id": 812,
           "links": [],
           "title": "Allocation rate per pod",
