@@ -1134,7 +1134,7 @@
           "type": "string"
         },
         "variables": {
-          "description": "The variables to complete the job with. Optional. Mutually exclusive with variablesExpression and a non-empty variablesTable. The legacy combination with useExampleData still ignores these variables.",
+          "description": "The variables to complete the job with. Optional. Mutually exclusive with variablesExpression and a non-empty variablesTable. The variables are ignored if useExampleData is true.",
           "type": "object",
           "additionalProperties": true
         },
