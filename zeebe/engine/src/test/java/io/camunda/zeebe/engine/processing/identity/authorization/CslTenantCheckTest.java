@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.identity.authorization;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -228,7 +230,8 @@ final class CslTenantCheckTest {
     final var tenantCheck = tenantCheck(false);
 
     // when
-    final var access = tenantCheck.resolveAuthorizedTenants(AuthInfo.ofClaims(Map.of()));
+    final var access =
+        tenantCheck.resolveAuthorizedTenantsWithAuthInfo(AuthInfo.ofClaims(Map.of()));
 
     // then — the default tenant, not a wildcard; resolving the tenant ids must not throw
     assertThat(access.wildcard()).isFalse();
@@ -243,7 +246,7 @@ final class CslTenantCheckTest {
 
     // when
     final var access =
-        tenantCheck.resolveAuthorizedTenants(
+        tenantCheck.resolveAuthorizedTenantsWithAuthInfo(
             AuthInfo.ofClaims(Map.of(Authorization.AUTHORIZED_USERNAME, "demo-user")));
 
     // then — tenant filtering still applies to the default tenant (matches pre-migration behavior)
@@ -259,7 +262,7 @@ final class CslTenantCheckTest {
 
     // when
     final var access =
-        tenantCheck.resolveAuthorizedTenants(
+        tenantCheck.resolveAuthorizedTenantsWithAuthInfo(
             AuthInfo.ofClaims(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true)));
 
     // then — anonymous access is a wildcard grant; no claims conversion needed
@@ -273,7 +276,8 @@ final class CslTenantCheckTest {
     final var tenantCheck = tenantCheck(true);
 
     // when
-    final var access = tenantCheck.resolveAuthorizedTenants(AuthInfo.ofClaims(Map.of()));
+    final var access =
+        tenantCheck.resolveAuthorizedTenantsWithAuthInfo(AuthInfo.ofClaims(Map.of()));
 
     // then — authorized for no tenant (not wildcard), so tenant-scoped lookups return NOT_FOUND
     assertThat(access.wildcard()).isFalse();
@@ -292,11 +296,140 @@ final class CslTenantCheckTest {
     when(claimsConverter.resolve(authorizations)).thenReturn(authentication);
 
     // when
-    final var access = tenantCheck.resolveAuthorizedTenants(AuthInfo.ofClaims(authorizations));
+    final var access =
+        tenantCheck.resolveAuthorizedTenantsWithAuthInfo(AuthInfo.ofClaims(authorizations));
 
     // then — resolved from the converted claims, not the empty no-principal fallback
     assertThat(access.wildcard()).isFalse();
     assertThat(access.tenantIds()).containsExactly("tenant-1");
+  }
+
+  @RegressionTest("https://github.com/camunda/camunda/issues/69632")
+  void shouldSkipTenantCheckForInternalCommand() {
+    // given
+    final var tenantCheck = tenantCheck(true);
+    when(command.isInternalCommand()).thenReturn(true);
+    when(command.isCommandDistributed()).thenReturn(false);
+
+    // when
+    final var result =
+        tenantCheck.checkTenant(
+            command, "tenant-b", "ok", new Rejection(RejectionType.FORBIDDEN, "denied"));
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    verifyNoInteractions(claimsConverter);
+  }
+
+  @Test
+  void shouldCheckTenantForDistributedCommand() {
+    // given
+    final var tenantCheck = tenantCheck(true);
+    when(command.isInternalCommand()).thenReturn(true);
+    when(command.isCommandDistributed()).thenReturn(true);
+    when(command.getAuthInfo())
+        .thenReturn(AuthInfo.ofClaims(Map.of(Authorization.AUTHORIZED_USERNAME, "user")));
+    when(authentication.authenticatedTenantIds()).thenReturn(List.of("tenant-a"));
+    when(claimsConverter.resolve(Map.of(Authorization.AUTHORIZED_USERNAME, "user")))
+        .thenReturn(authentication);
+    final var rejection = new Rejection(RejectionType.FORBIDDEN, "not assigned to tenant-b");
+
+    // when
+    final var result = tenantCheck.checkTenant(command, "tenant-b", "ok", rejection);
+
+    // then
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isEqualTo(rejection);
+  }
+
+  @RegressionTest("https://github.com/camunda/camunda/issues/69632")
+  void shouldResolveEveryTenantForInternalCommand() {
+    // given
+    final var tenantCheck = tenantCheck(true);
+    when(command.isInternalCommand()).thenReturn(true);
+    when(command.isCommandDistributed()).thenReturn(false);
+
+    // when
+    final var access = tenantCheck.resolveAuthorizedTenants(command);
+
+    // then
+    assertThat(access.wildcard()).isTrue();
+    verifyNoInteractions(claimsConverter);
+  }
+
+  @Test
+  void shouldAllowInternalCommandForAllTenantsWhenPrincipalIsRequired() {
+    // given
+    final var tenantCheck = tenantCheck(true);
+    when(command.isInternalCommand()).thenReturn(true);
+    when(command.isCommandDistributed()).thenReturn(false);
+
+    // when
+    final var result =
+        tenantCheck.checkTenantsRequiringPrincipal(
+            List.of("tenant-a", "tenant-b"),
+            tenantCheck.resolveAuthorizedTenants(command),
+            "ok",
+            () -> new Rejection(RejectionType.FORBIDDEN, "denied"));
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    verifyNoInteractions(claimsConverter);
+  }
+
+  @Test
+  void shouldResolveTenantsFromClaimsForDistributedCommand() {
+    // given
+    final var tenantCheck = tenantCheck(true);
+    when(command.isInternalCommand()).thenReturn(true);
+    when(command.isCommandDistributed()).thenReturn(true);
+    when(command.getAuthInfo())
+        .thenReturn(AuthInfo.ofClaims(Map.of(Authorization.AUTHORIZED_USERNAME, "user")));
+    when(authentication.authenticatedTenantIds()).thenReturn(List.of("tenant-a"));
+    when(claimsConverter.resolve(Map.of(Authorization.AUTHORIZED_USERNAME, "user")))
+        .thenReturn(authentication);
+
+    // when
+    final var access = tenantCheck.resolveAuthorizedTenants(command);
+
+    // then
+    assertThat(access.wildcard()).isFalse();
+    assertThat(access.tenantIds()).containsExactly("tenant-a");
+  }
+
+  @Test
+  void shouldResolveTenantsFromClaimsForClientCommand() {
+    // given
+    final var tenantCheck = tenantCheck(true);
+    when(command.isInternalCommand()).thenReturn(false);
+    when(command.getAuthInfo())
+        .thenReturn(AuthInfo.ofClaims(Map.of(Authorization.AUTHORIZED_USERNAME, "user")));
+    when(authentication.authenticatedTenantIds()).thenReturn(List.of("tenant-a"));
+    when(claimsConverter.resolve(Map.of(Authorization.AUTHORIZED_USERNAME, "user")))
+        .thenReturn(authentication);
+
+    // when
+    final var access = tenantCheck.resolveAuthorizedTenants(command);
+
+    // then
+    assertThat(access.wildcard()).isFalse();
+    assertThat(access.tenantIds()).containsExactly("tenant-a");
+  }
+
+  @Test
+  void shouldResolveDefaultTenantForInternalCommandWhenMultiTenancyDisabled() {
+    // given
+    final var tenantCheck = tenantCheck(false);
+    lenient().when(command.isInternalCommand()).thenReturn(true);
+    when(command.getAuthInfo())
+        .thenReturn(AuthInfo.ofClaims(Map.of(Authorization.AUTHORIZED_USERNAME, "user")));
+
+    // when
+    final var access = tenantCheck.resolveAuthorizedTenants(command);
+
+    // then
+    assertThat(access.wildcard()).isFalse();
+    assertThat(access.tenantIds()).containsExactly(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   private CslTenantCheck tenantCheck(final boolean multiTenancyChecksEnabled) {

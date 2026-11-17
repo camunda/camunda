@@ -390,7 +390,8 @@ public class BpmnJobActivationBehavior {
     final var isTenantAuthorized =
         switch (jobActivationProperties.tenantFilter()) {
           case ASSIGNED -> {
-            final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(authInfo);
+            final var authorizedTenants =
+                tenantCheck.resolveAuthorizedTenantsWithAuthInfo(authInfo);
             yield !authorizedTenants.wildcard()
                 && authorizedTenants.isAuthorizedForTenantId(ownerTenantId);
           }

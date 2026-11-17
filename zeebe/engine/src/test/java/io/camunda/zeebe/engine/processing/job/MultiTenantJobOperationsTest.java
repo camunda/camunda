@@ -12,9 +12,12 @@ import static io.camunda.zeebe.protocol.record.intent.JobIntent.FAILED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
+import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -35,6 +38,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -58,6 +62,7 @@ public class MultiTenantJobOperationsTest {
 
   private static String jobType;
   private static String username;
+  private static String unassignedUsername;
   private static String tenantId;
 
   private static final BpmnModelInstance BOUNDARY_EVENT_PROCESS =
@@ -86,27 +91,32 @@ public class MultiTenantJobOperationsTest {
         .withEntityId(username)
         .add();
 
-    ENGINE
-        .authorization()
-        .newAuthorization()
-        .withPermissions(PermissionType.UPDATE_PROCESS_INSTANCE)
-        .withResourceMatcher(AuthorizationResourceMatcher.ID)
-        .withResourceId(PROCESS_ID)
-        .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-        .withOwnerId(username)
-        .withOwnerType(AuthorizationOwnerType.USER)
-        .create();
+    unassignedUsername = UUID.randomUUID().toString();
+    ENGINE.user().newUser(unassignedUsername).create();
 
-    ENGINE
-        .authorization()
-        .newAuthorization()
-        .withPermissions(PermissionType.UPDATE_PROCESS_INSTANCE)
-        .withResourceMatcher(AuthorizationResourceMatcher.ID)
-        .withResourceId(BOUNDARY_PROCESS_ID)
-        .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-        .withOwnerId(username)
-        .withOwnerType(AuthorizationOwnerType.USER)
-        .create();
+    for (final var owner : List.of(username, unassignedUsername)) {
+      ENGINE
+          .authorization()
+          .newAuthorization()
+          .withPermissions(PermissionType.UPDATE_PROCESS_INSTANCE)
+          .withResourceMatcher(AuthorizationResourceMatcher.ID)
+          .withResourceId(PROCESS_ID)
+          .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+          .withOwnerId(owner)
+          .withOwnerType(AuthorizationOwnerType.USER)
+          .create();
+
+      ENGINE
+          .authorization()
+          .newAuthorization()
+          .withPermissions(PermissionType.UPDATE_PROCESS_INSTANCE)
+          .withResourceMatcher(AuthorizationResourceMatcher.ID)
+          .withResourceId(BOUNDARY_PROCESS_ID)
+          .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+          .withOwnerId(owner)
+          .withOwnerType(AuthorizationOwnerType.USER)
+          .create();
+    }
   }
 
   @Before
@@ -139,7 +149,6 @@ public class MultiTenantJobOperationsTest {
   @Test
   public void shouldRejectCompletionIfTenantIsUnauthorized() {
     // given
-    final String falseTenantId = UUID.randomUUID().toString();
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
 
     final io.camunda.zeebe.protocol.record.Record<JobBatchRecordValue> batchRecord =
@@ -150,9 +159,8 @@ public class MultiTenantJobOperationsTest {
         ENGINE
             .job()
             .withKey(batchRecord.getValue().getJobKeys().get(0))
-            .withAuthorizedTenantIds(falseTenantId)
             .expectRejection()
-            .complete();
+            .complete(unassignedUsername);
 
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
@@ -161,18 +169,12 @@ public class MultiTenantJobOperationsTest {
   @Test
   public void shouldRejectThrowErrorIfTenantIsUnauthorized() {
     // given
-    final String falseTenantId = "foo";
     final var job = ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
     ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(username);
 
     // when
     final Record<JobRecordValue> result =
-        ENGINE
-            .job()
-            .withKey(job.getKey())
-            .withErrorCode("error")
-            .withAuthorizedTenantIds(falseTenantId)
-            .throwError();
+        ENGINE.job().withKey(job.getKey()).withErrorCode("error").throwError(unassignedUsername);
 
     // then
     Assertions.assertThat(result).hasRejectionType(RejectionType.NOT_FOUND);
@@ -243,7 +245,6 @@ public class MultiTenantJobOperationsTest {
   @Test
   public void shouldRejectUpdateRetriesIfTenantIsUnauthorized() {
     // given
-    final String falseTenantId = "foo";
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
     final Record<JobBatchRecordValue> batchRecord =
         ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(username);
@@ -255,9 +256,8 @@ public class MultiTenantJobOperationsTest {
             .job()
             .withKey(jobKey)
             .withRetries(NEW_RETRIES)
-            .withAuthorizedTenantIds(falseTenantId)
             .expectRejection()
-            .updateRetries();
+            .updateRetries(unassignedUsername);
 
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
@@ -266,7 +266,6 @@ public class MultiTenantJobOperationsTest {
   @Test
   public void shouldRejectFailIfTenantIsUnauthorized() {
     // given
-    final String falseTenantId = UUID.randomUUID().toString();
     ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
 
     final Record<JobBatchRecordValue> batchRecord =
@@ -275,13 +274,7 @@ public class MultiTenantJobOperationsTest {
 
     // when
     final Record<JobRecordValue> jobRecord =
-        ENGINE
-            .job()
-            .withKey(jobKey)
-            .withRetries(3)
-            .withAuthorizedTenantIds(falseTenantId)
-            .expectRejection()
-            .fail();
+        ENGINE.job().withKey(jobKey).withRetries(3).expectRejection().fail(unassignedUsername);
 
     // then
     Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
@@ -428,5 +421,29 @@ public class MultiTenantJobOperationsTest {
         .isCloseTo(
             ENGINE.getClock().getCurrentTimeInMillis() + timeout,
             within(Duration.ofMillis(100).toMillis()));
+  }
+
+  @Test
+  public void shouldNotCheckTenantOfInternalCommand() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
+    final var batch =
+        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(username).getValue();
+    final var otherUser = UUID.randomUUID().toString();
+    ENGINE.user().newUser(otherUser).create();
+
+    // when
+    final long position =
+        ENGINE.writeRecords(
+            RecordToWrite.commandWithClaims(AuthorizationUtil.getAuthInfo(otherUser))
+                .job(JobIntent.COMPLETE, (JobRecord) batch.getJobs().get(0))
+                .key(batch.getJobKeys().get(0)));
+
+    // then
+    final var result =
+        RecordingExporter.jobRecords()
+            .filter(r -> r.getSourceRecordPosition() == position)
+            .getFirst();
+    Assertions.assertThat(result).hasRecordType(RecordType.EVENT).hasIntent(JobIntent.COMPLETED);
   }
 }

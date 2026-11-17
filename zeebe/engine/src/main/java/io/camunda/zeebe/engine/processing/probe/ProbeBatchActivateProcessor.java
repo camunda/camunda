@@ -81,7 +81,7 @@ public final class ProbeBatchActivateProcessor implements TypedRecordProcessor<P
   @Override
   public void processRecord(final TypedRecord<ProbeBatchRecord> command) {
     final var value = command.getValue();
-    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthInfo());
+    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command);
 
     final var validation =
         validateTenants(value, authorizedTenants).flatMap(ignored -> validateFields(value));
