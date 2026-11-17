@@ -435,6 +435,69 @@ same file. As a rough starting point, plan for one additional node per 2-3 extra
 default shard settings — reduce further if you also raise the shard/replica counts in the platform
 values.
 
+#### Optional dual region cluster
+
+A load test can run as **one zone-aware cluster spread over two namespaces**, `<name>-ra` and
+`<name>-rb`, to exercise cross-namespace replication and Elasticsearch export between regions.
+Each namespace is scaffolded and installed like a normal load test (3 brokers, its own Elasticsearch);
+the settings that join them come from `generate-dual-region-values.sh`. Any scenario works
+(`realistic`, `typical`, `max`, …): the load generators run in region A and drive the whole cluster.
+
+```sh
+# the namespaces are scaffolded one by one, the same way as for a single namespace
+./newLoadTest.sh c8-demo-ra elasticsearch 1 false
+./newLoadTest.sh c8-demo-rb elasticsearch 1 false
+
+make -C c8-demo-ra install dual_region=true dual_region_zone=region-a \
+  dual_region_peer_namespace=c8-demo-rb dual_region_cluster_name=c8-demo
+make -C c8-demo-rb install dual_region=true dual_region_zone=region-b \
+  dual_region_peer_namespace=c8-demo-ra dual_region_cluster_name=c8-demo
+```
+
+Region A runs the load generators and the leader balancer for the whole cluster. Region B starts
+without the load tester and the k6 tests, and with its leader balancer CronJob suspended. To turn
+them on, pass e.g. `additional_load_test_configuration="--set k6.tests.default.enabled=true"`, or
+resume the CronJob with `kubectl patch cronjob leader-balancer -p '{"spec":{"suspend":false}}'`.
+
+The install order doesn't matter. Each partition has half its replicas in each region and needs a
+majority of them, so no partition elects a leader, and nothing is processed or exported, until
+both namespaces run.
+
+The `dual_region_*` variables of `common.mk`:
+
+|           Variable           |                                 Meaning                                  |
+|------------------------------|--------------------------------------------------------------------------|
+| `dual_region`                | `true` to enable                                                         |
+| `dual_region_zone`           | `region-a` or `region-b`: the zone of the brokers in this namespace      |
+| `dual_region_peer_namespace` | the namespace of the other region                                        |
+| `dual_region_cluster_name`   | cluster name, identical in both namespaces (brokers only join their own) |
+
+With `dual_region=true` the Makefile generates two files, following the documented
+[zone-aware Helm setup](https://docs.camunda.io/docs/self-managed/deployment/helm/configure/multi-region-zone-awareness/):
+
+- `camunda-platform-dual-region-values.yaml`, passed with `-f`: the platform chart's own
+  `orchestration.partitioning` (zone-aware scheme, one zone per namespace) and the shared cluster
+  name. The chart derives the cluster size, replication factor and the namespace-qualified
+  advertised host from it, and names the broker StatefulSet `camunda-<zone>`, so the pods are
+  `camunda-region-a-0`, …. The `camunda` and `camunda-gateway` services keep their names.
+- `camunda-platform-dual-region-override.yaml`, passed as `application-override.yml`: what the chart
+  leaves to the user for a cluster spanning more than one zone. That is the initial contact points
+  (every broker of both zones, e.g. `camunda-region-a-0.camunda-region-a.<namespace>.svc`) and, with `secondary_storage=elasticsearch`, one Camunda
+  exporter per region (`camundaregiona`, `camundaregionb`) in place of the autoconfigured one. Each
+  exporter id writes to the same Elasticsearch on every broker, so both regions get every record
+  and a leadership change between regions never resumes an exporter against the other
+  Elasticsearch. `scenario=max` sets its consistency checks through the same `application-override.yml`
+  slot, so with `scenario=max` this file also carries those overrides; other scenarios don't touch it.
+
+Limits: `secondary_storage=elasticsearch` or `none` only, no Optimize, no physical tenants, and
+`main`/`stable-810` only (`dual_region_supported`: the zone-aware chart values need chart v15). The
+brokers only become ready once both namespaces are installed.
+
+In the GitHub workflow, set the `dual-region` input of `camunda-load-test.yml`. It deploys
+`c8-<name>-ra` and `c8-<name>-rb`, with the load generators in region A only and region B's leader
+balancer suspended. Delete both namespaces with `camunda-delete-load-test.yml`, one run per namespace; the TTL cleanup handles
+each one on its own.
+
 ### Running specific scenarios
 
 By default, `make install` uses the load test chart's own defaults (no workload profile applied).

@@ -62,4 +62,4 @@ spec:
   schedule: '*/10 * * * *'
   failedJobsHistoryLimit: 1
   successfulJobsHistoryLimit: 3
-  suspend: false
+  suspend: {{ .Values.leaderBalancer.suspend }}
