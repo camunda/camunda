@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordingProbeNotifier;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeBatchRecord;
@@ -23,11 +24,14 @@ import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
 import io.camunda.zeebe.protocol.record.value.ProbeRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.util.ByteValue;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -40,6 +44,12 @@ public final class ProbeBatchActivateTest {
 
   @ClassRule
   public static final EngineRule ENGINE = EngineRule.singlePartition().withProbeNotifier(NOTIFIER);
+
+  /** The largest record a batch takes with the engine's margin, as in the job activation tests. */
+  private static final long MAX_RECORD_SIZE =
+      ByteValue.ofMegabytes(4)
+          - ByteValue.ofKilobytes(2)
+          - EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -282,6 +292,52 @@ public final class ProbeBatchActivateTest {
     final var timedOut =
         RecordingExporter.probeRecords(ProbeIntent.TIMED_OUT).withRecordKey(probeKey).getFirst();
     assertThat(timedOut.getValue().getEndReason()).isEqualTo(ProbeEndReason.NO_WORKER);
+  }
+
+  @Test
+  public void shouldActivateTheProbesThatFitAndMarkTheBatchTruncated() {
+    // given two probes that do not fit one batch together
+    final long first = createProbe(probeId, inputOfLength(MAX_RECORD_SIZE * 3 / 5));
+    final long second = createProbe(probeId, inputOfLength(MAX_RECORD_SIZE * 3 / 5));
+
+    // when
+    final var activated = ENGINE.probe().activate(List.of(probeId), "worker", 10);
+
+    // then
+    assertThat(activated.getValue().getProbeKeys()).containsExactly(first);
+    assertThat(activated.getValue().isTruncated()).isTrue();
+    assertThat(ENGINE.probe().activate(List.of(probeId), "worker", 10).getValue().getProbeKeys())
+        .containsExactly(second);
+  }
+
+  @Test
+  public void shouldReturnATruncatedEmptyBatchWhenTheFirstProbeDoesNotFit() {
+    // given a probe that fits its CREATE, but not the batch of a poll for 100 long probe IDs
+    final long probeKey = createProbe(probeId, inputOfLength(MAX_RECORD_SIZE - 6 * 1024));
+    final var longProbeIds =
+        IntStream.range(0, ProbeBatchActivateProcessor.MAX_PROBE_IDS - 1)
+            .mapToObj(
+                i ->
+                    "%03d-%s"
+                        .formatted(i, "p".repeat(ProbeCreateProcessor.MAX_PROBE_ID_LENGTH - 4)))
+            .collect(Collectors.toCollection(ArrayList::new));
+    longProbeIds.add(probeId);
+
+    // when
+    final var activated = ENGINE.probe().activate(longProbeIds, "worker", 10);
+
+    // then the poll gets nothing; a probe has no incident to raise, as a job too large has
+    assertThat(activated.getValue().getProbeKeys()).isEmpty();
+    assertThat(activated.getValue().isTruncated()).isTrue();
+    assertThat(ENGINE.probe().activate(List.of(probeId), "worker", 1).getValue().getProbeKeys())
+        .describedAs("the probe stays activatable, and a smaller poll collects it")
+        .containsExactly(probeKey);
+  }
+
+  /** An input whose evaluated document is about this long, from a short expression. */
+  private static String inputOfLength(final long length) {
+    final int chunks = (int) (length / 100);
+    return "={blob: string join(for i in 1..%d return \"%s\")}".formatted(chunks, "x".repeat(100));
   }
 
   private long createProbe(final String probeId, final String input) {

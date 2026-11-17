@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
 import io.camunda.zeebe.protocol.record.value.ProbeOutcome;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.util.ByteValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.List;
@@ -35,6 +36,8 @@ import org.junit.Test;
 public final class ProbeAnswerTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
+  private static final long MAX_MESSAGE_SIZE = ByteValue.ofMegabytes(4);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -382,6 +385,47 @@ public final class ProbeAnswerTest {
     final var timedOut =
         RecordingExporter.probeRecords(ProbeIntent.TIMED_OUT).withRecordKey(probeKey).getFirst();
     assertThat(timedOut.getValue().getEndReason()).isEqualTo(ProbeEndReason.WORKER_DID_NOT_ANSWER);
+  }
+
+  @Test
+  public void shouldAnswerTheClientWithDataNearTheMaxMessageSize() {
+    // given
+    final long probeKey =
+        ENGINE
+            .probe()
+            .withProbeId(probeId)
+            .withInput("={}")
+            .withRequest(46, 466L)
+            .create()
+            .getKey();
+    ENGINE.probe().activate(List.of(probeId), "worker", 1);
+    final var nearMax = ok(Map.of("blob", "x".repeat((int) (MAX_MESSAGE_SIZE - 20 * 1024))));
+
+    // when
+    final var answered = ENGINE.probe().answer(probeKey, nearMax);
+
+    // then the RESPOND that carries the data again still fits the batch of the ANSWER
+    assertThat(answered.getIntent()).isEqualTo(ProbeIntent.ANSWERED);
+    verify(ENGINE.getCommandResponseWriter(), timeout(5000)).tryWriteResponse(46, 466L);
+  }
+
+  @Test
+  public void shouldRejectAnAnswerWhoseRespondDoesNotFitTheBatchAndKeepTheProbeActivated() {
+    // given a worker name long enough that ANSWERED and RESPOND outgrow the ANSWER they follow
+    final long probeKey = ENGINE.probe().withProbeId(probeId).withInput("={}").create().getKey();
+    ENGINE.probe().activate(List.of(probeId), "w".repeat(20 * 1024), 1);
+    final var nearMax = ok(Map.of("blob", "x".repeat((int) (MAX_MESSAGE_SIZE - 20 * 1024))));
+
+    // when
+    final var rejection =
+        ENGINE.probe().withRequest(47, 477L).expectRejection().answer(probeKey, nearMax);
+
+    // then the worker gets the rejection the REST API maps to 413 (D53), and nothing was written
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.EXCEEDED_BATCH_RECORD_SIZE);
+    verify(ENGINE.getCommandResponseWriter(), timeout(5000)).tryWriteResponse(47, 477L);
+    assertThat(ENGINE.probe().answer(probeKey, unsupported()).getIntent())
+        .describedAs("the probe is still activated, so the worker can answer ERROR instead")
+        .isEqualTo(ProbeIntent.ANSWERED);
   }
 
   private long activatedProbe() {

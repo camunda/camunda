@@ -163,6 +163,13 @@ public final class ProbeClient {
     return expectation.apply(writer.writeCommand(probeKey, ProbeIntent.YIELD, new ProbeRecord()));
   }
 
+  /** As {@link #yield(long)}, sent with the user's claims rather than by the broker itself. */
+  public Record<ProbeRecordValue> yield(final long probeKey, final String username) {
+    return expectation.apply(
+        writer.writeCommand(
+            probeKey, requestStreamId, requestId, ProbeIntent.YIELD, username, new ProbeRecord()));
+  }
+
   private Record<ProbeBatchRecordValue> activated(final long position) {
     final var records = RecordingExporter.probeBatchRecords().withSourceRecordPosition(position);
     return expectation == REJECTION_SUPPLIER

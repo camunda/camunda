@@ -181,6 +181,36 @@ public final class ProbeAnswerAuthorizationTest {
     Assertions.assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
   }
 
+  @Test
+  public void shouldRejectTheYieldOfAProbeOfAnotherTenantAsNotFound() {
+    // given
+    final long probeKey = activatedProbe(OTHER_TENANT, "worker");
+    final var stranger = createUser(UUID.randomUUID().toString(), TENANT);
+
+    // when
+    final var rejection = ENGINE.probe().expectRejection().yield(probeKey, stranger);
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to yield probe with key '%d', but no such probe was found."
+                .formatted(probeKey));
+  }
+
+  @Test
+  public void shouldYieldAProbeOfAnyTenantWhenTheBrokerSendsTheYield() {
+    // given
+    final long probeKey = activatedProbe(OTHER_TENANT, "worker");
+
+    // when the gateway's yield comes without request, with the claims of the default tenant only
+    final var yielded = ENGINE.probe().yield(probeKey);
+
+    // then
+    assertThat(yielded.getIntent()).isEqualTo(ProbeIntent.YIELDED);
+    assertThat(yielded.getValue().getTenantId()).isEqualTo(OTHER_TENANT);
+  }
+
   private long activatedProbe(final String tenantId, final String workerName) {
     final long probeKey = createProbe(probeId, tenantId);
     final var worker = createUser(UUID.randomUUID().toString(), tenantId);
