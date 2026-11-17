@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
 import io.camunda.zeebe.msgpack.pojo.processor.InMemoryCompiler.Result;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -63,7 +64,10 @@ final class GeneratedNestedListsTest {
                 final List<List<List<Long>>> deep = new ArrayList<>();
                 final List<List<List<Integer>>> ints = new ArrayList<>();
                 final List<List<DirectBuffer>> names = new ArrayList<>();
-                """));
+                final List<List<Item>> items = new ArrayList<>();
+                final List<List<io.camunda.zeebe.msgpack.value.StringValue>> values = new ArrayList<>();
+                """),
+            pojo("Item", "long id; public Item() {} public Item(final long id) { this.id = id; }"));
     assertThat(compiled.errors()).isEmpty();
   }
 
@@ -99,6 +103,15 @@ final class GeneratedNestedListsTest {
     final var names = (List<List<DirectBuffer>>) get(source, "names");
     names.add(List.of(new UnsafeBuffer("a".getBytes()), new UnsafeBuffer("bc".getBytes())));
     names.add(List.of());
+    final var item = compiled.load("sample.Item").getConstructor(long.class);
+    @SuppressWarnings("unchecked")
+    final var items = (List<List<Object>>) get(source, "items");
+    items.add(List.of(item.newInstance(7L), item.newInstance(8L)));
+    @SuppressWarnings("unchecked")
+    final var values = (List<List<StringValue>>) get(source, "values");
+    final var value = new StringValue();
+    value.wrap(new UnsafeBuffer("v".getBytes()));
+    values.add(List.of(value));
 
     // when
     final var written = new UnsafeBuffer(new byte[source.getLength()]);
@@ -110,6 +123,12 @@ final class GeneratedNestedListsTest {
     assertThat(get(read, "deep")).isEqualTo(expected);
     assertThat(get(read, "ints")).isEqualTo(ints);
     assertThat(get(read, "names")).isEqualTo(names);
+    @SuppressWarnings("unchecked")
+    final var readItems = (List<List<Object>>) get(read, "items");
+    assertThat(readItems).hasSize(1);
+    assertThat(readItems.get(0)).hasSize(2);
+    assertThat(get(readItems.get(0).get(1), "id")).isEqualTo(8L);
+    assertThat(get(read, "values")).isEqualTo(values);
     assertThat(bytes(read)).isEqualTo(written.byteArray());
   }
 

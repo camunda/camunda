@@ -15,6 +15,10 @@ import io.camunda.zeebe.msgpack.pojo.annotation.MsgpackPojo;
 import io.camunda.zeebe.msgpack.pojo.annotation.Raw;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
@@ -54,6 +58,7 @@ final class ModelBuilder {
     requireTopLevel(type);
     requireRecyclable(type);
     requireNoInheritedFields(type);
+    requireNoCycle(type);
     return buildModel(type);
   }
 
@@ -87,6 +92,64 @@ final class ModelBuilder {
       }
       current = superclass.getSuperclass();
     }
+  }
+
+  /**
+   * A generated codec resolves the codecs of its nested objects while its class is initialized, so
+   * two classes that contain each other would wait for each other when first used by two threads.
+   */
+  private void requireNoCycle(final TypeElement root) {
+    final var path = new ArrayList<TypeElement>();
+    path.add(root);
+    findCycle(root, root, new HashSet<>(), path);
+  }
+
+  private void findCycle(
+      final TypeElement root,
+      final TypeElement current,
+      final Set<TypeElement> visited,
+      final List<TypeElement> path) {
+    for (final var next : nestedPojos(current)) {
+      if (next.equals(root)) {
+        throw new IllegalArgumentException(
+            "@MsgpackPojo classes must not contain themselves, directly or through other classes: "
+                + path.stream()
+                    .map(t -> t.getSimpleName().toString())
+                    .collect(Collectors.joining(" -> "))
+                + " -> "
+                + root.getSimpleName());
+      }
+      if (visited.add(next)) {
+        path.add(next);
+        findCycle(root, next, visited, path);
+        path.remove(path.size() - 1);
+      }
+    }
+  }
+
+  /** The {@code @MsgpackPojo} classes that the stored fields hold, also as list elements. */
+  private static Set<TypeElement> nestedPojos(final TypeElement type) {
+    final var pojos = new LinkedHashSet<TypeElement>();
+    for (final Element field : type.getEnclosedElements()) {
+      if (field.getKind() == ElementKind.FIELD
+          && !field.getModifiers().contains(Modifier.STATIC)
+          && field.getAnnotation(Ignore.class) == null) {
+        collectPojos(field.asType(), pojos);
+      }
+    }
+    return pojos;
+  }
+
+  private static void collectPojos(final TypeMirror mirror, final Set<TypeElement> pojos) {
+    if (mirror.getKind() != TypeKind.DECLARED) {
+      return;
+    }
+    final var declared = (DeclaredType) mirror;
+    final var element = (TypeElement) declared.asElement();
+    if (element.getAnnotation(MsgpackPojo.class) != null) {
+      pojos.add(element);
+    }
+    declared.getTypeArguments().forEach(argument -> collectPojos(argument, pojos));
   }
 
   private void requireRecyclable(final TypeElement type) {
@@ -176,7 +239,7 @@ final class ModelBuilder {
         throw new IllegalArgumentException("Field " + fieldName + " must not be final");
       }
       final var keyLiteral = processingEnv.getElementUtils().getConstantExpression(key);
-      final var element = kind == Type.LIST ? elementOf(mirror) : null;
+      final var element = kind == Type.LIST ? elementOf(mirror, fieldName) : null;
       if (element != null && !element.unboxed()) {
         switch (element.kind()) {
           case INT -> warning(field, boxedListWarning(fieldName, "IntArrayList"));
@@ -184,8 +247,8 @@ final class ModelBuilder {
           default -> {}
         }
       }
-      properties.add(
-          new Property(keyLiteral, kind, fieldName, javaType(mirror, kind), inPlace, element));
+      final var javaType = element != null ? element.leaf().javaType() : javaType(mirror, kind);
+      properties.add(new Property(keyLiteral, kind, fieldName, javaType, inPlace, element));
     }
     if (properties.isEmpty()) {
       throw new IllegalArgumentException("@MsgpackPojo class has no stored fields");
@@ -221,7 +284,7 @@ final class ModelBuilder {
         }
         if (name.equals(INT_ARRAY_LIST)
             || name.equals(LONG_ARRAY_LIST)
-            || name.equals(LIST) && elementOf(mirror) != null) {
+            || name.equals(LIST) && elementOf(mirror, field) != null) {
           return Type.LIST;
         }
         if (element.getKind() == ElementKind.ENUM) {
@@ -262,10 +325,10 @@ final class ModelBuilder {
 
   /**
    * The element of an agrona {@code IntArrayList} or {@code LongArrayList}, or of a {@code List<E>}
-   * with {@code E} a {@code DirectBuffer}, a {@code Long}, an {@code Integer} or such a list again;
-   * null for any other type.
+   * with {@code E} a {@code DirectBuffer}, a {@code Long}, an {@code Integer}, a {@link
+   * MsgpackPojo}, a {@code BaseValue} or such a list again; null for any other type.
    */
-  private @Nullable ListElement elementOf(final TypeMirror list) {
+  private @Nullable ListElement elementOf(final TypeMirror list, final String field) {
     if (isType(list, INT_ARRAY_LIST)) {
       return new ListElement(ListElement.Kind.INT, "int", true, null);
     }
@@ -287,14 +350,39 @@ final class ModelBuilder {
     if (isType(argument, "java.lang.Integer")) {
       return new ListElement(ListElement.Kind.INT, "java.lang.Integer", false, null);
     }
-    if (argument.getKind() == TypeKind.DECLARED && isType(argument, LIST)) {
-      final var inner = elementOf(argument);
+    if (argument.getKind() != TypeKind.DECLARED) {
+      return null;
+    }
+    if (isType(argument, LIST)) {
+      final var inner = elementOf(argument, field);
       return inner == null
           ? null
           : new ListElement(
               ListElement.Kind.LIST, LIST + "<" + inner.javaType() + ">", false, inner);
     }
+    final var item = (TypeElement) ((DeclaredType) argument).asElement();
+    if (item.getAnnotation(MsgpackPojo.class) != null || isBaseValue(item)) {
+      requirePublicConstructor(item, field);
+      return new ListElement(
+          ListElement.Kind.ITEM, item.getQualifiedName().toString(), false, null);
+    }
     return null;
+  }
+
+  /** Items are created while reading, so the generated codec must be able to call {@code new}. */
+  private static void requirePublicConstructor(final TypeElement item, final String field) {
+    final boolean found =
+        item.getEnclosedElements().stream()
+            .anyMatch(
+                e ->
+                    e.getKind() == ElementKind.CONSTRUCTOR
+                        && e.getModifiers().contains(Modifier.PUBLIC)
+                        && ((ExecutableElement) e).getParameters().isEmpty());
+    if (!found) {
+      throw new IllegalArgumentException(
+          "Items of the list %s are created while reading, so %s needs a public constructor without parameters"
+              .formatted(field, item.getQualifiedName()));
+    }
   }
 
   private boolean isType(final TypeMirror mirror, final String qualifiedName) {

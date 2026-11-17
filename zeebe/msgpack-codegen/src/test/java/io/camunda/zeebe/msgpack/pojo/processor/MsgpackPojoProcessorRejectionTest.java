@@ -122,7 +122,30 @@ final class MsgpackPojoProcessorRejectionTest {
             "@Document @Binary DirectBuffer doc = Decoding.EMPTY;",
             "doc",
             "document cannot be combined"),
-        fields("@Document final DirectBuffer doc = Decoding.EMPTY;", "doc", "must not be final"));
+        fields("@Document final DirectBuffer doc = Decoding.EMPTY;", "doc", "must not be final"),
+        // lists of nested objects
+        fields("List<Inner> key = new ArrayList<>();", "key", "must be final"),
+        fields("final List<String> items = new ArrayList<>();", "Unsupported type", "items"),
+        classes(
+            "list item without a public constructor",
+            List.of(
+                pojo("Hidden", "int value; Hidden() {}"),
+                pojo("Sample", "final List<Hidden> items = new ArrayList<>();")),
+            "items",
+            "public constructor without parameters"),
+        classes(
+            "list of its own class",
+            List.of(pojo("Sample", "final List<Sample> children = new ArrayList<>();")),
+            "must not contain themselves",
+            "Sample -> Sample"),
+        classes(
+            "classes that contain each other",
+            List.of(
+                pojo("First", "final List<Second> items = new ArrayList<>();"),
+                pojo("Second", "final List<List<First>> items = new ArrayList<>();"),
+                pojo("Sample", "long key;")),
+            "must not contain themselves",
+            "First -> Second -> First"));
   }
 
   @Test

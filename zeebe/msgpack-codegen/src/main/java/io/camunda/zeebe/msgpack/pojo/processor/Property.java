@@ -12,6 +12,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @param keyLiteral the key as an escaped Java string literal, to be pasted into generated code
+ * @param javaType the type of the field in generated code; of the innermost elements for a list
  * @param inPlace a {@code final UnsafeBuffer} that is wrapped around the read bytes instead of
  *     being replaced by a new view
  * @param element the element of a {@link Type#LIST}, null for the other types

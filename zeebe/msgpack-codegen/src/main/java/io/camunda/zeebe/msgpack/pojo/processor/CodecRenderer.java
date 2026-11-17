@@ -40,7 +40,10 @@ final class CodecRenderer {
             case LIST -> "$list";
             case NESTED -> "    n += CODEC_$i.write(w, $value);\n";
           };
-      final var list = p.type() == Type.LIST ? writeList("v." + p.field(), p.listElement(), 0) : "";
+      final var list =
+          p.type() == Type.LIST
+              ? writeList("v." + p.field(), p.listElement(), 0, "CODEC_" + i)
+              : "";
       write.append(
           fill(
               p,
@@ -84,7 +87,9 @@ final class CodecRenderer {
             case NESTED -> "    n += CODEC_$i.getLength($value);\n";
           };
       final var list =
-          p.type() == Type.LIST ? listLength("v." + p.field(), p.listElement(), 0) : "";
+          p.type() == Type.LIST
+              ? listLength("v." + p.field(), p.listElement(), 0, "CODEC_" + i)
+              : "";
       length.append(
           fill(
               p,
@@ -136,7 +141,9 @@ final class CodecRenderer {
             case NESTED -> "CODEC_$i.read(r, target.$field);";
           };
       final var list =
-          p.type() == Type.LIST ? readList("target." + p.field(), p.listElement(), 0) : "";
+          p.type() == Type.LIST
+              ? readList("target." + p.field(), p.listElement(), 0, "CODEC_" + i)
+              : "";
       cases.append(
           fill(p, "        case $i -> " + statement + "\n", "$i", i, "$list", list.indent(10)));
       i++;
@@ -278,27 +285,31 @@ final class CodecRenderer {
    * Writes a list as an array, and each element with the code for its type. An element that is a
    * list is written by the same method one level deeper.
    */
-  private static String writeList(final String list, final ListElement e, final int depth) {
+  private static String writeList(
+      final String list, final ListElement e, final int depth, final String codec) {
     final var x = e.at(list, depth);
     final var element =
         switch (e.kind()) {
           case STRING -> fill("n += w.writeString($x);\n", "$x", x);
           case LONG, INT -> fill("n += w.writeInteger($x);\n", "$x", x);
-          case LIST -> writeList(x, e.inner(), depth + 1);
+          case ITEM -> fill("n += $codec.write(w, $x);\n", "$codec", codec, "$x", x);
+          case LIST -> writeList(x, e.inner(), depth + 1, codec);
         };
     return fill("n += w.writeArrayHeader($list.size());\n", "$list", list)
         + loop(list, depth, element);
   }
 
   /** The length of {@link #writeList}. */
-  private static String listLength(final String list, final ListElement e, final int depth) {
+  private static String listLength(
+      final String list, final ListElement e, final int depth, final String codec) {
     final var x = e.at(list, depth);
     final var element =
         switch (e.kind()) {
           case STRING ->
               fill("n += MsgPackWriter.getEncodedStringLength($x.capacity());\n", "$x", x);
           case LONG, INT -> fill("n += MsgPackWriter.getEncodedLongValueLength($x);\n", "$x", x);
-          case LIST -> listLength(x, e.inner(), depth + 1);
+          case ITEM -> fill("n += $codec.getLength($x);\n", "$codec", codec, "$x", x);
+          case LIST -> listLength(x, e.inner(), depth + 1, codec);
         };
     return fill("n += MsgPackWriter.getEncodedArrayHeaderLength($list.size());\n", "$list", list)
         + loop(list, depth, element);
@@ -309,13 +320,29 @@ final class CodecRenderer {
    * list is a new {@code ArrayList}, read by the same method one level deeper; the locals have the
    * depth in their name ({@code n0}, {@code i0}, {@code e0}, ...), so the levels do not clash.
    */
-  private static String readList(final String list, final ListElement e, final int depth) {
+  private static String readList(
+      final String list, final ListElement e, final int depth, final String codec) {
     final var x = "e" + depth;
     final var element =
         switch (e.kind()) {
           case STRING -> fill("$list.add(Decoding.readString(r));\n", "$list", list);
           case LONG -> fill("$list.$add(r.readInteger());\n", "$list", list, "$add", e.add());
           case INT -> fill("$list.$add(Decoding.readInt(r));\n", "$list", list, "$add", e.add());
+          case ITEM ->
+              fill(
+                  """
+                  final $type $x = new $type();
+                  $codec.read(r, $x);
+                  $list.add($x);
+                  """,
+                  "$type",
+                  e.javaType(),
+                  "$x",
+                  x,
+                  "$codec",
+                  codec,
+                  "$list",
+                  list);
           case LIST ->
               fill(
                   """
@@ -328,7 +355,7 @@ final class CodecRenderer {
                   "$x",
                   x,
                   "$read",
-                  readList(x, e.inner(), depth + 1),
+                  readList(x, e.inner(), depth + 1, codec),
                   "$list",
                   list);
         };
@@ -384,7 +411,7 @@ final class CodecRenderer {
                 """,
                 "$i",
                 i));
-      } else if (p.type() == Type.NESTED) {
+      } else if (p.type() == Type.NESTED || p.type() == Type.LIST && p.listElement().items()) {
         s.append(
             fill(
                 p,

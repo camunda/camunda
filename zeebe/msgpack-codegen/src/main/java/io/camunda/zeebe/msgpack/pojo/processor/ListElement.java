@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.msgpack.pojo.processor;
 
+import io.camunda.zeebe.msgpack.pojo.annotation.MsgpackPojo;
 import java.util.Objects;
 import javax.tools.Diagnostic.Kind;
 import org.jspecify.annotations.Nullable;
@@ -27,6 +28,16 @@ record ListElement(Kind kind, String javaType, boolean unboxed, @Nullable ListEl
     return Objects.requireNonNull(element);
   }
 
+  /** The innermost element, which is not a list. */
+  ListElement leaf() {
+    return kind == Kind.LIST ? inner().leaf() : this;
+  }
+
+  /** The innermost elements are items, which a codec reads and writes. */
+  boolean items() {
+    return leaf().kind == Kind.ITEM;
+  }
+
   String get() {
     return !unboxed ? "get" : kind == Kind.INT ? "getInt" : "getLong";
   }
@@ -45,6 +56,8 @@ record ListElement(Kind kind, String javaType, boolean unboxed, @Nullable ListEl
     LONG,
     /** Read with the range check of an {@code int} property. */
     INT,
+    /** A {@link MsgpackPojo} or a {@code BaseValue}, read and written by its codec. */
+    ITEM,
     LIST
   }
 }

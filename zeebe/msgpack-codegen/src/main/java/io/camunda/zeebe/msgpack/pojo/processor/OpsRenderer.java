@@ -43,6 +43,14 @@ final class OpsRenderer {
             $reset\
               }
 
+              /** Items are owned by one list, so a default with items would be shared by every reset. */
+              private static void requireEmpty(final java.util.List<?> value, final String field) {
+                if (!value.isEmpty()) {
+                  throw new IllegalStateException(
+                      "List " + field + " of $pojo must start empty: its items are created while reading");
+                }
+              }
+
               private static <T> T requireDefault(final T value, final String field) {
                 if (value == null) {
                   throw new IllegalStateException(
@@ -72,14 +80,19 @@ final class OpsRenderer {
   /** The statements of {@code reset} that restore the initializer of a property. */
   private static String resetStatement(final Property p) {
     return switch (p.type()) {
-      case LIST ->
-          """
-              target.$field.clear();
-              target.$field.addAll(DEFAULTS.$field);
-          """;
-      case NESTED -> "    target.$field.reset();\n";
       // checked on every reset: an exception in the static initializer is not reliably
       // propagated, as the class is initialized while Codecs resolves these ops
+      case LIST ->
+          p.listElement().items()
+              ? """
+                    requireEmpty(DEFAULTS.$field, "$field");
+                    target.$field.clear();
+                """
+              : """
+                    target.$field.clear();
+                    target.$field.addAll(DEFAULTS.$field);
+                """;
+      case NESTED -> "    target.$field.reset();\n";
       case STRING, BINARY, RAW, DOCUMENT ->
           p.inPlace()
               ? "    target.$field.wrap(DEFAULTS.$field);\n"
