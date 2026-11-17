@@ -260,7 +260,7 @@ public class ProcessDefinitionServiceTest {
             CompletableFuture.completedFuture(
                 new BrokerResponse<>(new ProcessDefinitionSuspensionRecord())));
     final var request =
-        new ProcessDefinitionStateChangeRequest(PROCESS_DEFINITION_KEY, "", -1, "", false);
+        new ProcessDefinitionStateChangeRequest(PROCESS_DEFINITION_KEY, "", -1, null, false);
 
     // when
     services.resumeProcessDefinitions(request, authentication).join();
@@ -270,7 +270,7 @@ public class ProcessDefinitionServiceTest {
     assertThat(sent.getIntent()).isEqualTo(ProcessDefinitionSuspensionIntent.RESUME);
     assertThat(sent.getRequestWriter())
         .returns(PROCESS_DEFINITION_KEY, ProcessDefinitionSuspensionRecord::getProcessDefinitionKey)
-        .returns("", ProcessDefinitionSuspensionRecord::getTenantId)
+        .returns("<default>", ProcessDefinitionSuspensionRecord::getTenantId)
         .returns(false, ProcessDefinitionSuspensionRecord::isIncludeProcessInstances);
   }
 

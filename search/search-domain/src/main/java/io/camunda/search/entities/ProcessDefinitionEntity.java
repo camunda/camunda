@@ -34,7 +34,6 @@ public record ProcessDefinitionEntity(
 
   public enum ProcessDefinitionState {
     ACTIVE,
-    SUSPENDED,
     DRAINING,
     DELETED
   }

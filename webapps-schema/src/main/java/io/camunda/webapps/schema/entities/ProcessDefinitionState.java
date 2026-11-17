@@ -9,7 +9,6 @@ package io.camunda.webapps.schema.entities;
 
 public enum ProcessDefinitionState {
   ACTIVE,
-  SUSPENDED,
   DRAINING,
   DELETED
 }

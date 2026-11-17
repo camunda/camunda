@@ -8,6 +8,7 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.gateway.protocol.model.ProcessDefinitionResumptionInstructionById;
 import io.camunda.gateway.protocol.model.ProcessDefinitionResumptionInstructionByKey;
@@ -43,7 +44,25 @@ class ProcessDefinitionMapperTest {
     // then
     assertThat(result.isRight()).isTrue();
     assertThat(result.get())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(123L, "", -1, "", false));
+        .isEqualTo(new ProcessDefinitionStateChangeRequest(123L, "", -1, null, false));
+  }
+
+  @Test
+  void shouldMapSuspensionByKeyWithIncludeProcessInstances() {
+    // given
+    final var instruction =
+        ProcessDefinitionSuspensionInstructionByKey.Builder.create()
+            .processDefinitionKey("123")
+            .includeProcessInstances(true)
+            .build();
+
+    // when
+    final var result = mapper.toSuspendProcessDefinitions(instruction, false);
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get())
+        .isEqualTo(new ProcessDefinitionStateChangeRequest(123L, "", -1, null, true));
   }
 
   @Test
@@ -65,7 +84,7 @@ class ProcessDefinitionMapperTest {
   }
 
   @Test
-  void shouldMapSuspensionByIdWithVersionTenantAndCascade() {
+  void shouldMapSuspensionByIdWithVersionTenantAndIncludeProcessInstances() {
     // given
     final var instruction =
         ProcessDefinitionSuspensionInstructionById.Builder.create()
@@ -85,29 +104,76 @@ class ProcessDefinitionMapperTest {
   }
 
   @Test
-  void shouldMapResumptionByKeyAndById() {
+  void shouldMapResumptionByKey() {
     // given
-    final var byKey =
+    final var instruction =
+        ProcessDefinitionResumptionInstructionByKey.Builder.create()
+            .processDefinitionKey("456")
+            .build();
+
+    // when
+    final var result = mapper.toResumeProcessDefinitions(instruction, false);
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get())
+        .isEqualTo(new ProcessDefinitionStateChangeRequest(456L, "", -1, null, false));
+  }
+
+  @Test
+  void shouldMapResumptionByKeyWithIncludeProcessInstances() {
+    // given
+    final var instruction =
         ProcessDefinitionResumptionInstructionByKey.Builder.create()
             .processDefinitionKey("456")
             .includeProcessInstances(true)
             .build();
-    final var byId =
+
+    // when
+    final var result = mapper.toResumeProcessDefinitions(instruction, false);
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get())
+        .isEqualTo(new ProcessDefinitionStateChangeRequest(456L, "", -1, null, true));
+  }
+
+  @Test
+  void shouldMapResumptionByIdWithoutVersionToAllVersions() {
+    // given
+    final var instruction =
         ProcessDefinitionResumptionInstructionById.Builder.create()
             .processDefinitionId("invoice")
-            .processDefinitionVersion(2)
             .build();
 
     // when
-    final var keyResult = mapper.toResumeProcessDefinitions(byKey, false);
-    final var idResult = mapper.toResumeProcessDefinitions(byId, false);
+    final var result = mapper.toResumeProcessDefinitions(instruction, false);
 
     // then
-    assertThat(keyResult.get())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(456L, "", -1, "", true));
-    assertThat(idResult.get())
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get())
         .isEqualTo(
-            new ProcessDefinitionStateChangeRequest(-1L, "invoice", 2, DEFAULT_TENANT, false));
+            new ProcessDefinitionStateChangeRequest(-1L, "invoice", -1, DEFAULT_TENANT, false));
+  }
+
+  @Test
+  void shouldMapResumptionByIdWithVersionTenantAndIncludeProcessInstances() {
+    // given
+    final var instruction =
+        ProcessDefinitionResumptionInstructionById.Builder.create()
+            .processDefinitionId("invoice")
+            .includeProcessInstances(true)
+            .processDefinitionVersion(2)
+            .tenantId("tenant-a")
+            .build();
+
+    // when
+    final var result = mapper.toResumeProcessDefinitions(instruction, true);
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get())
+        .isEqualTo(new ProcessDefinitionStateChangeRequest(-1L, "invoice", 2, "tenant-a", true));
   }
 
   @Test
@@ -212,8 +278,61 @@ class ProcessDefinitionMapperTest {
     assertThat(result.getProcessDefinitions())
         .extracting(v -> v.getProcessDefinitionKey(), v -> v.getVersion(), v -> v.getOutcome())
         .containsExactly(
-            org.assertj.core.groups.Tuple.tuple("11", 1, OutcomeEnum.SUSPENDED),
-            org.assertj.core.groups.Tuple.tuple("12", 2, OutcomeEnum.ALREADY_SUSPENDED));
+            tuple("11", 1, OutcomeEnum.SUSPENDED), tuple("12", 2, OutcomeEnum.ALREADY_SUSPENDED));
+  }
+
+  @Test
+  void shouldMapSuspensionResultWithoutBatchOperationKey() {
+    // given
+    final var record =
+        new ProcessDefinitionSuspensionRecord()
+            .addResolvedVersion(
+                new ProcessDefinitionSuspensionResolvedVersion()
+                    .setProcessDefinitionKey(11L)
+                    .setVersion(1)
+                    .setOutcome(ProcessDefinitionSuspensionOutcome.SUSPENDED));
+
+    // when
+    final var result = mapper.toSuspensionResult(record);
+
+    // then
+    assertThat(result.getBatchOperationKey()).isNull();
+    assertThat(result.getProcessDefinitions())
+        .singleElement()
+        .satisfies(
+            v -> {
+              assertThat(v.getProcessDefinitionKey()).isEqualTo("11");
+              assertThat(v.getOutcome()).isEqualTo(OutcomeEnum.SUSPENDED);
+            });
+  }
+
+  @Test
+  void shouldMapResumptionResultWithBatchOperationKey() {
+    // given
+    final var record =
+        new ProcessDefinitionSuspensionRecord()
+            .setBatchOperationKey(78L)
+            .addResolvedVersion(
+                new ProcessDefinitionSuspensionResolvedVersion()
+                    .setProcessDefinitionKey(11L)
+                    .setVersion(1)
+                    .setOutcome(ProcessDefinitionSuspensionOutcome.RESUMED))
+            .addResolvedVersion(
+                new ProcessDefinitionSuspensionResolvedVersion()
+                    .setProcessDefinitionKey(12L)
+                    .setVersion(2)
+                    .setOutcome(ProcessDefinitionSuspensionOutcome.ALREADY_RESUMED));
+
+    // when
+    final var result = mapper.toResumptionResult(record);
+
+    // then
+    assertThat(result.getBatchOperationKey()).isEqualTo("78");
+    assertThat(result.getProcessDefinitions())
+        .extracting(v -> v.getProcessDefinitionKey(), v -> v.getVersion(), v -> v.getOutcome())
+        .containsExactly(
+            tuple("11", 1, ProcessDefinitionResumptionVersionResult.OutcomeEnum.RESUMED),
+            tuple("12", 2, ProcessDefinitionResumptionVersionResult.OutcomeEnum.ALREADY_RESUMED));
   }
 
   @Test

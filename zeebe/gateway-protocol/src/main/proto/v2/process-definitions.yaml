@@ -565,7 +565,9 @@ components:
         tenantId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
-          description: The tenant of the process definition. If omitted, the default tenant is used.
+          description: |
+            The tenant of the process definition. Required when multi-tenancy is enabled;
+            if multi-tenancy is disabled, it can be omitted and the default tenant is used.
 
     ProcessDefinitionSuspensionResult:
       type: object
@@ -663,7 +665,9 @@ components:
         tenantId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
-          description: The tenant of the process definition. If omitted, the default tenant is used.
+          description: |
+            The tenant of the process definition. Required when multi-tenancy is enabled;
+            if multi-tenancy is disabled, it can be omitted and the default tenant is used.
 
     ProcessDefinitionResumptionResult:
       type: object
@@ -801,7 +805,6 @@ components:
             Filter by the process definition's state.
             When not set, process definitions in any state are returned.
             Set to `ACTIVE` to exclude draining and deleted definitions (recommended for most use cases).
-            Set to `SUSPENDED` to return only suspended definitions.
             Set to `DRAINING` to return only definitions that are being deleted but still have
             active process instances draining.
             Set to `DELETED` to return only definitions that have been deleted but are still
@@ -809,7 +812,6 @@ components:
           type: string
           enum:
             - ACTIVE
-            - SUSPENDED
             - DRAINING
             - DELETED
       x-properties-added-in-version:
@@ -875,13 +877,11 @@ components:
         state:
           description: |
             The state of this process definition.
-            `SUSPENDED` indicates the definition is suspended and cannot be used to create instances.
             `DRAINING` indicates the definition is being deleted but still has active process
             instances draining before it is removed.
           type: string
           enum:
             - ACTIVE
-            - SUSPENDED
             - DRAINING
             - DELETED
       x-properties-added-in-version:

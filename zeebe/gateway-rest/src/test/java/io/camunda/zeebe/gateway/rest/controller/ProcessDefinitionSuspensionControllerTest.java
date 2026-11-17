@@ -30,7 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -93,11 +93,11 @@ public class ProcessDefinitionSuspensionControllerTest extends RestControllerTes
             JsonCompareMode.STRICT);
     verify(processDefinitionServices).suspendProcessDefinitions(requestCaptor.capture(), any());
     assertThat(requestCaptor.getValue())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(11L, "", -1, "", false));
+        .isEqualTo(new ProcessDefinitionStateChangeRequest(11L, "", -1, null, false));
   }
 
   @Test
-  void shouldSuspendAllVersionsByIdAndCascadeToInstances() {
+  void shouldSuspendAllVersionsByIdAndIncludeProcessInstances() {
     // given
     final var result =
         record(11L, 1, ProcessDefinitionSuspensionOutcome.ALREADY_SUSPENDED)
@@ -208,11 +208,11 @@ public class ProcessDefinitionSuspensionControllerTest extends RestControllerTes
             JsonCompareMode.STRICT);
     verify(processDefinitionServices).resumeProcessDefinitions(requestCaptor.capture(), any());
     assertThat(requestCaptor.getValue())
-        .isEqualTo(new ProcessDefinitionStateChangeRequest(11L, "", -1, "", false));
+        .isEqualTo(new ProcessDefinitionStateChangeRequest(11L, "", -1, null, false));
   }
 
   @Test
-  void shouldResumeByIdWithVersionAndCascade() {
+  void shouldResumeByIdWithVersionAndIncludeProcessInstances() {
     // given
     when(processDefinitionServices.resumeProcessDefinitions(any(), any()))
         .thenReturn(
@@ -274,34 +274,147 @@ public class ProcessDefinitionSuspensionControllerTest extends RestControllerTes
   }
 
   @ParameterizedTest
-  @ValueSource(
-      strings = {
-        "\"processDefinitionId\": \"invoice\"",
-        "\"processDefinitionVersion\": 1",
-        "\"tenantId\": \"tenant-a\""
+  @CsvSource(
+      delimiter = '|',
+      value = {
+        "\"processDefinitionId\": \"invoice\" | processDefinitionId, processDefinitionKey",
+        "\"processDefinitionVersion\": 1 | processDefinitionKey, processDefinitionVersion",
+        "\"tenantId\": \"tenant-a\" | processDefinitionKey, tenantId"
       })
-  void shouldRejectKeyCombinedWithIdSelector(final String idSelector) {
+  void shouldRejectKeyCombinedWithIdSelector(final String idSelector, final String conflicting) {
     // given
     final var body = "{\"processDefinitionKey\": \"123\", " + idSelector + "}";
+    final var expectedDetail = "Only one of [" + conflicting + "] is allowed";
 
     // when
     final ResponseSpec suspension = post(SUSPENSION_URL, body);
     final ResponseSpec resumption = post(RESUMPTION_URL, body);
 
     // then
-    suspension.expectStatus().isBadRequest();
-    resumption.expectStatus().isBadRequest();
+    assertBadRequest(suspension, expectedDetail, SUSPENSION_URL);
+    assertBadRequest(resumption, expectedDetail, RESUMPTION_URL);
     verifyNoInteractions(processDefinitionServices);
   }
 
   @Test
   void shouldRejectRequestWithoutKeyOrId() {
+    // given
+    final var expectedDetail =
+        "At least one of [processDefinitionId, processDefinitionKey] is required";
+
     // when
-    final ResponseSpec response = post(SUSPENSION_URL, "{}");
+    final ResponseSpec suspension = post(SUSPENSION_URL, "{}");
+    final ResponseSpec resumption = post(RESUMPTION_URL, "{}");
 
     // then
-    response.expectStatus().isBadRequest();
+    assertBadRequest(suspension, expectedDetail, SUSPENSION_URL);
+    assertBadRequest(resumption, expectedDetail, RESUMPTION_URL);
     verifyNoInteractions(processDefinitionServices);
+  }
+
+  @Test
+  void shouldRejectRequestWithNullKeyAndNullId() {
+    // given
+    final var body = "{\"processDefinitionKey\": null, \"processDefinitionId\": null}";
+    final var expectedDetail =
+        "At least one of [processDefinitionId, processDefinitionKey] is required";
+
+    // when
+    final ResponseSpec suspension = post(SUSPENSION_URL, body);
+    final ResponseSpec resumption = post(RESUMPTION_URL, body);
+
+    // then
+    assertBadRequest(suspension, expectedDetail, SUSPENSION_URL);
+    assertBadRequest(resumption, expectedDetail, RESUMPTION_URL);
+    verifyNoInteractions(processDefinitionServices);
+  }
+
+  @Test
+  void shouldTreatNullKeyAsAbsentAndSuspendById() {
+    // given
+    when(processDefinitionServices.suspendProcessDefinitions(any(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                record(11L, 1, ProcessDefinitionSuspensionOutcome.SUSPENDED)));
+
+    // when
+    final ResponseSpec response =
+        post(
+            SUSPENSION_URL,
+            """
+            {"processDefinitionKey": null, "processDefinitionId": "invoice"}""");
+
+    // then
+    response.expectStatus().isOk();
+    verify(processDefinitionServices).suspendProcessDefinitions(requestCaptor.capture(), any());
+    assertThat(requestCaptor.getValue())
+        .isEqualTo(new ProcessDefinitionStateChangeRequest(-1L, "invoice", -1, "<default>", false));
+  }
+
+  @Test
+  void shouldTreatNullKeyAsAbsentAndResumeById() {
+    // given
+    when(processDefinitionServices.resumeProcessDefinitions(any(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                record(11L, 1, ProcessDefinitionSuspensionOutcome.RESUMED)));
+
+    // when
+    final ResponseSpec response =
+        post(
+            RESUMPTION_URL,
+            """
+            {"processDefinitionKey": null, "processDefinitionId": "invoice"}""");
+
+    // then
+    response.expectStatus().isOk();
+    verify(processDefinitionServices).resumeProcessDefinitions(requestCaptor.capture(), any());
+    assertThat(requestCaptor.getValue())
+        .isEqualTo(new ProcessDefinitionStateChangeRequest(-1L, "invoice", -1, "<default>", false));
+  }
+
+  @Test
+  void shouldTreatNullVersionAndTenantAsAbsentAndSuspendByKey() {
+    // given
+    when(processDefinitionServices.suspendProcessDefinitions(any(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                record(123L, 1, ProcessDefinitionSuspensionOutcome.SUSPENDED)));
+
+    // when
+    final ResponseSpec response =
+        post(
+            SUSPENSION_URL,
+            """
+            {"processDefinitionKey": "123", "processDefinitionVersion": null, "tenantId": null}""");
+
+    // then
+    response.expectStatus().isOk();
+    verify(processDefinitionServices).suspendProcessDefinitions(requestCaptor.capture(), any());
+    assertThat(requestCaptor.getValue())
+        .isEqualTo(new ProcessDefinitionStateChangeRequest(123L, "", -1, null, false));
+  }
+
+  @Test
+  void shouldTreatNullVersionAndTenantAsAbsentAndResumeByKey() {
+    // given
+    when(processDefinitionServices.resumeProcessDefinitions(any(), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                record(123L, 1, ProcessDefinitionSuspensionOutcome.RESUMED)));
+
+    // when
+    final ResponseSpec response =
+        post(
+            RESUMPTION_URL,
+            """
+            {"processDefinitionKey": "123", "processDefinitionVersion": null, "tenantId": null}""");
+
+    // then
+    response.expectStatus().isOk();
+    verify(processDefinitionServices).resumeProcessDefinitions(requestCaptor.capture(), any());
+    assertThat(requestCaptor.getValue())
+        .isEqualTo(new ProcessDefinitionStateChangeRequest(123L, "", -1, null, false));
   }
 
   @Test
@@ -365,6 +478,25 @@ public class ProcessDefinitionSuspensionControllerTest extends RestControllerTes
         .expectBody()
         .jsonPath("$.title")
         .isEqualTo("INVALID_STATE");
+  }
+
+  private static void assertBadRequest(
+      final ResponseSpec response, final String detail, final String instance) {
+    response
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "%s",
+              "instance": "%s"
+            }"""
+                .formatted(detail, instance),
+            JsonCompareMode.STRICT);
   }
 
   private ResponseSpec post(final String uri, final String body) {

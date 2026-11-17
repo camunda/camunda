@@ -127,7 +127,7 @@ public class ProcessDefinitionMapper {
                 keyToLong(processDefinitionKey),
                 "",
                 -1,
-                "",
+                null,
                 Boolean.TRUE.equals(includeProcessInstances)));
   }
 
