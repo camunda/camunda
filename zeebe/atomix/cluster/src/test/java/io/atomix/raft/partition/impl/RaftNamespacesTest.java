@@ -32,6 +32,7 @@ import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.utils.serializer.Serializer;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -171,5 +172,22 @@ final class RaftNamespacesTest {
 
     // then
     assertThat(read.senderIncarnation()).isEqualTo(9L);
+  }
+
+  /**
+   * Kryo's record serializer writes the components by position, so that a later version could not
+   * add a field without breaking older members. The compatible field serializer writes each field
+   * with its name, and a reader skips the fields that it does not know.
+   */
+  @Test
+  void shouldSerializeFenceEntryAndVoterPolicyWithFieldNames() {
+    // when
+    final var fenceEntry =
+        new String(serializer.encode(fenced.getFirst()), StandardCharsets.ISO_8859_1);
+    final var voterPolicy = new String(serializer.encode(policy), StandardCharsets.ISO_8859_1);
+
+    // then - Kryo marks the last character of an ASCII string with the high bit
+    assertThat(fenceEntry).contains("memberI").contains("incarnatio");
+    assertThat(voterPolicy).contains("zone").contains("voter");
   }
 }

@@ -18,6 +18,7 @@ package io.atomix.raft.cluster;
 import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.MemberId;
+import java.util.Objects;
 
 /**
  * An entry of the fence list of a Raft configuration. A member is fenced if its id and its
@@ -28,16 +29,49 @@ import io.atomix.cluster.MemberId;
  * <p>Entries are never removed: a member that deletes its data and joins again gets a new
  * incarnation, so an old entry never matches it.
  *
- * @param memberId the fenced member
- * @param incarnation the incarnation of the member that is fenced
+ * <p>Not a record: Raft requests carry fence entries, and Kryo serializes records by position. As a
+ * class, it is serialized field by field with names, so that a later version can add a field.
  */
-public record FenceEntry(MemberId memberId, long incarnation) {
+public final class FenceEntry {
 
-  public FenceEntry {
-    requireNonNull(memberId, "memberId cannot be null");
+  private final MemberId memberId;
+  private final long incarnation;
+
+  /**
+   * @param memberId the fenced member
+   * @param incarnation the incarnation of the member that is fenced
+   */
+  public FenceEntry(final MemberId memberId, final long incarnation) {
+    this.memberId = requireNonNull(memberId, "memberId cannot be null");
+    this.incarnation = incarnation;
+  }
+
+  public MemberId memberId() {
+    return memberId;
+  }
+
+  public long incarnation() {
+    return incarnation;
   }
 
   public boolean matches(final MemberId id, final long incarnation) {
     return memberId.equals(id) && this.incarnation == incarnation;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    return o instanceof final FenceEntry other
+        && memberId.equals(other.memberId)
+        && incarnation == other.incarnation;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(memberId, incarnation);
+  }
+
+  @Override
+  public String toString() {
+    return "FenceEntry[memberId=" + memberId + ", incarnation=" + incarnation + "]";
   }
 }

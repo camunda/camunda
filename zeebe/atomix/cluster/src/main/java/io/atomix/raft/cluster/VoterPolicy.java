@@ -19,6 +19,7 @@ import static java.util.Objects.requireNonNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -30,17 +31,27 @@ import java.util.Optional;
  * leader rejects a change that puts more voters into a zone than the policy allows. Everything else
  * about the policy (who is promoted or demoted) is decided outside of Raft.
  *
- * @param zones the zones with their number of voters, highest priority first
+ * <p>Not a record: Raft requests carry the policy, and Kryo serializes records by position. As a
+ * class, it is serialized field by field with names, so that a later version can add a field.
  */
-public record VoterPolicy(List<ZoneVoters> zones) {
+public final class VoterPolicy {
 
-  public VoterPolicy {
+  private final List<ZoneVoters> zones;
+
+  /**
+   * @param zones the zones with their number of voters, highest priority first
+   */
+  public VoterPolicy(final List<ZoneVoters> zones) {
     requireNonNull(zones, "zones cannot be null");
     if (zones.isEmpty()) {
       throw new IllegalArgumentException("A voter policy must have at least one zone");
     }
     // A mutable copy, because Kryo cannot deserialize immutable collections
-    zones = new ArrayList<>(zones);
+    this.zones = new ArrayList<>(zones);
+  }
+
+  public List<ZoneVoters> zones() {
+    return zones;
   }
 
   public static VoterPolicy of(final ZoneVoters... zones) {
@@ -57,16 +68,62 @@ public record VoterPolicy(List<ZoneVoters> zones) {
         .findFirst();
   }
 
-  /**
-   * @param zone the zone, as in {@link io.atomix.cluster.MemberId#zone()}
-   * @param voters the number of voters of the zone
-   */
-  public record ZoneVoters(String zone, int voters) {
-    public ZoneVoters {
-      requireNonNull(zone, "zone cannot be null");
+  @Override
+  public boolean equals(final Object o) {
+    return o instanceof final VoterPolicy other && zones.equals(other.zones);
+  }
+
+  @Override
+  public int hashCode() {
+    return zones.hashCode();
+  }
+
+  @Override
+  public String toString() {
+    return "VoterPolicy[zones=" + zones + "]";
+  }
+
+  /** The number of voters of a zone. Not a record, for the same reason as {@link VoterPolicy}. */
+  public static final class ZoneVoters {
+
+    private final String zone;
+    private final int voters;
+
+    /**
+     * @param zone the zone, as in {@link io.atomix.cluster.MemberId#zone()}
+     * @param voters the number of voters of the zone
+     */
+    public ZoneVoters(final String zone, final int voters) {
+      this.zone = requireNonNull(zone, "zone cannot be null");
       if (voters < 0) {
         throw new IllegalArgumentException("voters must not be negative");
       }
+      this.voters = voters;
+    }
+
+    public String zone() {
+      return zone;
+    }
+
+    public int voters() {
+      return voters;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      return o instanceof final ZoneVoters other
+          && zone.equals(other.zone)
+          && voters == other.voters;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(zone, voters);
+    }
+
+    @Override
+    public String toString() {
+      return "ZoneVoters[zone=" + zone + ", voters=" + voters + "]";
     }
   }
 }
