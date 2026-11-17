@@ -1,9 +1,1 @@
-{
-  "c8-orchestration-cluster-nightly-8.10-api-rdbms.yml": {
-    "streak": {
-      "start_run": "43545147819",
-      "start_day": "2026-11-14",
-      "alerted_at": 1794815888
-    }
-  }
-}
+{}
