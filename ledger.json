@@ -255,5 +255,19 @@
     "updated_at": "2026-11-16T07:39:57Z",
     "cooldown_until": "2026-11-30T07:39:57Z",
     "pr": "https://github.com/camunda/camunda/pull/69477"
+  },
+  "ef2bd44f": {
+    "version": "8.8",
+    "file": "operate/decisionFilters.spec.ts",
+    "titlePath": [
+      "Decision Filters",
+      "Evaluated filter shows only evaluated instances"
+    ],
+    "last_action": "open_pr",
+    "last_reason": "iter1 100% vs baseline 90% (+10pp)",
+    "last_run": "https://github.com/camunda/camunda/actions/runs/44030771473",
+    "updated_at": "2026-11-17T07:05:43Z",
+    "cooldown_until": "2026-12-01T07:05:43Z",
+    "pr": "https://github.com/camunda/camunda/pull/69591"
   }
 }
