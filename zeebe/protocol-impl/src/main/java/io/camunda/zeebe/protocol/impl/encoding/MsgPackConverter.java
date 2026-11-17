@@ -259,8 +259,9 @@ public final class MsgPackConverter {
   // To NOT have JsonProperty Annotations on the CamundaAuthentication record, use a mixin.
   // Conditional role memberships are not persisted: OC has none (its MembershipPort keeps the CSL
   // default), and leaving the field out keeps the wire format readable by older nodes during a
-  // rolling upgrade. A batch operation therefore never carries conditional memberships. Until this
-  // branch uses a CSL version with the field, ignoring it has no effect.
+  // rolling upgrade. A batch operation therefore never carries conditional memberships. This ignore
+  // is load-bearing on any CSL version that defines the field (1.2.1+): removing it would write
+  // conditional_role_memberships into persisted batch operations and break older nodes on upgrade.
   @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
   @JsonIgnoreProperties({"anonymous", "conditionalRoleMemberships"})
   private abstract static class CamundaAuthenticationMixin {
