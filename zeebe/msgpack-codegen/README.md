@@ -176,3 +176,5 @@ public final class Foo extends MsgpackBufferValue<Foo> implements DbValue {
   property against `FooOps.SENTINEL_field` to see whether it is set.
 - A `@MsgpackPojo` is not a `BaseValue`, so an `UnpackedObject` cannot hold it in an
   `ObjectProperty` or `ArrayProperty`. The class that holds it must be a `@MsgpackPojo` too.
+
+Benchmark: `microbenchmarks/.../msgpack/StateValueBenchmark`, comparing `UnpackedObject`s with generated codecs.
