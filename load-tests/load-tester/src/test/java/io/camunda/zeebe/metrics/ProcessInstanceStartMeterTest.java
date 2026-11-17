@@ -664,6 +664,7 @@ class ProcessInstanceStartMeterTest {
 
     // then - the timeout is counted, and the latency is recorded as well
     await()
+        .ignoreExceptions()
         .untilAsserted(
             () -> {
               assertThat(
@@ -694,6 +695,7 @@ class ProcessInstanceStartMeterTest {
 
     // then
     await()
+        .ignoreExceptions()
         .untilAsserted(
             () ->
                 assertThat(
@@ -704,9 +706,29 @@ class ProcessInstanceStartMeterTest {
                     .isOne());
     assertThat(
             meterRegistry
-                .find(StarterLatencyMetricsDoc.DATA_AVAILABILITY_TIMED_OUT.getName())
-                .counters())
-        .isEmpty();
+                .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_TIMED_OUT.getName())
+                .tag("partition", "1")
+                .counter()
+                .count())
+        .isZero();
+  }
+
+  @Test
+  void shouldRegisterTimedOutCounterAtZeroWhenInstanceStarts() {
+    // given - the meter is not started, so no check can have run
+
+    // when
+    processInstanceStartMeter.recordProcessInstanceStart(
+        Protocol.encodePartitionId(1, 1), System.nanoTime());
+
+    // then - the counter already exists, so a first timeout is a visible increase from zero
+    assertThat(
+            meterRegistry
+                .get(StarterLatencyMetricsDoc.DATA_AVAILABILITY_TIMED_OUT.getName())
+                .tag("partition", "1")
+                .counter()
+                .count())
+        .isZero();
   }
 
   @Test
@@ -811,6 +833,7 @@ class ProcessInstanceStartMeterTest {
 
     // then - the stale instance is still evicted and its latency recorded
     await()
+        .ignoreExceptions()
         .untilAsserted(
             () ->
                 assertThat(

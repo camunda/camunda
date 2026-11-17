@@ -325,17 +325,17 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   }
 
   private void recordTimedOut(final PiCreationResult awaitingPI) {
-    final int partitionId = Protocol.decodePartitionId(awaitingPI.processInstanceKey);
-    partitionToTimedOutCounterMap
-        .computeIfAbsent(
-            partitionId,
-            key ->
-                Counter.builder(StarterLatencyMetricsDoc.DATA_AVAILABILITY_TIMED_OUT.getName())
-                    .description(
-                        StarterLatencyMetricsDoc.DATA_AVAILABILITY_TIMED_OUT.getDescription())
-                    .tag(StarterMetricKeyNames.PARTITION.asString(), Integer.toString(key))
-                    .register(registry))
-        .increment();
+    timedOutCounter(Protocol.decodePartitionId(awaitingPI.processInstanceKey)).increment();
+  }
+
+  private Counter timedOutCounter(final int partitionId) {
+    return partitionToTimedOutCounterMap.computeIfAbsent(
+        partitionId,
+        key ->
+            Counter.builder(StarterLatencyMetricsDoc.DATA_AVAILABILITY_TIMED_OUT.getName())
+                .description(StarterLatencyMetricsDoc.DATA_AVAILABILITY_TIMED_OUT.getDescription())
+                .tag(StarterMetricKeyNames.PARTITION.asString(), Integer.toString(key))
+                .register(registry));
   }
 
   private void recordInstanceAvailable(
@@ -374,12 +374,15 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
    * partition count share a factor, because instances are distributed round-robin.
    */
   public void recordProcessInstanceStart(final long processInstanceKey, final long startTimeNanos) {
+    final int partitionId = Protocol.decodePartitionId(processInstanceKey);
     final var started =
-        startedPerPartition.computeIfAbsent(
-            Protocol.decodePartitionId(processInstanceKey), partition -> new AtomicLong());
+        startedPerPartition.computeIfAbsent(partitionId, partition -> new AtomicLong());
     if (started.getAndIncrement() % samplingStride != 0) {
       return;
     }
+    // Register the timeout counter at zero as soon as the partition is tracked: Prometheus can only
+    // see a first timeout as an increase if the series already exists.
+    timedOutCounter(partitionId);
     pendingInstances.add(new PiCreationResult(processInstanceKey, startTimeNanos));
   }
 
