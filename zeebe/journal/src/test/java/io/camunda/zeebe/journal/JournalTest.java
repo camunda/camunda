@@ -229,7 +229,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldTruncate() {
+  void shouldTruncate() throws Exception {
     // given
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
@@ -242,10 +242,16 @@ final class JournalTest {
     // when
     journal.deleteAfter(1);
 
-    // then
+    // then - nothing was flushed, so the truncation must not claim entry 1 as flushed
     assertThat(journal.getLastIndex()).isEqualTo(1);
-    assertThat(metaStore.loadLastFlushedIndex()).isOne();
+    assertThat(metaStore.hasLastFlushedIndex()).isFalse();
     assertThat(reader.hasNext()).isFalse();
+
+    // when
+    journal.flush();
+
+    // then
+    assertThat(metaStore.loadLastFlushedIndex()).isOne();
   }
 
   @Test
