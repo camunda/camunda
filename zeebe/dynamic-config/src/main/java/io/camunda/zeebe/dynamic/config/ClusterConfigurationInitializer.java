@@ -194,6 +194,9 @@ public interface ClusterConfigurationInitializer {
   class GossipInitializer
       implements ClusterConfigurationInitializer, ClusterConfigurationUpdateListener {
 
+    static final Duration DEFAULT_WAIT_LOG_INTERVAL = Duration.ofSeconds(10);
+    static final int ERROR_LOG_THRESHOLD = 10;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(GossipInitializer.class);
     private final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier;
     private final PersistedClusterConfiguration persistedClusterConfiguration;
@@ -201,12 +204,30 @@ public interface ClusterConfigurationInitializer {
     private final ActorFuture<ClusterConfiguration> initialized;
 
     private final ConcurrencyControl executor;
+    private final Duration waitLogInterval;
+    private ScheduledTimer waitLogTimer;
+    private int waitLogCount;
 
     public GossipInitializer(
         final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
         final PersistedClusterConfiguration persistedClusterConfiguration,
         final Consumer<ClusterConfiguration> configurationGossiper,
         final ConcurrencyControl executor) {
+      this(
+          clusterConfigurationUpdateNotifier,
+          persistedClusterConfiguration,
+          configurationGossiper,
+          executor,
+          DEFAULT_WAIT_LOG_INTERVAL);
+    }
+
+    GossipInitializer(
+        final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
+        final PersistedClusterConfiguration persistedClusterConfiguration,
+        final Consumer<ClusterConfiguration> configurationGossiper,
+        final ConcurrencyControl executor,
+        final Duration waitLogInterval) {
+      this.waitLogInterval = waitLogInterval;
       this.clusterConfigurationUpdateNotifier = clusterConfigurationUpdateNotifier;
       this.persistedClusterConfiguration = persistedClusterConfiguration;
       this.configurationGossiper = configurationGossiper;
@@ -226,7 +247,25 @@ public interface ClusterConfigurationInitializer {
         // received gossip
         configurationGossiper.accept(persistedClusterConfiguration.getConfiguration());
       }
+      // Without this, a coordinator that never comes up leaves this member silently waiting.
+      waitLogTimer = executor.runAtFixedRate(waitLogInterval, this::logStillWaiting);
       return initialized;
+    }
+
+    private void logStillWaiting() {
+      if (initialized.isDone()) {
+        return;
+      }
+      waitLogCount++;
+      final var waited = waitLogInterval.multipliedBy(waitLogCount);
+      final var message =
+          "Still waiting for the coordinator to provide the initial cluster configuration via"
+              + " gossip after {}. Check that the coordinator (broker 0) is up and healthy.";
+      if (waitLogCount >= ERROR_LOG_THRESHOLD) {
+        LOGGER.error(message, waited);
+      } else {
+        LOGGER.warn(message, waited);
+      }
     }
 
     @Override
@@ -240,6 +279,9 @@ public interface ClusterConfigurationInitializer {
               LOGGER.debug("Received cluster configuration {} via gossip.", clusterConfiguration);
               initialized.complete(clusterConfiguration);
               clusterConfigurationUpdateNotifier.removeUpdateListener(this);
+              if (waitLogTimer != null) {
+                waitLogTimer.cancel();
+              }
             }
           });
     }
