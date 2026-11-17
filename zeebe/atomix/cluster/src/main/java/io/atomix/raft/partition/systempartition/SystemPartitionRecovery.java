@@ -62,8 +62,9 @@ public final class SystemPartitionRecovery {
 
   /**
    * Phase 0 of a force-remove plan (5.6.3): removes the given brokers from the system partition.
-   * Resends a forced change of an earlier try, else uses a normal change if the voters that are not
-   * removed are a quorum, else a forced change. The removed brokers go on the fence list.
+   * Resends a forced change of an earlier try (the brokers are not in it and are fenced), else uses
+   * a normal change if the voters that are not removed are a quorum, else a forced change. The
+   * removed brokers go on the fence list.
    *
    * @param removed the brokers to remove
    * @param reports the reports of the reachable members that are not removed
@@ -71,13 +72,18 @@ public final class SystemPartitionRecovery {
   public static RecoveryDecision removeMembers(
       final Set<MemberId> removed, final Collection<MemberReport> reports) {
     final var configuration = latestConfiguration(reports);
-    final var fencedIds = fencedIds(configuration);
     final var removedMembers =
         configuration.allMembers().stream()
             .filter(member -> removed.contains(member.memberId()))
             .toList();
 
-    if (configuration.force() && fencedIds.containsAll(removed)) {
+    // A forced configuration that already removed and fenced the brokers is an earlier try of
+    // this operation. A forced configuration that still has them, e.g. one of "force system
+    // partition voters", is not.
+    if (configuration.force()
+        && removedMembers.isEmpty()
+        && removed.stream()
+            .allMatch(member -> isFencedAsReported(member, configuration, reports))) {
       return new RecoveryDecision.ResendForced(configuration);
     }
     if (removedMembers.isEmpty()) {
@@ -109,18 +115,18 @@ public final class SystemPartitionRecovery {
   public static RecoveryDecision forceVoters(
       final Set<MemberId> down, final Collection<MemberReport> reports) {
     final var configuration = latestConfiguration(reports);
-    final var fencedIds = fencedIds(configuration);
     final var downMembers =
         configuration.allMembers().stream()
             .filter(member -> down.contains(member.memberId()))
             .toList();
 
-    if (configuration.force() && fencedIds.containsAll(down)) {
-      return new RecoveryDecision.ResendForced(configuration);
-    }
     if (downMembers.stream().allMatch(configuration::isFenced)
         && downMembers.stream().noneMatch(member -> member.getType() == Type.ACTIVE)) {
-      return new RecoveryDecision.AlreadyDone(configuration);
+      // A forced configuration that already made the change is an earlier try; it is sent again
+      // until a leader ends it.
+      return configuration.force()
+          ? new RecoveryDecision.ResendForced(configuration)
+          : new RecoveryDecision.AlreadyDone(configuration);
     }
 
     return new RecoveryDecision.ForcedChange(
@@ -238,8 +244,25 @@ public final class SystemPartitionRecovery {
         .toList();
   }
 
-  private static Set<MemberId> fencedIds(final Configuration configuration) {
-    return configuration.fenced().stream().map(FenceEntry::memberId).collect(Collectors.toSet());
+  /**
+   * @return true if the configuration fences the member with each incarnation that a report knows
+   *     for it, or with any incarnation if no report knows the member
+   */
+  private static boolean isFencedAsReported(
+      final MemberId member,
+      final Configuration configuration,
+      final Collection<MemberReport> reports) {
+    final var knownIncarnations =
+        reports.stream()
+            .flatMap(report -> report.configuration().allMembers().stream())
+            .filter(m -> m.memberId().equals(member))
+            .map(RaftMember::getIncarnation)
+            .collect(Collectors.toSet());
+    if (knownIncarnations.isEmpty()) {
+      return configuration.fenced().stream().anyMatch(f -> f.memberId().equals(member));
+    }
+    return knownIncarnations.stream()
+        .allMatch(incarnation -> configuration.isFenced(member, incarnation));
   }
 
   /** Step 1 of 5.6.3: the configuration with the highest index, then term. */

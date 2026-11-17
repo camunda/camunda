@@ -291,6 +291,40 @@ final class SystemPartitionRecoveryTest {
     }
 
     @Test
+    void shouldRemoveBrokersThatForceVotersKeptAsFencedPassiveMembers() {
+      // given - "force system partition voters" kept the down brokers as fenced passive members,
+      // and no leader has ended the forced configuration yet
+      final var forced =
+          new Configuration(
+              8,
+              3,
+              1,
+              raftMembers(
+                  members(
+                      B1, ACTIVE, B2, ACTIVE, A1, PASSIVE, A2, PASSIVE, A3, PASSIVE, B3, PASSIVE,
+                      C1, PASSIVE),
+                  Map.of()),
+              List.of(),
+              true,
+              fenced(A1, A2, A3, C1),
+              POLICY);
+
+      // when - phase 0 removes zone a
+      final var decision =
+          SystemPartitionRecovery.removeMembers(
+              Set.of(A1, A2, A3), List.of(report(B1, forced, 20), report(B2, forced, 20)));
+
+      // then - a real removal, not a resend of the forced change
+      assertThat(decision)
+          .isEqualTo(
+              new NormalChange(
+                  members(B1, ACTIVE, B2, ACTIVE, B3, PASSIVE, C1, PASSIVE),
+                  fenced(A1, A2, A3),
+                  8,
+                  3));
+    }
+
+    @Test
     void shouldBeDoneIfBrokersAreNotMembers() {
       // given - the normal change of an earlier try committed
       final var configuration =
