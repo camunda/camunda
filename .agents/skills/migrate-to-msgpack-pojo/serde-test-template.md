@@ -1,12 +1,12 @@
 # Template for `<Name>SerdeTest`
 
 Copy into `<module>/src/test/java/<package path>/<Name>SerdeTest.java` and replace `Name`. Keep
-the structure and the `// given // when // then` comments. `NameV1` is the frozen copy of the old
+the structure and the `// given // when // then` comments. `legacy.Name` (fully qualified: `<package>.legacy.Name`) is the frozen copy of the old
 class, next to this test in `src/test`. Kind A example: `zeebe/engine/src/test/java/io/camunda/zeebe/engine/state/instance/ElementInstanceSerdeTest.java`.
 
 Adjust the tests to the class:
 
-- Derive expected defaults from a fresh instance (`new NameV1()`), never from memory.
+- Derive expected defaults from a fresh instance (`new <package>.legacy.Name()`), never from memory.
 - Nested records: set every field the class stores to a non-default value in test 1. Include one
   value large enough to change the msgpack header (a 40 byte string, a list of 20 entries).
 - Properties without a default cannot be written by the old class while unset: set them on both
@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The serialized format must not change, otherwise migration, rollback and mixed version clusters
- * break. {@link NameV1} is a frozen copy of the property based implementation the generated codec
+ * break. {@link <package>.legacy.Name} is a frozen copy of the property based implementation the generated codec
  * replaced.
  */
 final class NameSerdeTest {
@@ -42,7 +42,7 @@ final class NameSerdeTest {
   @Test
   void shouldWriteTheSameBytesAsV1() {
     // given
-    final var v1 = new NameV1();
+    final var v1 = new <package>.legacy.Name();
     final var current = new Name();
     // TODO: set EVERY property to a non-default value on BOTH objects, one pair of lines each:
     //   v1.setX(5L);
@@ -62,7 +62,7 @@ final class NameSerdeTest {
   @Test
   void shouldWriteTheSameBytesAsV1WithDefaults() {
     // given only what cannot be written unset, everything else stays default
-    final var v1 = new NameV1();
+    final var v1 = new <package>.legacy.Name();
     final var current = new Name();
     // TODO: set the properties that have no default, on both
 
@@ -79,7 +79,7 @@ final class NameSerdeTest {
   @Test
   void shouldReadBytesWrittenByV1() {
     // given
-    final var v1 = new NameV1();
+    final var v1 = new <package>.legacy.Name();
     // TODO: set a few properties to non-default values
     final var bytes = new ExpandableArrayBuffer();
     final int length = v1.write(bytes, 0);
@@ -103,11 +103,11 @@ final class NameSerdeTest {
     final int length = current.write(bytes, 0);
 
     // when
-    final var v1 = new NameV1();
+    final var v1 = new <package>.legacy.Name();
     v1.wrap(bytes, 0, length);
 
     // then
-    // TODO: assert the values through the V1 getters
+    // TODO: assert the values through the legacy getters
   }
 
   @Test
@@ -161,7 +161,7 @@ final class NameSerdeTest {
   @Test
   void shouldProduceTheSameJsonAsV1() throws Exception {
     // given
-    final var v1 = new NameV1();
+    final var v1 = new <package>.legacy.Name();
     final var current = new Name();
     // TODO: set EVERY property to a non-default value on BOTH objects (same values as the first
     // test; extract a helper if it is long)

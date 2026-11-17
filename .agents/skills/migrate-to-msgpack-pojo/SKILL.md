@@ -8,7 +8,7 @@ description: Use when converting a class built from XxxProperty fields (an engin
 Converts classes, one at a time, from the property-tree style (`LongProperty`, `declareProperty`, ...) to a plain
 data class whose msgpack codec is generated. The serialized bytes must not change: state written
 by an old broker has to stay readable (rollback, migration), and records are written to the log,
-exported and replicated. A frozen copy of the old class (`<Name>V1`) plus a byte comparison test
+exported and replicated. A frozen copy of the old class (`<package>.legacy.Name`) plus a byte comparison test
 proves that.
 
 Background: `zeebe/msgpack-codegen/README.md` (read it first, it lists the supported types and the
@@ -21,16 +21,16 @@ generator rules).
 | Where | `zeebe/engine/src/main/java/io/camunda/zeebe/engine/state/**` | `zeebe/protocol-impl/.../protocol/impl/record/value/**` |
 | Old base | `extends UnpackedObject implements DbValue` | `extends UnifiedRecordValue implements <Name>Value` |
 | New declaration | `public final class Name extends MsgpackBufferValue<Name> implements DbValue` | `public final class Name extends MsgpackBufferValue<Name> implements MsgpackRecordValue, <Name>Value` |
-| `NameV1` goes to | `src/test` of the same module, same package | `src/test` of `zeebe/protocol-impl`, same package (a copy in `src/main` would need a golden: `RecordGoldenFilesTest` demands one for every source under the record package) |
+| `legacy.Name` goes to | `src/test` of the same module, child package `legacy` of the class | `src/test` of `zeebe/protocol-impl`, child package `legacy` of the record (a copy in `src/main` would need a golden: `RecordGoldenFilesTest` demands one for every source under the record package) |
 | Gradle project | `:zeebe-workflow-engine` (or the module of the class) | `:zeebe-protocol-impl` |
 | Extra proof | bytes | bytes **and** `toJson()` (exporters see the JSON) |
 | Golden files | none | `RecordGoldenFilesTest` must pass with the unchanged golden (step 6) |
 
 Worked examples for A, read one first: `zeebe/engine/src/main/java/io/camunda/zeebe/engine/state/instance/`
-`ElementInstance.java`, `IndexedRecord.java`, `TaskListenerIndicesRecord.java`, their `*V1.java`
+`ElementInstance.java`, `IndexedRecord.java`, `TaskListenerIndicesRecord.java`, their `legacy/*.java`
 copies and `ElementInstanceSerdeTest.java` under `src/test`. (They exist once the engine state PR
 is in; if they are missing on your branch, ask the user where they live. The workshop examples keep
-the `*V1.java` copies in `src/main`; new ones go to `src/test`.)
+the frozen copies in `src/main`; new ones go to `src/test`, in the `legacy` package.)
 For B the design is `MsgpackRecordValue`
 (`zeebe/protocol-impl/src/main/java/io/camunda/zeebe/protocol/impl/record/MsgpackRecordValue.java`):
 an interface with `wrap(DirectBuffer)`, `toJson()` and `valueType()` as defaults, so a record does
@@ -39,7 +39,7 @@ unmigrated records mix wherever a `MsgpackRecordValue` is taken.
 
 ## Rules
 
-- Migrate one class at a time: do steps 1-6 for a class, with its own `NameV1` and `NameSerdeTest`,
+- Migrate one class at a time: do steps 1-6 for a class, with its own `legacy.Name` and `NameSerdeTest`,
   and see them pass before you start the next. Commit once per kind: one commit for the engine
   state classes (kind A), one for the protocol-impl records (kind B). Never mix the kinds in a
   commit, and never commit a class whose step 6 is not green.
@@ -143,8 +143,7 @@ Also check, and STOP if any of these is true:
 3. `UnpackedObject` members the class loses and that something uses: `copyFrom`, `copyTo`,
    `isEmpty`, `getEncodedLength`, `writeJSON`, `toString`, `hashCode`. Search the repo for callers
    on this class (`grep -rn "<method>(" zeebe/ --include=*.java`, check the receiver type).
-   Unused: drop. Used: STOP. (`wrap(DirectBuffer)` is provided by `MsgpackRecordValue` for B; for A
-   see step 3.6.)
+   Unused: drop. Used: STOP. (`wrap(DirectBuffer)` is provided by `MsgpackBufferValue`.)
 4. Equality and string representation. `MsgpackBufferValue` delegates `equals`, `hashCode` and
    `toString` to the generated `NameOps`; equality and hashing are content-based over stored
    properties, not identity-based. Do not stop just because tests or code rely on value equality.
@@ -176,7 +175,7 @@ leaves the property out, as the legacy classes do. The bytes are identical. Tran
 is that of the legacy `getValue()`. Differences to
 mention in the commit body: `get()` of an unset holder throws `IllegalStateException` (the legacy
 one a `MsgpackPropertyException` with the key). In the serde tests, cover the unset write and read like the
-`NameV1` twin does.
+`legacy.Name` twin does.
 
 A holder costs one object per instance and a slower copy; a `@MsgpackRequired` primitive costs
 nothing, but its sentinel can never be a real value (writing or reading it fails like an unset
@@ -197,20 +196,29 @@ order, not the order of the field declarations, is the stored order. For each: k
 default. Keys may be constants (`NAME_KEY`) or `new StringValue("..")`; resolve them. You need
 this list in steps 3 and 5.
 
-## Step 2: freeze the old class as `<Name>V1`
+## Step 2: freeze the old class in the `legacy` package
 
 Copy the current class (and every class you migrate together with it, e.g. nested ones) BEFORE
-editing it (do not use `git show`, some environments block it). Same package, renamed, in the TEST
-sources of the module: only the serde test needs it, so it must not ship.
+editing it (do not use `git show`, some environments block it). Same name, in the child package
+`legacy` of the TEST sources of the module: only the serde test needs it, so it must not ship.
+The copy is a plain copy/paste, only the package changes.
 
 ```bash
-cp <module>/src/main/java/<package path>/Name.java <module>/src/test/java/<package path>/NameV1.java
-sed -i -E 's/\b(Name|NestedName)\b/\1V1/g' <module>/src/test/java/<package path>/NameV1.java
+mkdir -p <module>/src/test/java/<package path>/legacy
+cp <module>/src/main/java/<package path>/Name.java <module>/src/test/java/<package path>/legacy/Name.java
+sed -i -E 's/^package ([a-zA-Z0-9_.]+);/package \1.legacy;/' <module>/src/test/java/<package path>/legacy/Name.java
 ```
 
-Replace `Name`/`NestedName` with the real class names (one alternation entry per frozen class). If
-the original is `public class`, make the V1 copy `public final class` too. Insert this Javadoc
-directly above the class declaration of each V1 file:
+Then fix what the move breaks, so that the copy compiles unchanged otherwise:
+
+- Make the class `public final` and give it public constructors and methods: the serde test lives
+  in the parent package and uses them.
+- Add imports for the classes of the original package that the copy used without import.
+- A class it holds that is itself frozen (another `legacy.Other`) is imported from its `legacy`
+  package, never the current one.
+
+The tests use the fully qualified name (`<package>.legacy.Name`), because the current `Name` is in
+scope there. Insert this Javadoc directly above the class declaration of each legacy file:
 
 ```java
 /**
@@ -219,7 +227,7 @@ directly above the class declaration of each V1 file:
  */
 ```
 
-A V1 copy of a record may drop the `<Name>Value` interface and its `@Override`s if that is
+A legacy copy of a record may drop the `<Name>Value` interface and its `@Override`s if that is
 awkward; the comparison only needs `write`, `wrap`, `getLength`, `toJson`, setters and getters.
 
 ## Step 3: convert the class
@@ -300,9 +308,8 @@ Edit the class in place:
    - Kind A: if the class overrode `wrap(...)` to copy the input bytes first, keep that override
      but make it call `super.wrap(copy, 0, length)` (see `IndexedRecord.wrap`). A class that holds
      an unmigrated `UnpackedObject` as a nested field decodes it by reference to the input buffer,
-     so it must copy the input first in the same way. The one-argument `wrap(DirectBuffer)` from
-     `UnpackedObject` does not exist on `MsgpackBufferValue`; callers use
-     `wrap(buffer, 0, buffer.capacity())` (`grep` for them and rewrite; STOP if outside the engine).
+     so it must copy the input first in the same way. `MsgpackBufferValue` provides the one-argument
+     `wrap(DirectBuffer)` like `UnpackedObject`, so callers need no rewrite.
      Test helpers typed on `UnpackedObject` (e.g. `serialize(UnpackedObject)`) no longer accept
      the class: `grep -rn "UnpackedObject" <module>/src/test` and widen the parameter to
      `io.camunda.zeebe.util.buffer.BufferWriter`.
@@ -343,15 +350,15 @@ is next to it. Inspect its `reset`, `equals`, `hashCode` and `toString` operatio
 ## Step 5: write the byte comparison test
 
 Copy `serde-test-template.md` (next to this file) to `<Name>SerdeTest.java` in the test sources of
-the same module and package, and fill it in. It must contain, for the new class vs `NameV1`:
+the same module and package, and fill it in. It must contain, for the new class vs `legacy.Name`:
 
 1. same bytes when every property is set to a non-default value,
 2. same bytes with only the constructor-required values set (defaults everywhere else),
-3. reads the bytes written by `NameV1` into a target whose EVERY property was first set to a
+3. reads the bytes written by `legacy.Name` into a target whose EVERY property was first set to a
    non-default value (proves the generated reset restores every default),
-4. is read by `NameV1`,
+4. is read by `legacy.Name`,
 5. unknown properties of a newer version survive read, modify, write,
-6. kind B only: `toJson()` equals that of `NameV1` for a fully populated value,
+6. kind B only: `toJson()` equals that of `legacy.Name` for a fully populated value,
 7. a decoded value does not reference the buffer it was read from: only for classes that copy the
    input in `wrap`, or whose legacy setters copied explicitly. Skip it for classes that only had
    views before.
@@ -373,7 +380,7 @@ input" and the XML files stay stale. `-q` prints nothing on success; to confirm 
 XML files (nested test classes get mangled file names):
 `grep -ho 'tests="[0-9]*"' <module>/build/test-results/test/*.xml | grep -o '[0-9]*' | paste -sd+ | bc`.
 A failure means behavior changed: fix the class (usually a missing copy, a wrong default or a wrong
-order), never the test and never the V1 copy.
+order), never the test and never the legacy copy.
 
 ### Kind B: `RecordGoldenFilesTest`
 
@@ -397,12 +404,12 @@ the property type the field replaces) and finds a renamed field by its key.
 ./gradlew :<project>:spotlessApply
 ```
 
-Then `git add` only the files you changed (every migrated class of this kind with its `NameV1` and
+Then `git add` only the files you changed (every migrated class of this kind with its `legacy.Name` and
 `NameSerdeTest`, the build files once per module, nothing under the goldens), commit and push: one
 commit for the whole kind. Header examples:
 `refactor: replace UnpackedObject based engine state classes with generated codecs` and
 `refactor: replace UnpackedObject based records with generated codecs`. The body lists the migrated
-classes, says that the stored format is unchanged and that the V1 comparison tests prove it, and
+classes, says that the stored format is unchanged and that the legacy comparison tests prove it, and
 lists actual behavior changes per class (for example, final class or unset-property behavior).
 Generated `NameOps` provides content-based equality, hashing and string output. Gradle may regenerate
 `dist/src/main/config/defaults.yaml`; revert it with `git checkout`.
@@ -413,7 +420,7 @@ Generated `NameOps` provides content-based equality, hashing and string output. 
 - A lost `UnpackedObject` member is used, or step 0 identifies an equality/string behavior mismatch
   that the migration cannot preserve as written.
 - Kind B: `RecordGoldenFilesTest` fails and the cause is not a changed key or type (step 6).
-- Any V1 comparison fails and the cause is not obvious after one fix attempt.
+- Any legacy comparison fails and the cause is not obvious after one fix attempt.
 - The class is used by code outside its module in a way that needs a signature change.
-- You are tempted to edit the generator, `zb-db`, a `ColumnFamily`, the V1 copy, or a golden to make
+- You are tempted to edit the generator, `zb-db`, a `ColumnFamily`, the legacy copy, or a golden to make
   something pass.
