@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.deletion;
 
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import io.camunda.exporter.tasks.util.FilterByKeysQuery;
@@ -14,7 +15,12 @@ import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.exporter.tasks.util.SearchAfter;
 import io.camunda.exporter.tasks.util.SearchAfterOS;
 import io.camunda.search.schema.config.DeleterConfiguration;
+import io.camunda.search.schema.config.RetentionConfiguration;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -33,15 +39,60 @@ import org.slf4j.Logger;
 public class OpensearchDeletionRepository extends OpensearchRepository
     implements DeletionRepository {
   private final DeleteByIdPipeline pipeline;
+  private final DeleterConfiguration config;
+  private final RetentionConfiguration retention;
+  private final ProcessInstanceRetentionMode retentionMode;
+  private final int partitionId;
+  private final IndexTemplateDescriptor listViewTemplate;
 
   public OpensearchDeletionRepository(
       final DeleterConfiguration config,
+      final RetentionConfiguration retention,
+      final ProcessInstanceRetentionMode retentionMode,
+      final int partitionId,
+      final IndexTemplateDescriptor listViewTemplate,
       final OpenSearchAsyncClient client,
       final Executor executor,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
     super(client, executor, logger);
+    this.config = config;
+    this.retention = retention;
+    this.retentionMode = retentionMode;
+    this.partitionId = partitionId;
+    this.listViewTemplate = listViewTemplate;
     pipeline = new DeleteByIdPipeline(config, this, metrics, logger);
+  }
+
+  @Override
+  public CompletableFuture<ProcessInstanceDeletionBatch> getProcessInstancesNextBatch() {
+    final var request =
+        new Builder()
+            .trackTotalHits(t -> t.enabled(false))
+            .index(listViewTemplate.getOrdinalIndexPattern())
+            .requestCache(false)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .query(
+                finishedProcessInstancesQuery(
+                    "now-" + retention.getMinimumAge(), partitionId, retentionMode))
+            .size(config.getEntityBatchSize())
+            .source(
+                s -> s.filter(f -> f.includes(List.of(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY))))
+            .sort(
+                sort ->
+                    sort.field(
+                        field -> field.field(ListViewTemplate.END_DATE).order(SortOrder.Asc)))
+            .build();
+
+    try {
+      return client
+          .search(request, ProcessInstanceForListViewEntity.class)
+          .thenApplyAsync(
+              response -> toProcessInstanceDeletionBatch(response.hits().hits()), executor);
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(e);
+    }
   }
 
   @Override
@@ -136,5 +187,22 @@ public class OpensearchDeletionRepository extends OpensearchRepository
 
     // only count DELETE bulk operation where result was `deleted`
     return response.items().stream().filter(i -> "deleted".equals(i.result())).count();
+  }
+
+  private ProcessInstanceDeletionBatch toProcessInstanceDeletionBatch(
+      final List<Hit<ProcessInstanceForListViewEntity>> hits) {
+    final List<Long> processInstanceKeys = new ArrayList<>();
+    final List<Long> rootProcessInstanceKeys = new ArrayList<>();
+
+    for (final var hit : hits) {
+      final var rootKey = hit.source() == null ? null : hit.source().getRootProcessInstanceKey();
+      if (retentionMode != ProcessInstanceRetentionMode.PI && rootKey != null) {
+        rootProcessInstanceKeys.add(rootKey);
+      } else {
+        processInstanceKeys.add(Long.valueOf(hit.id()));
+      }
+    }
+
+    return new ProcessInstanceDeletionBatch(processInstanceKeys, rootProcessInstanceKeys);
   }
 }

@@ -19,6 +19,7 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.TrackHits;
+import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration.ProcessInstanceRetentionMode;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.AsyncDocumentPipeline.DocumentBatch;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
@@ -26,6 +27,11 @@ import io.camunda.exporter.tasks.util.FilterByKeysQuery;
 import io.camunda.exporter.tasks.util.SearchAfter;
 import io.camunda.exporter.tasks.util.SearchAfterES;
 import io.camunda.search.schema.config.DeleterConfiguration;
+import io.camunda.search.schema.config.RetentionConfiguration;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -35,16 +41,55 @@ import org.slf4j.Logger;
 public class ElasticsearchDeletionRepository extends ElasticsearchRepository
     implements DeletionRepository {
   private final DeleteByIdPipeline pipeline;
+  private final DeleterConfiguration config;
+  private final RetentionConfiguration retention;
+  private final ProcessInstanceRetentionMode retentionMode;
+  private final int partitionId;
+  private final IndexTemplateDescriptor listViewTemplate;
 
   public ElasticsearchDeletionRepository(
       final DeleterConfiguration config,
+      final RetentionConfiguration retention,
+      final ProcessInstanceRetentionMode retentionMode,
+      final int partitionId,
+      final IndexTemplateDescriptor listViewTemplate,
       final ElasticsearchAsyncClient client,
       final Executor executor,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
     super(client, executor, logger);
+    this.config = config;
+    this.retention = retention;
+    this.retentionMode = retentionMode;
+    this.partitionId = partitionId;
+    this.listViewTemplate = listViewTemplate;
 
     pipeline = new DeleteByIdPipeline(config, this, metrics, logger);
+  }
+
+  @Override
+  public CompletableFuture<ProcessInstanceDeletionBatch> getProcessInstancesNextBatch() {
+    final var request =
+        new SearchRequest.Builder()
+            .trackTotalHits(TrackHits.of(t -> t.enabled(false)))
+            .index(listViewTemplate.getOrdinalIndexPattern())
+            .requestCache(false)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .query(
+                finishedProcessInstancesQuery(
+                    "now-" + retention.getMinimumAge(), partitionId, retentionMode))
+            .size(config.getEntityBatchSize())
+            .source(s -> s.filter(f -> f.includes(ListViewTemplate.ROOT_PROCESS_INSTANCE_KEY)))
+            .sort(
+                SortOptions.of(
+                    s -> s.field(f -> f.field(ListViewTemplate.END_DATE).order(SortOrder.Asc))))
+            .build();
+
+    return client
+        .search(request, ProcessInstanceForListViewEntity.class)
+        .thenApplyAsync(
+            response -> toProcessInstanceDeletionBatch(response.hits().hits()), executor);
   }
 
   @Override
@@ -114,6 +159,23 @@ public class ElasticsearchDeletionRepository extends ElasticsearchRepository
         .bulk(request)
         .thenApplyAsync(this::getDeletedDocCount, executor)
         .thenApply(Math::toIntExact);
+  }
+
+  private ProcessInstanceDeletionBatch toProcessInstanceDeletionBatch(
+      final List<Hit<ProcessInstanceForListViewEntity>> hits) {
+    final List<Long> processInstanceKeys = new ArrayList<>();
+    final List<Long> rootProcessInstanceKeys = new ArrayList<>();
+
+    for (final var hit : hits) {
+      final var rootKey = hit.source() == null ? null : hit.source().getRootProcessInstanceKey();
+      if (retentionMode != ProcessInstanceRetentionMode.PI && rootKey != null) {
+        rootProcessInstanceKeys.add(rootKey);
+      } else {
+        processInstanceKeys.add(Long.valueOf(hit.id()));
+      }
+    }
+
+    return new ProcessInstanceDeletionBatch(processInstanceKeys, rootProcessInstanceKeys);
   }
 
   private long getDeletedDocCount(final BulkResponse response) {
