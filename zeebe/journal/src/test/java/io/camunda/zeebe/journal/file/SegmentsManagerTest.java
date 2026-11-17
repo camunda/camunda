@@ -20,10 +20,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayUtil;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -336,16 +336,26 @@ class SegmentsManagerTest {
 
   @Test
   void shouldCloseBackgroundIoExecutor() {
-    // given
-    final var bgIoExecutor = Executors.newSingleThreadExecutor();
-    segments = journalFactory.segmentsManager(directory, () -> bgIoExecutor);
+    // given - capture the bg I/O thread via the prep task it runs
+    final var loader = Mockito.spy(journalFactory.segmentLoader());
+    final var preparingThread = new AtomicReference<Thread>();
+    Mockito.doAnswer(
+            call -> {
+              preparingThread.set(Thread.currentThread());
+              return call.callRealMethod();
+            })
+        .when(loader)
+        .createUninitializedSegment(Mockito.any(), Mockito.any(), Mockito.any());
+    segments = journalFactory.segmentsManager(directory, loader);
     segments.open();
+    segments.getNextSegment();
+    segments.getNextSegment();
 
     // when
     segments.close();
 
     // then
-    assertThat(bgIoExecutor.isTerminated()).isTrue();
+    Awaitility.await("bg I/O thread is terminated").until(() -> !preparingThread.get().isAlive());
   }
 
   @Test

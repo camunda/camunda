@@ -13,7 +13,6 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalMetaStore;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -33,7 +32,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +56,6 @@ final class SegmentsManager implements AutoCloseable {
   private final SegmentLoader segmentLoader;
   private final String name;
   private final JournalMetaStore metaStore;
-  private final Supplier<ExecutorService> bgIoExecutorFactory;
   private @Nullable ExecutorService bgIoExecutor;
 
   private volatile @Nullable Segment currentSegment;
@@ -71,33 +68,6 @@ final class SegmentsManager implements AutoCloseable {
       final SegmentLoader segmentLoader,
       final JournalMetrics journalMetrics,
       final JournalMetaStore metaStore) {
-    this(
-        journalIndex,
-        maxSegmentSize,
-        directory,
-        name,
-        segmentLoader,
-        journalMetrics,
-        metaStore,
-        () ->
-            Executors.newSingleThreadExecutor(
-                task ->
-                    Thread.ofPlatform()
-                        .name("journal-bg-io-" + name)
-                        .daemon(true)
-                        .unstarted(task)));
-  }
-
-  @VisibleForTesting
-  SegmentsManager(
-      final JournalIndex journalIndex,
-      final int maxSegmentSize,
-      final Path directory,
-      final String name,
-      final SegmentLoader segmentLoader,
-      final JournalMetrics journalMetrics,
-      final JournalMetaStore metaStore,
-      final Supplier<ExecutorService> bgIoExecutorFactory) {
     this.name = checkNotNull(name, "name cannot be null");
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
@@ -105,7 +75,6 @@ final class SegmentsManager implements AutoCloseable {
     this.segmentLoader = segmentLoader;
     this.journalMetrics = journalMetrics;
     this.metaStore = metaStore;
-    this.bgIoExecutorFactory = bgIoExecutorFactory;
   }
 
   @Override
@@ -321,7 +290,9 @@ final class SegmentsManager implements AutoCloseable {
 
   /** Loads existing segments from the disk */
   void open() {
-    bgIoExecutor = bgIoExecutorFactory.get();
+    bgIoExecutor =
+        Executors.newSingleThreadExecutor(
+            task -> Thread.ofPlatform().name("journal-bg-io-" + name).daemon(true).unstarted(task));
     final var openDurationTimer = journalMetrics.startJournalOpenDurationTimer();
     // Load existing log segments from disk.
     for (final Segment segment : loadSegments()) {
