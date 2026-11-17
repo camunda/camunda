@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Raft server cluster API.
@@ -150,7 +151,18 @@ public interface RaftCluster {
    * @param members the members of the initial configuration with their types
    * @return A completable future to be completed once the cluster has been bootstrapped.
    */
-  CompletableFuture<Void> bootstrap(Map<MemberId, RaftMember.Type> members);
+  default CompletableFuture<Void> bootstrap(final Map<MemberId, RaftMember.Type> members) {
+    return bootstrap(members, null);
+  }
+
+  /**
+   * Bootstraps like {@link #bootstrap(Map)}, with a voter policy in the initial configuration. With
+   * a policy, the first leader appends a configuration entry right after its initial entry, so that
+   * a configuration index above 0 shows that the partition has been started. All members must be
+   * bootstrapped with the same policy.
+   */
+  CompletableFuture<Void> bootstrap(
+      Map<MemberId, RaftMember.Type> members, @Nullable VoterPolicy voterPolicy);
 
   /**
    * Joins the cluster as an {@link RaftMember.Type#ACTIVE} member.

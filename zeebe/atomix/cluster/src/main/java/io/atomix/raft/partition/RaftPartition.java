@@ -27,6 +27,7 @@ import io.atomix.raft.JoinOptions;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
+import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.camunda.cluster.PartitionId;
@@ -117,9 +118,24 @@ public final class RaftPartition implements Partition, HealthMonitorable {
       final PartitionManagementService managementService,
       final ReceivableSnapshotStore snapshotStore,
       final Map<MemberId, RaftMember.Type> members) {
+    return bootstrap(managementService, snapshotStore, members, null);
+  }
+
+  /**
+   * Bootstraps a partition with typed members and an optional voter policy. See {@link
+   * io.atomix.raft.cluster.RaftCluster#bootstrap(Map, VoterPolicy)}.
+   */
+  public CompletableFuture<RaftPartition> bootstrap(
+      final PartitionManagementService managementService,
+      final ReceivableSnapshotStore snapshotStore,
+      final Map<MemberId, RaftMember.Type> members,
+      final VoterPolicy voterPolicy) {
     if (members.containsKey(managementService.getMembershipService().getLocalMember().id())) {
       initServer(managementService, snapshotStore);
-      return server.bootstrap(members).thenApply(v -> this);
+      return (voterPolicy == null
+              ? server.bootstrap(members)
+              : server.bootstrap(members, voterPolicy))
+          .thenApply(v -> this);
     }
     return CompletableFuture.completedFuture(this);
   }

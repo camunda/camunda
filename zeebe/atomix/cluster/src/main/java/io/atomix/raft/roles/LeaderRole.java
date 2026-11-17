@@ -76,6 +76,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -310,6 +311,16 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .build()));
     }
 
+    final var exceededZone =
+        zoneExceedingVoterPolicy(configuration, updatedMembers, targetVoterPolicy);
+    if (exceededZone != null) {
+      return CompletableFuture.completedFuture(
+          rejectReconfigure(
+              Type.CONFIGURATION_ERROR,
+              "Cannot add a voter to zone '%s', it would have more voters than the voter policy %s allows"
+                  .formatted(exceededZone, targetVoterPolicy)));
+    }
+
     // A fenced member is not replicated to, thus as a voter it would block every commit.
     final var fencedVoter =
         updatedMembers.stream()
@@ -471,6 +482,43 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
           new RaftError(
               Type.NOT_READY, "Not ready to decide whether %s may join".formatted(member));
     };
+  }
+
+  /**
+   * Returns a zone that the target configuration gives more voters than the voter policy allows, if
+   * the change adds voters to it. A zone that is not in the policy has no voter slots; a member
+   * without a zone is in the zone "". A change that does not add voters to a zone is allowed even
+   * if the zone has too many, so that the extra voters can be demoted one at a time, and a policy
+   * change does not need to fix all zones at once.
+   *
+   * @return the zone, or null if the change respects the policy or there is no policy
+   */
+  private static @Nullable String zoneExceedingVoterPolicy(
+      final Configuration configuration,
+      final Collection<RaftMember> targetMembers,
+      final @Nullable VoterPolicy voterPolicy) {
+    if (voterPolicy == null) {
+      return null;
+    }
+    final var currentVoters = votersByZone(configuration.newMembers());
+    final var targetVoters = votersByZone(targetMembers);
+    for (final var zoneVoters : targetVoters.entrySet()) {
+      final var zone = zoneVoters.getKey();
+      final long voters = zoneVoters.getValue();
+      final long slots = voterPolicy.votersOf(zone).orElse(0);
+      if (voters > slots && voters > currentVoters.getOrDefault(zone, 0L)) {
+        return zone;
+      }
+    }
+    return null;
+  }
+
+  private static Map<String, Long> votersByZone(final Collection<RaftMember> members) {
+    return members.stream()
+        .filter(member -> member.getType() == RaftMember.Type.ACTIVE)
+        .collect(
+            Collectors.groupingBy(
+                member -> Objects.toString(member.memberId().zone(), ""), Collectors.counting()));
   }
 
   /** The fence list only grows: the request can add entries, but never remove one. */
@@ -812,6 +860,40 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     appendEntry(new RaftLogEntry(term, new InitialEntry()));
   }
 
+  /**
+   * The first leader of a partition that was bootstrapped with a voter policy appends the initial
+   * configuration (index 0) as an entry, right after its initial entry. Thus a configuration index
+   * above 0 shows that the partition has been started, and the entry confirms the policy. Without a
+   * policy nothing changes, so that existing partitions keep their log.
+   *
+   * <p>It is appended once the initial entry is committed, before the leadership is announced, so
+   * no other entry precedes it. Appending it earlier loses it on the followers: a follower with an
+   * empty log resets its log on the first append and falls back to its stored configuration, which
+   * drops a configuration that it received before the entry, and the leader does not send it again.
+   */
+  private void appendFirstConfigurationEntry() {
+    final var configuration = raft.getCluster().getConfiguration();
+    if (configuration.index() != 0
+        || configuration.voterPolicy() == null
+        || configuration.force()
+        || configuration.requiresJointConsensus()) {
+      return;
+    }
+    log.info(
+        "Appending the initial configuration with voter policy {}", configuration.voterPolicy());
+    configure(
+            configuration.newMembers(),
+            List.of(),
+            configuration.fenced(),
+            configuration.voterPolicy())
+        .whenComplete(
+            (index, error) -> {
+              if (error != null) {
+                log.debug("Failed to commit the first configuration entry", error);
+              }
+            });
+  }
+
   /** Commits a no-op entry to the log, ensuring any entries from a previous term are committed. */
   private CompletableFuture<Void> commitInitialEntries() {
     // The Raft protocol dictates that leaders cannot commit entries from previous terms until
@@ -827,6 +909,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               raft.checkThread();
               if (isRunning()) {
                 if (error == null) {
+                  // Before anything that waits for the initial entry, so that no other entry is
+                  // appended before it.
+                  appendFirstConfigurationEntry();
                   future.complete(null);
                 } else {
                   log.info("Failed to commit the initial entry, stepping down");

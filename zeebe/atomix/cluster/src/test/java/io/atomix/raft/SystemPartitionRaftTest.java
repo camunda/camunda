@@ -25,6 +25,8 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
+import io.atomix.raft.cluster.VoterPolicy;
+import io.atomix.raft.cluster.VoterPolicy.ZoneVoters;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.PollRequest;
@@ -796,6 +798,122 @@ final class SystemPartitionRaftTest {
       assertThat(response.error().type()).isEqualTo(RaftError.Type.NOT_A_MEMBER);
       assertThat(response.index()).isEqualTo(current.index());
       assertThat(configurationId(leader)).isEqualTo(current);
+    }
+  }
+
+  @Nested
+  final class VoterPolicyInConfiguration {
+    private final MemberId a0 = MemberId.from("a_0");
+    private final MemberId a1 = MemberId.from("a_1");
+    private final MemberId b0 = MemberId.from("b_0");
+    private final VoterPolicy oneVoterPerZone =
+        VoterPolicy.of(new ZoneVoters("a", 1), new ZoneVoters("b", 1));
+
+    private List<RaftServer> bootstrapWithPolicy() {
+      final var members = Map.of(a0, Type.ACTIVE, b0, Type.ACTIVE, a1, Type.PASSIVE);
+      final var servers =
+          List.of(createServer(a0, b0, a1), createServer(b0, a0, a1), createServer(a1, a0, b0));
+      CompletableFuture.allOf(
+              servers.stream()
+                  .map(server -> server.bootstrap(members, oneVoterPerZone))
+                  .toArray(CompletableFuture[]::new))
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+      return servers;
+    }
+
+    private Configuration configurationOf(final RaftServer server) {
+      return onRaftThread(server, () -> server.getContext().getCluster().getConfiguration());
+    }
+
+    @Test
+    void shouldAppendInitialConfigurationWithPolicyAsFirstLeader() {
+      // when
+      final var cluster = bootstrapWithPolicy();
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+
+      // then - every member learns a configuration with an index above 0 that has the policy
+      Awaitility.await("all members have the first configuration entry")
+          .untilAsserted(
+              () ->
+                  cluster.forEach(
+                      server -> {
+                        final var configuration = configurationOf(server);
+                        assertThat(configuration.index()).isPositive();
+                        assertThat(configuration.voterPolicy()).isEqualTo(oneVoterPerZone);
+                      }));
+      assertThat(memberTypes(leader))
+          .isEqualTo(Map.of(a0, Type.ACTIVE, b0, Type.ACTIVE, a1, Type.PASSIVE));
+    }
+
+    @Test
+    void shouldNotAppendConfigurationEntryWithoutPolicy() {
+      // when
+      final var cluster = bootstrapTwoVotersOnePassive();
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+      appendEntry(leader);
+
+      // then
+      assertThat(configurationOf(leader).index()).isZero();
+    }
+
+    @Test
+    void shouldRejectPromotionBeyondPolicy() {
+      // given
+      final var cluster = bootstrapWithPolicy();
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+      appendEntry(leader);
+
+      // when
+      final var response =
+          Awaitility.await("leader answers with a final response")
+              .until(
+                  () -> {
+                    final var current = configurationId(leader);
+                    return leader
+                        .reconfigure(
+                            Map.of(a0, Type.ACTIVE, b0, Type.ACTIVE, a1, Type.ACTIVE),
+                            current.index(),
+                            current.term())
+                        .orTimeout(10, TimeUnit.SECONDS)
+                        .join();
+                  },
+                  r -> r.error() == null || r.error().message().contains("voter policy"));
+
+      // then
+      assertThat(response.status()).isEqualTo(Status.ERROR);
+      assertThat(memberTypes(leader)).containsEntry(a1, Type.PASSIVE);
+    }
+
+    @Test
+    void shouldPromoteAfterPolicyUpdate() {
+      // given
+      final var cluster = bootstrapWithPolicy();
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+      appendEntry(leader);
+      final var twoVotersInA = VoterPolicy.of(new ZoneVoters("a", 2), new ZoneVoters("b", 1));
+
+      // when - the policy update is a configuration change of its own
+      Awaitility.await("policy is updated")
+          .until(
+              () -> {
+                final var current = configurationId(leader);
+                return leader
+                    .reconfigure(
+                        Map.of(a0, Type.ACTIVE, b0, Type.ACTIVE, a1, Type.PASSIVE),
+                        List.of(),
+                        twoVotersInA,
+                        current.index(),
+                        current.term())
+                    .orTimeout(10, TimeUnit.SECONDS)
+                    .join();
+              },
+              r -> r.status() == Status.OK);
+      awaitReconfigured(leader, leader, Map.of(a0, Type.ACTIVE, b0, Type.ACTIVE, a1, Type.ACTIVE));
+
+      // then
+      assertThat(configurationOf(leader).voterPolicy()).isEqualTo(twoVotersInA);
+      assertThat(memberTypes(leader)).containsEntry(a1, Type.ACTIVE);
     }
   }
 }

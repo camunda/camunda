@@ -308,6 +308,12 @@ public interface RaftServer {
   CompletableFuture<RaftServer> bootstrap(Map<MemberId, Type> members);
 
   /**
+   * Bootstraps the cluster with typed members and a voter policy, see {@link
+   * io.atomix.raft.cluster.RaftCluster#bootstrap(Map, VoterPolicy)}.
+   */
+  CompletableFuture<RaftServer> bootstrap(Map<MemberId, Type> members, VoterPolicy voterPolicy);
+
+  /**
    * Bootstraps the cluster using the provided cluster configuration.
    *
    * <p>Bootstrapping the cluster results in a new cluster being formed with the provided

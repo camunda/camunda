@@ -35,6 +35,7 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.SnapshotReplicationListener;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
+import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.metrics.RaftRequestMetrics;
 import io.atomix.raft.metrics.RaftStartupMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
@@ -119,6 +120,15 @@ public class RaftPartitionServer implements HealthMonitorable {
    */
   public CompletableFuture<RaftPartitionServer> bootstrap(final Map<MemberId, Type> members) {
     return bootstrap(server -> server.bootstrap(members));
+  }
+
+  /**
+   * Bootstraps with typed members and a voter policy, see {@link RaftServer#bootstrap(Map,
+   * VoterPolicy)}.
+   */
+  public CompletableFuture<RaftPartitionServer> bootstrap(
+      final Map<MemberId, Type> members, final VoterPolicy voterPolicy) {
+    return bootstrap(server -> server.bootstrap(members, voterPolicy));
   }
 
   private CompletableFuture<RaftPartitionServer> bootstrap(

@@ -25,6 +25,7 @@ import io.atomix.raft.JoinOptions;
 import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
+import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.impl.ReconfigurationHelper;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
@@ -38,6 +39,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -46,6 +48,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,7 +87,8 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   }
 
   @Override
-  public CompletableFuture<Void> bootstrap(final Map<MemberId, Type> cluster) {
+  public CompletableFuture<Void> bootstrap(
+      final Map<MemberId, Type> cluster, final @Nullable VoterPolicy voterPolicy) {
     final var localType = cluster.get(localMember.memberId());
     if (localType == null || localType == Type.INACTIVE) {
       return CompletableFuture.failedFuture(
@@ -111,7 +115,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
               reloadStoredConfiguration();
               reloadConfigurationFromLog();
               if (configuration == null) {
-                createInitialConfig(members);
+                createInitialConfig(members, voterPolicy);
               } else {
                 // The incarnation of the local member is part of the configuration, so that a
                 // restart keeps it.
@@ -182,7 +186,8 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     return configuration != null ? configuration.allMembers() : null;
   }
 
-  private void createInitialConfig(final Map<MemberId, Type> members) {
+  private void createInitialConfig(
+      final Map<MemberId, Type> members, final @Nullable VoterPolicy voterPolicy) {
     localMember.setType(members.get(localMember.memberId()));
 
     final Set<RaftMember> initialMembers =
@@ -199,7 +204,15 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     // Create a new configuration and store it on disk to ensure the cluster can fall back to the
     // configuration. The types are part of the stored configuration, so a restart keeps them.
     final var initialConfiguration =
-        new Configuration(0, 0, localMember.getLastUpdated().toEpochMilli(), initialMembers);
+        new Configuration(
+            0,
+            0,
+            localMember.getLastUpdated().toEpochMilli(),
+            initialMembers,
+            List.of(),
+            false,
+            List.of(),
+            voterPolicy);
     configure(initialConfiguration);
     commitCurrentConfiguration();
   }
