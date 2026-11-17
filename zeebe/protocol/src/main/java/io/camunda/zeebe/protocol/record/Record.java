@@ -90,15 +90,22 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
   String getBrokerVersion();
 
   /**
-   * Provides the authorization data of the user the triggered the creation of this record. The
-   * following entries may be available:
+   * Provides the authorization data of the principal that triggered the creation of this record.
+   * Commands and rejections can contain these entries:
    *
    * <ul>
-   *   <li>Key: <code>authorized_tenants</code>; Value: a List of Strings defining the user's
-   *       authorized tenants.
-   *   <li>Key: <code>authorized_user_key</code>; Value: the Long representation of the
-   *       authenticated user's key
+   *   <li>Key: <code>authorized_anonymous_user</code>; Value: a Boolean, true if the principal is
+   *       not authenticated.
+   *   <li>Key: <code>authorized_username</code>; Value: the String username of the user.
+   *   <li>Key: <code>authorized_client_id</code>; Value: the String id of the client.
+   *   <li>Key: <code>authorized_tenants</code>; Value: a List of Strings with the authorized
+   *       tenants.
+   *   <li>Key: <code>user_groups_claims</code>; Value: a List of Strings with the groups from the
+   *       token.
+   *   <li>Key: <code>user_token_claims</code>; Value: a Map with the claims of the token.
    * </ul>
+   *
+   * <p>Events contain only the first three entries.
    *
    * @return a Map of authorization data for this record or an empty Map if not set.
    */
