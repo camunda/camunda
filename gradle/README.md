@@ -93,8 +93,9 @@ apply the documented policy for transitive patch-version differences.
 - `-Pskip.fe.build=true` disables frontend npm tasks while keeping the active project graph.
 - `-Pquickly` omits Optimize projects, disables tests and Spotless, and skips frontend builds.
 - `-PuseMavenLocal` adds Maven Local to dependency resolution when explicitly needed.
-- `-Ptest.max.forks=N` sets the number of Gradle test JVM forks; default is `1`. Keep the default
-  until the shared test-port slot handling supports multiple forks.
+- `-Ptest.max.forks=N` sets the number of Gradle test JVM forks; default is `1`. `SocketUtil`
+  coordinates dynamically allocated ports across test JVMs. Tests that bind fixed ports must still
+  avoid collisions when run concurrently.
 - `-Ptest.max.retries=N` sets the maximum retries for failed tests; default is `0`. Do not use
   retries to hide a test failure.
 - `-Pparallel.tests` enables JUnit parallel execution for tests that opt in with their execution
@@ -108,9 +109,10 @@ apply the documented policy for transitive patch-version differences.
 - `-PincludeStraceTests` includes strace-tagged tests.
 - `-PincludeRandomTests` selects randomized tests and uses the configured randomized-test counts.
 
-The repository enables the Gradle build cache and configuration cache in `gradle.properties`. To
-diagnose task caching, repeat a task with `--info` and inspect whether Gradle reports `UP-TO-DATE`
-or `FROM-CACHE`. To inspect configuration-cache problems, run the same task twice with
+The repository enables the Gradle build cache and configuration cache in `gradle.properties`.
+The Gradle CI workflow persists the build cache between runs, including cacheable `Test` task
+outputs. To diagnose task caching, repeat a task with `--info` and inspect whether Gradle reports
+`UP-TO-DATE` or `FROM-CACHE`. To inspect configuration-cache problems, run the same task twice with
 `--configuration-cache --configuration-cache-problems=warn --info` and check for cache reuse and
 reported incompatibilities. Some tasks or callers still disable the configuration cache; for
 example, the distribution dependency report command above uses `--no-configuration-cache`. Keep
