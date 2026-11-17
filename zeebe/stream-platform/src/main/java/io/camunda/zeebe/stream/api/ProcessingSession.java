@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Agent;
+import io.camunda.zeebe.protocol.record.RecordType;
 import java.util.function.Consumer;
 
 public interface ProcessingSession {
@@ -49,16 +50,12 @@ public interface ProcessingSession {
   }
 
   /**
-   * The engine checks the claims of a batch operation command. A rejection keeps the claims of the
-   * rejected command. For other follow-ups, only the actor has a reader: the engine does not check
-   * the claims of internal commands.
+   * The engine checks the claims of a batch operation command. For other follow-ups, only the actor
+   * has a reader: the engine does not check the claims of internal commands.
    */
   private static boolean needsFullClaims(final RecordMetadata metadata) {
-    return switch (metadata.getRecordType()) {
-      case COMMAND -> metadata.getBatchOperationReference() != batchOperationReferenceNullValue();
-      case COMMAND_REJECTION -> true;
-      default -> false;
-    };
+    return metadata.getRecordType() == RecordType.COMMAND
+        && metadata.getBatchOperationReference() != batchOperationReferenceNullValue();
   }
 
   default void appendAgentInfoToFollowUps(final Agent agentInfo) {

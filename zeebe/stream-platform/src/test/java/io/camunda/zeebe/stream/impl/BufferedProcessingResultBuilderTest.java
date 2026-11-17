@@ -139,7 +139,7 @@ class BufferedProcessingResultBuilderTest {
         .as("follow-up event")
         .isEqualTo(AuthDataFormat.PRE_AUTHORIZED);
     assertThat(authorizations.get(1).getClaims()).as("follow-up event").isEqualTo(actorClaims);
-    assertThat(authorizations.get(2)).as("rejection").isEqualTo(authInfo);
+    assertThat(authorizations.get(2).getClaims()).as("rejection").isEqualTo(actorClaims);
     assertThat(authorizations.get(3)).as("batch operation command").isEqualTo(authInfo);
   }
 
