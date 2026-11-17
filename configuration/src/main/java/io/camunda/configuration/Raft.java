@@ -24,6 +24,7 @@ public class Raft {
       "zeebe.broker.cluster.raft.enablePriorityElection";
   private static final String LEGACY_FLUSH_ENABLED = "zeebe.broker.cluster.raft.flush.enabled";
   private static final String LEGACY_FLUSH_DELAY = "zeebe.broker.cluster.raft.flush.delay";
+  private static final String LEGACY_FLUSH_DELAY_TIME = "zeebe.broker.cluster.raft.flush.delayTime";
 
   /**
    * The heartbeat interval for Raft. The leader sends a heartbeat to a follower every
@@ -131,7 +132,7 @@ public class Raft {
         flushDelay,
         Duration.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_FLUSH_DELAY));
+        Set.of(LEGACY_FLUSH_DELAY_TIME, LEGACY_FLUSH_DELAY));
   }
 
   public void setFlushDelay(final Duration flushDelay) {
