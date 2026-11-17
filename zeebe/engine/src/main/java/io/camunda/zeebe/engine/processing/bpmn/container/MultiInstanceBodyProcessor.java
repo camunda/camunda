@@ -423,7 +423,7 @@ public final class MultiInstanceBodyProcessor
           completionCondition.get(),
           context.getElementInstanceKey(),
           context.getTenantId(),
-          ExpressionLabel.completionConditionExpression(context.getElementId()));
+          ExpressionLabel.multiInstanceCompletionConditionExpression(context.getElementId()));
     }
     return Either.right(false);
   }

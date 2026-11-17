@@ -205,7 +205,7 @@ public class AdHocSubProcessProcessor
               activeElementsCollection,
               context.getElementInstanceKey(),
               context.getTenantId(),
-              ExpressionLabel.activeElementsCollectionExpression(adHocSubProcess.getId()))
+              ExpressionLabel.adHocActiveElementsCollectionExpression(adHocSubProcess.getId()))
           .mapLeft(
               failure ->
                   new Failure(

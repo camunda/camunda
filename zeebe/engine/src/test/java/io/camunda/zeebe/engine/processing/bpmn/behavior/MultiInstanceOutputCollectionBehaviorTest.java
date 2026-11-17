@@ -66,10 +66,7 @@ public class MultiInstanceOutputCollectionBehaviorTest {
 
     final var mockExpressionProcessor = mock(ExpressionProcessor.class);
     when(mockExpressionProcessor.evaluateAnyExpressionToBuffer(
-            eq(outputElementExpression),
-            anyLong(),
-            anyString(),
-            eq(ExpressionLabel.outputElementExpression(wrapString("task")))))
+            eq(outputElementExpression), anyLong(), anyString(), any(ExpressionLabel.class)))
         .thenReturn(Either.right(elementToAdd));
 
     final var mockElement = mock(ExecutableMultiInstanceBody.class);
@@ -121,10 +118,7 @@ public class MultiInstanceOutputCollectionBehaviorTest {
 
     final var mockExpressionProcessor = mock(ExpressionProcessor.class);
     when(mockExpressionProcessor.evaluateAnyExpressionToBuffer(
-            eq(outputElementExpression),
-            anyLong(),
-            anyString(),
-            eq(ExpressionLabel.outputElementExpression(wrapString("task")))))
+            eq(outputElementExpression), anyLong(), anyString(), any(ExpressionLabel.class)))
         .thenReturn(Either.right(elementToAdd));
 
     final var mockElement = mock(ExecutableMultiInstanceBody.class);

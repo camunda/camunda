@@ -62,23 +62,26 @@ public record ExpressionLabel(@Nullable String kind, @Nullable String target) {
   }
 
   /** Labels an expression as the input collection expression of a multi-instance activity. */
-  public static ExpressionLabel inputCollectionExpression(final DirectBuffer activityId) {
+  public static ExpressionLabel multiInstanceInputCollectionExpression(
+      final DirectBuffer activityId) {
     return new ExpressionLabel("input collection expression", multiInstanceActivity(activityId));
   }
 
   /** Labels an expression as the output element expression of a multi-instance activity. */
-  public static ExpressionLabel outputElementExpression(final DirectBuffer activityId) {
+  public static ExpressionLabel multiInstanceOutputElementExpression(
+      final DirectBuffer activityId) {
     return new ExpressionLabel("output element expression", multiInstanceActivity(activityId));
   }
 
   /** Labels an expression as the completion condition expression of a multi-instance activity. */
-  public static ExpressionLabel completionConditionExpression(final DirectBuffer activityId) {
+  public static ExpressionLabel multiInstanceCompletionConditionExpression(
+      final DirectBuffer activityId) {
     return new ExpressionLabel(
         "completion condition expression", multiInstanceActivity(activityId));
   }
 
   /** Labels an expression as the active elements collection expression of an ad-hoc sub-process. */
-  public static ExpressionLabel activeElementsCollectionExpression(
+  public static ExpressionLabel adHocActiveElementsCollectionExpression(
       final DirectBuffer adHocSubProcessId) {
     return new ExpressionLabel(
         "active elements collection expression", adHocSubProcess(adHocSubProcessId));

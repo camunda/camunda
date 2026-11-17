@@ -65,6 +65,6 @@ public class MultiInstanceInputCollectionBehavior {
         inputCollectionExpression,
         context.getElementInstanceKey(),
         context.getTenantId(),
-        ExpressionLabel.inputCollectionExpression(context.getElementId()));
+        ExpressionLabel.multiInstanceInputCollectionExpression(context.getElementId()));
   }
 }

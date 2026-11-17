@@ -119,7 +119,7 @@ public final class MultiInstanceOutputCollectionBehavior {
         expression,
         context.getElementInstanceKey(),
         context.getTenantId(),
-        ExpressionLabel.outputElementExpression(context.getElementId()));
+        ExpressionLabel.multiInstanceOutputElementExpression(context.getElementId()));
   }
 
   private Either<Failure, DirectBuffer> replaceAt(
