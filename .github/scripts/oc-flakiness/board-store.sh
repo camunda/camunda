@@ -99,9 +99,13 @@ for attempt in 1 2 3 4 5; do
         # and add only what this pick dispatched on top.
         printf '%s' "${BOARD_JSON:?BOARD_JSON is required for init}" \
           | jq -c '.rows' > "${state}/targets.tmp"
+        # The post-merge verdicts are a fresh measurement of the same merged
+        # fixes, so this pick's replace the ones already on the board.
+        printf '%s' "${BOARD_JSON}" | jq -c '.post_merge // []' > "${state}/postmerge.tmp"
         node "${script_dir}/board.mjs" --merge "${state}/${file}" \
-          --targets "${state}/targets.tmp" > "${state}/${file}.tmp"
-        rm -f "${state}/targets.tmp"
+          --targets "${state}/targets.tmp" --postmerge "${state}/postmerge.tmp" \
+          > "${state}/${file}.tmp"
+        rm -f "${state}/targets.tmp" "${state}/postmerge.tmp"
       else
         printf '%s' "${BOARD_JSON:?BOARD_JSON is required for init}" > "${state}/${file}.tmp"
         # One board a day would otherwise accumulate for the life of the

@@ -30,6 +30,23 @@ export function* walkSpecs(report) {
   }
 }
 
+const ATTEMPT_FAILED = new Set(['failed', 'timedOut']);
+
+// How one Playwright test entry of a report counts: 'flaky', 'failed',
+// 'passed', or null for an entry that says nothing about the test. `status:
+// "unexpected"` also covers an interrupted run -- a cancelled nightly -- so a
+// failure has to carry an attempt that actually failed.
+export function testOutcome(test) {
+  if (test.status === 'flaky') return 'flaky';
+  if (test.status === 'unexpected') {
+    return (test.results ?? []).some((r) => ATTEMPT_FAILED.has(r.status))
+      ? 'failed'
+      : null;
+  }
+  if (test.status === 'expected') return 'passed';
+  return null;
+}
+
 export function findFiles(dir, name) {
   const out = [];
   let entries;

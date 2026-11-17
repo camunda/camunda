@@ -166,6 +166,55 @@ jobs:
           jq -e 'type == "object"' "$RUNNER_TEMP/ledger.json" > /dev/null 2>&1 \
             || echo '{}' > "$RUNNER_TEMP/ledger.json"
 
+      # The one measurement of this agent taken outside its own validation
+      # runs: for every fix that merged, how the nightlies since have treated
+      # the test. Nothing here may fail the pick -- it is a report on the work,
+      # not the work -- so every step is guarded and the verdicts default to
+      # none.
+      - name: Measure post-merge survival
+        run: |
+          set -uo pipefail
+          s=.github/scripts/oc-flakiness
+          echo '[]' > "$RUNNER_TEMP/postmerge.json"
+
+          # merged_at per fingerprint, for the PRs the agent opened that landed.
+          : > "$RUNNER_TEMP/merged-lines.json"
+          jq -r 'to_entries[] | select((.value.pr // "") != "") | "\(.key) \(.value.pr)"' \
+            "$RUNNER_TEMP/ledger.json" > "$RUNNER_TEMP/merged-prs.txt" || true
+          while read -r fp pr_url; do
+            [[ -n "$fp" ]] || continue
+            merged_at=$(gh api "repos/${REPO}/pulls/${pr_url##*/}" --jq '.merged_at // empty' 2>/dev/null || true)
+            [[ -n "$merged_at" ]] || continue
+            jq -nc --arg fp "$fp" --arg m "$merged_at" '{($fp): $m}' >> "$RUNNER_TEMP/merged-lines.json"
+          done < "$RUNNER_TEMP/merged-prs.txt"
+          jq -s 'add // {}' "$RUNNER_TEMP/merged-lines.json" > "$RUNNER_TEMP/merged.json" \
+            || echo '{}' > "$RUNNER_TEMP/merged.json"
+
+          node "$s/postmerge.mjs" --reports "$RUNNER_TEMP/reports" \
+            --ledger "$RUNNER_TEMP/ledger.json" --merged "$RUNNER_TEMP/merged.json" \
+            > "$RUNNER_TEMP/postmerge.tmp" \
+            && mv "$RUNNER_TEMP/postmerge.tmp" "$RUNNER_TEMP/postmerge.json" \
+            || echo "::warning::could not measure post-merge survival"
+
+          # Fold the verdicts into the ledger this run ranks against: a fix
+          # that did not hold loses its cooldown, so the test is eligible for
+          # today's pick instead of waiting out the 14 days it was given.
+          jq --slurpfile pm "$RUNNER_TEMP/postmerge.json" '
+            reduce $pm[0][] as $r (.;
+              .[$r.fp].post_merge = $r.post_merge
+              | if $r.verdict == "re-flaked" then del(.[$r.fp].cooldown_until) else . end)
+          ' "$RUNNER_TEMP/ledger.json" > "$RUNNER_TEMP/ledger.tmp" \
+            && mv "$RUNNER_TEMP/ledger.tmp" "$RUNNER_TEMP/ledger.json"
+
+          {
+            echo "### Merged fixes, measured against the nightlies since"
+            echo
+            echo "| version | test | merged | nights run | re-flaked in | verdict |"
+            echo "|---|---|---|---|---|---|"
+            jq -r '.[] | "| \(.version) | `\(.file)` › \(.title) | \(.post_merge.merged_at[0:10]) | \(.post_merge.nightlies) | \(.post_merge.flaked) | \(.post_merge.summary) |"' \
+              "$RUNNER_TEMP/postmerge.json"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Rank flaky tests
         id: rank
         env:
@@ -225,6 +274,79 @@ jobs:
           owner: camunda
           repositories: camunda
 
+      # Persist what the measurement found, and tell a PR whose fix did not
+      # hold. Same read-modify-write loop as the ledger write in `decide`: the
+      # push to the state branch is what serialises the writers.
+      - name: Record the post-merge verdicts
+        if: github.event_name == 'schedule' || inputs.dispatch
+        env:
+          TOKEN: ${{ steps.github-token.outputs.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -uo pipefail
+          count=$(jq 'length' "$RUNNER_TEMP/postmerge.json" 2>/dev/null || echo 0)
+          [[ "$count" -gt 0 ]] || exit 0
+          now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          # A PR is flagged once. A test that keeps re-flaking would otherwise
+          # collect a comment a night.
+          flagged='[]'
+          for i in $(seq 0 $(( count - 1 ))); do
+            r=$(jq -c ".[$i]" "$RUNNER_TEMP/postmerge.json")
+            [[ "$(jq -r '.needs_flag' <<< "$r")" == "true" ]] || continue
+            pr=$(jq -r '.pr // ""' <<< "$r")
+            [[ -n "$pr" ]] || continue
+            run_id=$(jq -r '.post_merge.last_flake_run_id // ""' <<< "$r")
+            body=":rotating_light: **This fix did not hold.** \`$(jq -r .file <<< "$r")\` › $(jq -r .title <<< "$r") ($(jq -r .version <<< "$r")) $(jq -r '.post_merge.summary' <<< "$r")."
+            [[ -n "$run_id" ]] && body="${body}"$'\n\n'"Most recent nightly it flaked in: ${GITHUB_SERVER_URL}/${REPO}/actions/runs/${run_id}"
+            body="${body}"$'\n\n'"Measured by the OC flakiness fix agent (${RUN_URL}). The test is out of cooldown and can be picked again."
+            if GH_TOKEN="$TOKEN" gh pr comment "$pr" --repo "$REPO" --body "$body"; then
+              flagged=$(jq -c --arg fp "$(jq -r .fp <<< "$r")" '. + [$fp]' <<< "$flagged")
+            else
+              echo "::warning::could not flag ${pr}"
+            fi
+          done
+
+          state="$RUNNER_TEMP/pm-state"
+          git init -q "$state"
+          git -C "$state" config user.name  "qa-processes[bot]"
+          git -C "$state" config user.email "qa-processes[bot]@users.noreply.github.com"
+          git -C "$state" remote add origin "https://x-access-token:${TOKEN}@github.com/${REPO}.git"
+
+          for attempt in 1 2 3 4 5; do
+            if git -C "$state" fetch -q --depth 1 origin "$STATE_BRANCH" 2>/dev/null; then
+              git -C "$state" checkout -q -B "$STATE_BRANCH" FETCH_HEAD
+            else
+              git -C "$state" checkout -q --orphan "$STATE_BRANCH"
+              git -C "$state" rm -rq --cached . 2>/dev/null || true
+            fi
+            [[ -f "$state/ledger.json" ]] || echo '{}' > "$state/ledger.json"
+            # Only entries the branch still carries: a ledger the janitor has
+            # pruned must not be refilled from a stale measurement.
+            jq --slurpfile pm "$RUNNER_TEMP/postmerge.json" \
+               --argjson flagged "$flagged" --arg now "$now" '
+              reduce $pm[0][] as $r (.;
+                if (. | has($r.fp)) | not then .
+                else
+                  .[$r.fp].post_merge = ($r.post_merge
+                    + (if ($flagged | index($r.fp)) then {pr_flagged_at: $now} else {} end))
+                  | if $r.verdict == "re-flaked" then del(.[$r.fp].cooldown_until) else . end
+                end)
+            ' "$state/ledger.json" > "$state/ledger.tmp" || break
+            mv "$state/ledger.tmp" "$state/ledger.json"
+            git -C "$state" add ledger.json
+            if git -C "$state" diff --cached --quiet; then
+              exit 0
+            fi
+            git -C "$state" commit -qm "ledger: post-merge verdicts $(date -u +%Y-%m-%d)"
+            if git -C "$state" push -q origin "HEAD:refs/heads/${STATE_BRANCH}"; then
+              exit 0
+            fi
+            echo "::notice::post-merge ledger push raced another run (attempt ${attempt}); retrying"
+            sleep $(( attempt * 5 ))
+          done
+          echo "::warning::could not record the post-merge verdicts in the ledger"
+
       # Posted before the dispatch, so a run that finishes unusually fast still
       # finds the board it is meant to update.
       - name: Post the daily board to Slack
@@ -243,7 +365,8 @@ jobs:
           s=.github/scripts/oc-flakiness
           date_key=$(date -u +%Y-%m-%d)
           if ! node "$s/board.mjs" --init "$RUNNER_TEMP/targets.json" \
-            --date "$date_key" --run-url "$RUN_URL" > "$RUNNER_TEMP/board-init.json"; then
+            --date "$date_key" --run-url "$RUN_URL" \
+            --postmerge "$RUNNER_TEMP/postmerge.json" > "$RUNNER_TEMP/board-init.json"; then
             echo "::warning::could not build the daily board; dispatching without it"
             exit 0
           fi
@@ -851,7 +974,10 @@ jobs:
               })
               | if $cooldown != "" then .[$fp].cooldown_until = $cooldown else del(.[$fp].cooldown_until) end
               | del(.[$fp].verified_at)
-              | if $pr != "" then .[$fp].pr = $pr else . end
+              # A new PR makes the last fix's post-merge measurement -- and the
+              # note that its PR was already flagged -- say nothing about this
+              # one.
+              | if $pr != "" then .[$fp].pr = $pr | del(.[$fp].post_merge) else . end
             ' "$state/ledger.json" > "$state/ledger.tmp"
             mv "$state/ledger.tmp" "$state/ledger.json"
             git -C "$state" add ledger.json
