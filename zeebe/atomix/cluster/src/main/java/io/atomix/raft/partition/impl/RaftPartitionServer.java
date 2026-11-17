@@ -23,6 +23,8 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.atomix.raft.JoinAdmission;
+import io.atomix.raft.JoinOptions;
 import io.atomix.raft.LeadershipTransferCoordinatorCheck;
 import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
@@ -147,12 +149,14 @@ public class RaftPartitionServer implements HealthMonitorable {
     return join(type, server -> server.join(type, partitionMetadata.members()));
   }
 
-  /**
-   * Joins with the given incarnation of the local member, see {@link RaftServer#join(Type,
-   * java.util.Collection, long)}.
-   */
-  public CompletableFuture<RaftPartitionServer> join(final Type type, final long incarnation) {
-    return join(type, server -> server.join(type, partitionMetadata.members(), incarnation));
+  /** Joins with the given options, see {@link RaftServer#join(Type, Collection, JoinOptions)}. */
+  public CompletableFuture<RaftPartitionServer> join(final Type type, final JoinOptions options) {
+    return join(type, server -> server.join(type, partitionMetadata.members(), options));
+  }
+
+  /** See {@link RaftServer#setJoinAdmission(JoinAdmission)}. */
+  public void setJoinAdmission(final JoinAdmission joinAdmission) {
+    server.setJoinAdmission(joinAdmission);
   }
 
   private CompletableFuture<RaftPartitionServer> join(

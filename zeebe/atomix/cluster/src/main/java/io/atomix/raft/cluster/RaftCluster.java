@@ -17,6 +17,7 @@
 package io.atomix.raft.cluster;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.JoinOptions;
 import io.atomix.raft.RaftServer;
 import java.util.Arrays;
 import java.util.Collection;
@@ -174,13 +175,12 @@ public interface RaftCluster {
   CompletableFuture<Void> join(RaftMember.Type type, Collection<MemberId> cluster);
 
   /**
-   * Joins like {@link #join(RaftMember.Type, Collection)}, with the given incarnation of the local
-   * member. A member that starts without data uses a new incarnation, so that a fence entry of its
-   * previous incarnation does not apply to it. If the incarnation differs from the one in the
-   * leader's configuration, the leader writes a new configuration with it.
+   * Joins like {@link #join(RaftMember.Type, Collection)}, with the given options. The local member
+   * uses the incarnation of the options. If it differs from the one in the leader's configuration,
+   * the leader writes a new configuration with it.
    */
   CompletableFuture<Void> join(
-      RaftMember.Type type, Collection<MemberId> cluster, long incarnation);
+      RaftMember.Type type, Collection<MemberId> cluster, JoinOptions options);
 
   /**
    * Returns a member by ID.

@@ -21,6 +21,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.FencedListener;
+import io.atomix.raft.JoinAdmission;
+import io.atomix.raft.JoinOptions;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftThreadContextFactory;
@@ -113,8 +115,13 @@ public class DefaultRaftServer implements RaftServer {
 
   @Override
   public CompletableFuture<RaftServer> join(
-      final Type type, final Collection<MemberId> cluster, final long incarnation) {
-    return start(() -> cluster().join(type, cluster, incarnation));
+      final Type type, final Collection<MemberId> cluster, final JoinOptions options) {
+    return start(() -> cluster().join(type, cluster, options));
+  }
+
+  @Override
+  public void setJoinAdmission(final JoinAdmission joinAdmission) {
+    context.setJoinAdmission(joinAdmission);
   }
 
   @Override

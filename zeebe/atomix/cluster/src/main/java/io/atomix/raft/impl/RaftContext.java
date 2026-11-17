@@ -25,6 +25,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
 import io.atomix.raft.FencedListener;
+import io.atomix.raft.JoinAdmission;
 import io.atomix.raft.LeadershipTransferCoordinatorCheck;
 import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
@@ -131,6 +132,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private final RaftServerProtocol outboundProtocol;
   private final Set<FencedListener> fencedListeners = new CopyOnWriteArraySet<>();
   private boolean fenced;
+  private volatile JoinAdmission joinAdmission = JoinAdmission.ADMIT_ALL;
   protected final RaftStorage storage;
   private final RaftElectionConfig electionConfig;
   private final Set<RaftRoleChangeListener> roleChangeListeners = new CopyOnWriteArraySet<>();
@@ -444,6 +446,14 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public boolean isFenced() {
     return fenced;
+  }
+
+  public JoinAdmission getJoinAdmission() {
+    return joinAdmission;
+  }
+
+  public void setJoinAdmission(final JoinAdmission joinAdmission) {
+    this.joinAdmission = checkNotNull(joinAdmission, "joinAdmission cannot be null");
   }
 
   public void addFencedListener(final FencedListener listener) {

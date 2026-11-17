@@ -22,6 +22,8 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.atomix.raft.JoinAdmission;
+import io.atomix.raft.JoinOptions;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
@@ -135,17 +137,22 @@ public final class RaftPartition implements Partition, HealthMonitorable {
   }
 
   /**
-   * Joins with the given incarnation of the local member. A member that starts without data uses a
-   * new incarnation, see {@link io.atomix.raft.cluster.RaftCluster#join(RaftMember.Type,
-   * Collection, long)}.
+   * Joins with the given options, for example the new incarnation of a member that starts without
+   * data. See {@link io.atomix.raft.cluster.RaftCluster#join(RaftMember.Type, Collection,
+   * JoinOptions)}.
    */
   public CompletableFuture<RaftPartition> join(
       final RaftMember.Type type,
       final PartitionManagementService managementService,
       final ReceivableSnapshotStore snapshotStore,
-      final long incarnation) {
+      final JoinOptions options) {
     initServer(managementService, snapshotStore);
-    return server.join(type, incarnation).thenApply(v -> this);
+    return server.join(type, options).thenApply(v -> this);
+  }
+
+  /** See {@link io.atomix.raft.RaftServer#setJoinAdmission(JoinAdmission)}. */
+  public void setJoinAdmission(final JoinAdmission joinAdmission) {
+    server.setJoinAdmission(joinAdmission);
   }
 
   public CompletableFuture<RaftPartition> leave() {

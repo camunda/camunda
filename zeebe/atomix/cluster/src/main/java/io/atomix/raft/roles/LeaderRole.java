@@ -344,6 +344,17 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                         RaftMember.Type.ACTIVE,
                         RaftMember.Type.ACTIVE)));
       }
+
+      for (final var member : updatedMembers) {
+        if (configuration.hasMember(member.memberId())) {
+          continue;
+        }
+        final var refusal = checkAdmission(member.memberId(), 0);
+        if (refusal != null) {
+          return CompletableFuture.completedFuture(
+              rejectReconfigure(refusal.type(), refusal.message()));
+        }
+      }
     }
 
     // Gate promotions of existing members to ACTIVE on the member being caught up: it joins the
@@ -446,6 +457,22 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
             .build());
   }
 
+  /**
+   * @return null if the member may be added, else the refusal
+   */
+  private @Nullable RaftError checkAdmission(
+      final MemberId member, final long configurationVersion) {
+    final var decision = raft.getJoinAdmission().check(member, configurationVersion);
+    return switch (decision) {
+      case ADMIT -> null;
+      case NOT_A_MEMBER ->
+          new RaftError(Type.NOT_A_MEMBER, "%s is not a member of the cluster".formatted(member));
+      case NOT_READY ->
+          new RaftError(
+              Type.NOT_READY, "Not ready to decide whether %s may join".formatted(member));
+    };
+  }
+
   /** The fence list only grows: the request can add entries, but never remove one. */
   private static List<FenceEntry> targetFenced(
       final Configuration configuration, final ReconfigureRequest request) {
@@ -509,6 +536,17 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                 Instant.now(),
                 request.joiningMember().getIncarnation())
             : request.joiningMember();
+    // Adding a member, also a known member with a new incarnation, needs the admission of the
+    // owner of the server: Raft does not know who may be a member.
+    if (existingMember.isEmpty() || !sameIncarnation) {
+      final var refusal =
+          checkAdmission(request.joiningMember().memberId(), request.configurationVersion());
+      if (refusal != null) {
+        return CompletableFuture.completedFuture(
+            logResponse(
+                JoinResponse.builder().withStatus(Status.ERROR).withError(refusal).build()));
+      }
+    }
     if (existingMember.isPresent()
         && sameIncarnation
         && existingMember.get().getType().ordinal() > request.joiningMember().getType().ordinal()

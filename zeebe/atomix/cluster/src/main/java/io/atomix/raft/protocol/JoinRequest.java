@@ -15,13 +15,24 @@ import java.util.Objects;
 
 public final class JoinRequest extends AbstractRaftRequest {
   private final RaftMember joining;
+  // Passed to the leader's JoinAdmission. Absent (0, unknown) in requests of members that predate
+  // this field.
+  private final long configurationVersion;
 
-  private JoinRequest(final RaftMember joining) {
+  private JoinRequest(final RaftMember joining, final long configurationVersion) {
     this.joining = requireNonNull(joining);
+    this.configurationVersion = configurationVersion;
   }
 
   public RaftMember joiningMember() {
     return joining;
+  }
+
+  /**
+   * @return the version that the joiner passed in its {@link io.atomix.raft.JoinOptions}, or 0
+   */
+  public long configurationVersion() {
+    return configurationVersion;
   }
 
   public static Builder builder() {
@@ -47,7 +58,12 @@ public final class JoinRequest extends AbstractRaftRequest {
 
   @Override
   public String toString() {
-    return "JoinRequest{" + "joining=" + joining + '}';
+    return "JoinRequest{"
+        + "joining="
+        + joining
+        + ", configurationVersion="
+        + configurationVersion
+        + '}';
   }
 
   @Override
@@ -61,6 +77,12 @@ public final class JoinRequest extends AbstractRaftRequest {
       extends AbstractRaftRequest.Builder<JoinRequest.Builder, JoinRequest> {
 
     private RaftMember joining;
+    private long configurationVersion;
+
+    public Builder withConfigurationVersion(final long configurationVersion) {
+      this.configurationVersion = configurationVersion;
+      return this;
+    }
 
     private Builder() {}
 
@@ -72,7 +94,7 @@ public final class JoinRequest extends AbstractRaftRequest {
     @Override
     public JoinRequest build() {
       validate();
-      return new JoinRequest(joining);
+      return new JoinRequest(joining, configurationVersion);
     }
 
     @Override

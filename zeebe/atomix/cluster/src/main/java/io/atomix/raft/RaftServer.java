@@ -365,10 +365,16 @@ public interface RaftServer {
   CompletableFuture<RaftServer> join(Type type, Collection<MemberId> cluster);
 
   /**
-   * Joins with the given incarnation of the local member, see {@link
-   * io.atomix.raft.cluster.RaftCluster#join(Type, Collection, long)}.
+   * Joins with the given options, see {@link io.atomix.raft.cluster.RaftCluster#join(Type,
+   * Collection, JoinOptions)}.
    */
-  CompletableFuture<RaftServer> join(Type type, Collection<MemberId> cluster, long incarnation);
+  CompletableFuture<RaftServer> join(Type type, Collection<MemberId> cluster, JoinOptions options);
+
+  /**
+   * Sets the check that decides, while this server is the leader, whether a member may be added.
+   * See {@link JoinAdmission}.
+   */
+  void setJoinAdmission(JoinAdmission joinAdmission);
 
   /**
    * Adds a listener that is notified when the local member is fenced, see {@link FencedListener}.

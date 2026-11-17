@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.Comparators;
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.JoinOptions;
 import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
@@ -137,8 +138,13 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
   @Override
   public CompletableFuture<Void> join(final Type type, final Collection<MemberId> cluster) {
+    return join(type, cluster, 0);
+  }
+
+  private CompletableFuture<Void> join(
+      final Type type, final Collection<MemberId> cluster, final long configurationVersion) {
     return new ReconfigurationHelper(raft)
-        .join(type, cluster)
+        .join(type, cluster, configurationVersion)
         // Usually the transition is triggered by `onConfigure` when the leader sends the updated
         // configuration. If the join is attempted again, it can be accepted without a configuration
         // change and nothing triggers the transition.
@@ -151,10 +157,10 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
 
   @Override
   public CompletableFuture<Void> join(
-      final Type type, final Collection<MemberId> cluster, final long incarnation) {
+      final Type type, final Collection<MemberId> cluster, final JoinOptions options) {
     // The thread context runs tasks in order, so the join runs with the new incarnation.
-    raft.getThreadContext().execute(() -> localMember.setIncarnation(incarnation));
-    return join(type, cluster);
+    raft.getThreadContext().execute(() -> localMember.setIncarnation(options.incarnation()));
+    return join(type, cluster, options.configurationVersion());
   }
 
   @Override

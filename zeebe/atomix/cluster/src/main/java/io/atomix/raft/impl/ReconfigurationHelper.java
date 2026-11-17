@@ -64,6 +64,15 @@ public final class ReconfigurationHelper {
   }
 
   public CompletableFuture<Void> join(final Type type, final Collection<MemberId> clusterMembers) {
+    return join(type, clusterMembers, 0);
+  }
+
+  /**
+   * Joins like {@link #join(Type, Collection)}; the configuration version is passed to the leader's
+   * {@link io.atomix.raft.JoinAdmission}.
+   */
+  public CompletableFuture<Void> join(
+      final Type type, final Collection<MemberId> clusterMembers, final long configurationVersion) {
     final var result = new CompletableFuture<Void>();
     if (type == Type.INACTIVE) {
       result.completeExceptionally(
@@ -134,7 +143,12 @@ public final class ReconfigurationHelper {
           threadContext.execute(
               () ->
                   joinWithRetry(
-                      joining, knownAssistingMembers, assistingMembers, result, deadline));
+                      joining,
+                      configurationVersion,
+                      knownAssistingMembers,
+                      assistingMembers,
+                      result,
+                      deadline));
         });
     return result;
   }
@@ -156,6 +170,7 @@ public final class ReconfigurationHelper {
    */
   private void joinWithRetry(
       final RaftMember joining,
+      final long configurationVersion,
       final Collection<MemberId> knownAssistingMembers,
       final Queue<MemberId> assistingMembers,
       final CompletableFuture<Void> result,
@@ -177,7 +192,13 @@ public final class ReconfigurationHelper {
         threadContext.schedule(
             raftContext.getElectionTimeout(),
             () ->
-                joinWithRetry(joining, knownAssistingMembers, assistingMembers, result, deadline));
+                joinWithRetry(
+                    joining,
+                    configurationVersion,
+                    knownAssistingMembers,
+                    assistingMembers,
+                    result,
+                    deadline));
         return;
       }
       result.completeExceptionally(
@@ -187,7 +208,12 @@ public final class ReconfigurationHelper {
     }
     raftContext
         .getOutboundProtocol()
-        .join(receiver, JoinRequest.builder().withJoiningMember(joining).build())
+        .join(
+            receiver,
+            JoinRequest.builder()
+                .withJoiningMember(joining)
+                .withConfigurationVersion(configurationVersion)
+                .build())
         .whenCompleteAsync(
             (response, error) -> {
               if (error != null) {
@@ -200,7 +226,12 @@ public final class ReconfigurationHelper {
                   threadContext.execute(
                       () ->
                           joinWithRetry(
-                              joining, knownAssistingMembers, assistingMembers, result, deadline));
+                              joining,
+                              configurationVersion,
+                              knownAssistingMembers,
+                              assistingMembers,
+                              result,
+                              deadline));
                 } else {
                   LOGGER.error("Join request failed with an unexpected error, not retrying", error);
                   result.completeExceptionally(error);
@@ -223,7 +254,11 @@ public final class ReconfigurationHelper {
                     response.index());
                 awaitLocalCommit(response.index(), result);
               } else if (response.error().type() == RaftError.Type.NO_LEADER
-                  || response.error().type() == RaftError.Type.CONFIGURATION_ERROR) {
+                  || response.error().type() == RaftError.Type.CONFIGURATION_ERROR
+                  // The leader's admission check refused the join for now; the cluster may make
+                  // this member a member, or the leader may become ready, later.
+                  || response.error().type() == RaftError.Type.NOT_A_MEMBER
+                  || response.error().type() == RaftError.Type.NOT_READY) {
                 if (Instant.now().isBefore(deadline)) {
                   LOGGER.debug(
                       "Join request failed, retrying after {}",
@@ -242,7 +277,12 @@ public final class ReconfigurationHelper {
                       raftContext.getElectionTimeout(),
                       () ->
                           joinWithRetry(
-                              joining, knownAssistingMembers, assistingMembers, result, deadline));
+                              joining,
+                              configurationVersion,
+                              knownAssistingMembers,
+                              assistingMembers,
+                              result,
+                              deadline));
                 } else {
                   LOGGER.error(
                       "Join request failed, not retrying because the join did not complete within {}",
@@ -255,7 +295,12 @@ public final class ReconfigurationHelper {
                 threadContext.execute(
                     () ->
                         joinWithRetry(
-                            joining, knownAssistingMembers, assistingMembers, result, deadline));
+                            joining,
+                            configurationVersion,
+                            knownAssistingMembers,
+                            assistingMembers,
+                            result,
+                            deadline));
               } else {
                 final var errorAsException = response.error().createException();
                 LOGGER.error("Join request rejected, not retrying", errorAsException);
