@@ -478,16 +478,20 @@ public final class ReconfigurationHelper {
 
   private void sendForceConfigureRequestToAllMembers(final CompletableFuture<Void> future) {
     final Configuration configuration = raftContext.getCluster().getConfiguration();
+    final var localMemberId = raftContext.getCluster().getLocalMember().memberId();
     final var otherMembers =
         configuration.newMembers().stream()
-            .map(RaftMember::memberId)
-            .filter(m -> !m.equals(raftContext.getCluster().getLocalMember().memberId()))
+            .filter(m -> !m.memberId().equals(localMemberId))
             .collect(Collectors.toSet());
-
-    if (otherMembers.isEmpty()) {
-      future.complete(null);
-      return;
-    }
+    // Only the voters of the new configuration must acknowledge: they elect the next leader, and
+    // the one with the most recent log must take part. Non-voters get the request too, but a
+    // non-voter that is down must not stop the recovery. It receives the configuration from the
+    // next leader.
+    final var votersToAcknowledge =
+        otherMembers.stream()
+            .filter(m -> m.getType() == Type.ACTIVE)
+            .map(RaftMember::memberId)
+            .collect(Collectors.toSet());
 
     final var quorum =
         new ForceConfigureQuorum(
@@ -500,7 +504,10 @@ public final class ReconfigurationHelper {
                         "Failed to force configure because not all members acknowledged the request."));
               }
             },
-            otherMembers);
+            votersToAcknowledge);
+    if (votersToAcknowledge.isEmpty()) {
+      future.complete(null);
+    }
 
     final ForceConfigureRequest request =
         ForceConfigureRequest.builder()
@@ -509,10 +516,11 @@ public final class ReconfigurationHelper {
             .withTime(configuration.time())
             // Beware that using ImmutableCollections can break Kryo serialization
             .withNewMembers(new HashSet<>(configuration.newMembers()))
-            .from(raftContext.getCluster().getLocalMember().memberId())
+            .from(localMemberId)
             .build();
 
-    otherMembers.forEach(memberId -> sendForceConfigurationRequest(memberId, request, quorum));
+    otherMembers.forEach(
+        member -> sendForceConfigurationRequest(member.memberId(), request, quorum));
   }
 
   private void sendForceConfigurationRequest(

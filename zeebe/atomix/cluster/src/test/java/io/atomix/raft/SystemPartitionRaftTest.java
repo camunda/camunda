@@ -414,4 +414,83 @@ final class SystemPartitionRaftTest {
       assertThat(configurationId(leader)).isEqualTo(current);
     }
   }
+
+  @Nested
+  final class ForceConfigure {
+
+    private List<RaftServer> bootstrapThreeVotersOnePassive() {
+      final var members =
+          Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE, id4, Type.PASSIVE);
+      final var m1 = createServer(id1, id2, id3, id4);
+      final var m2 = createServer(id2, id1, id3, id4);
+      final var m3 = createServer(id3, id1, id2, id4);
+      final var m4 = createServer(id4, id1, id2, id3);
+      CompletableFuture.allOf(
+              m1.bootstrap(members),
+              m2.bootstrap(members),
+              m3.bootstrap(members),
+              m4.bootstrap(members))
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+      appendEntry(awaitLeader(m1, m2, m3));
+      return List.of(m1, m2, m3, m4);
+    }
+
+    @Test
+    void shouldNotWaitForUnreachablePassiveMember() {
+      // given - voter 2 and passive member 4 are down
+      final var cluster = bootstrapThreeVotersOnePassive();
+      final var m1 = cluster.get(0);
+      final var m3 = cluster.get(2);
+      cluster.get(1).shutdown().join();
+      cluster.get(3).shutdown().join();
+
+      // when - force a configuration that keeps 2 and 4 as passive members
+      final var target =
+          Map.of(id1, Type.ACTIVE, id3, Type.ACTIVE, id2, Type.PASSIVE, id4, Type.PASSIVE);
+      m1.forceConfigure(target).orTimeout(30, TimeUnit.SECONDS).join();
+
+      // then
+      final var leader = awaitLeader(m1, m3);
+      appendEntry(leader);
+      assertThat(memberTypes(leader)).isEqualTo(target);
+    }
+
+    @Test
+    void shouldForceConfigureFromPassiveMember() {
+      // given - voters 1 and 2 are down, the remaining voter has no quorum
+      final var cluster = bootstrapThreeVotersOnePassive();
+      final var m3 = cluster.get(2);
+      final var m4 = cluster.get(3);
+      cluster.get(0).shutdown().join();
+      cluster.get(1).shutdown().join();
+
+      // when - the passive member forces itself and the remaining voter to be the voters
+      final var target =
+          Map.of(id3, Type.ACTIVE, id4, Type.ACTIVE, id1, Type.PASSIVE, id2, Type.PASSIVE);
+      m4.forceConfigure(target).orTimeout(30, TimeUnit.SECONDS).join();
+
+      // then
+      final var leader = awaitLeader(m3, m4);
+      appendEntry(leader);
+      assertThat(memberTypes(m3)).isEqualTo(target);
+      assertThat(memberTypes(m4)).isEqualTo(target);
+    }
+
+    @Test
+    void shouldStillWaitForUnreachableVoter() {
+      // given - voter 2 is down
+      final var cluster = bootstrapThreeVotersOnePassive();
+      final var m1 = cluster.get(0);
+      cluster.get(1).shutdown().join();
+
+      // when - force a configuration in which the unreachable member is a voter
+      final var target =
+          Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.PASSIVE, id4, Type.PASSIVE);
+
+      // then
+      assertThatThrownBy(() -> m1.forceConfigure(target).orTimeout(30, TimeUnit.SECONDS).join())
+          .hasRootCauseInstanceOf(RaftException.ProtocolException.class);
+    }
+  }
 }
