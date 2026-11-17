@@ -52,22 +52,6 @@ class Header extends View {
 		return this.page.getByRole('menuitem', {name: 'Log out'});
 	}
 
-	get documentationLink() {
-		return this.page.getByRole('button', {name: 'Documentation'});
-	}
-
-	get camundaAcademyLink() {
-		return this.page.getByRole('button', {name: 'Camunda Academy'});
-	}
-
-	get communityForumLink() {
-		return this.page.getByRole('button', {name: 'Community Forum'});
-	}
-
-	get feedbackAndSupportLink() {
-		return this.page.getByRole('button', {name: 'Feedback and Support'});
-	}
-
 	languageMenuItem(language: string) {
 		return this.page.getByRole('menuitemradio', {name: language});
 	}
