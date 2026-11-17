@@ -1,6 +1,6 @@
 # System partition reconfiguration
 
-Status: draft, revision 5 (after review rounds 1 to 3). Issue: [camunda/pdp-3723-dual-region-failover-detection#42](https://github.com/camunda/pdp-3723-dual-region-failover-detection/issues/42).
+Status: draft, revision 6 (after review rounds 1 to 3 and the PoC). Issue: [camunda/pdp-3723-dual-region-failover-detection#42](https://github.com/camunda/pdp-3723-dual-region-failover-detection/issues/42).
 
 ## 1. Summary
 
@@ -12,7 +12,7 @@ The design has these main rules:
 
 1. The Raft configuration of the system partition is the only record of its members and their types. The dynamic configuration (`ClusterConfiguration`) does not record them.
 2. The voter policy sets the number of voters for each zone and the order of the zones. It comes from the static configuration. The Raft configuration of the system partition stores it. An operation can change it with a Raft configuration change.
-3. At the first start, all brokers calculate the same initial configuration from the voter policy. They bootstrap only when all brokers of the static configuration agree that no system partition exists. The first leader appends a configuration entry. Thus, a configuration index above 0 shows that the system partition exists.
+3. At the first start, all brokers calculate the same initial configuration from the voter policy. They bootstrap only when all brokers of the static configuration agree that no system partition exists. When its initial entry commits, the first leader appends a configuration entry before any other entry. Thus, a configuration index above 0 shows that the system partition exists.
 4. At a restart, a broker starts the system partition with the Raft configuration that it stored on its disk.
 5. Add a broker and remove a broker change the system partition. They call Raft directly. They do not write the system partition members into the dynamic configuration.
 6. A force-remove plan changes the system partition first. It uses a forced Raft change only if the remaining voters are not a quorum.
@@ -21,6 +21,8 @@ The design has these main rules:
 9. A broker that joins without data does not vote until it has caught up with the current leader.
 10. Each removal and each forced change puts the brokers on a fence list. A fence entry has the broker id and the incarnation of the broker. A fenced broker must delete its data and join again with a new incarnation. Fence entries are never cleared.
 11. The dynamic configuration starts after the system partition. The start of the system partition does not read it. The leader admission, the excluded set and self-promotion read it at runtime, after it is initialized.
+
+Revision 6 adds the results of the proof of concept (PoC). Section 9 tells what the PoC shows and what it does not cover.
 
 ## 2. Context and constraints
 
@@ -52,6 +54,8 @@ Thus, the system partition must be able to change its Raft configuration when th
 | Cluster member  | A broker that the dynamic configuration shows as `JOINING`, `ACTIVE` or `LEAVING`.                                                                                                         |
 | Fence list      | A list of entries in the Raft configuration (R8). Each entry has a broker id and an incarnation. The entries are brokers that were removed, and brokers that a forced change made passive. |
 | Most recent log | The log with the highest last term. If the last terms are equal, the log with the highest last index.                                                                                      |
+| Control zone    | The first zone of the voter policy. It has the highest election priority. A dual-region policy has no control zone. Its first zone is a data zone.                                         |
+| Fenced notice   | The committed configuration that the leader sends to a fenced member, in a `ConfigureRequest` that is marked as committed (5.6.6).                                                         |
 
 ## 4. What the code does today
 
@@ -95,7 +99,7 @@ Broker paths are relative to `zeebe/broker/src/main/java/io/camunda/zeebe/broker
 - A scale-down adds its `MemberLeave` operations after the partition phases. A scale-up adds `MemberJoin` before them.
 - A force-remove plan (`ForceScaleDownRequestTransformer`) first force-reconfigures each data partition. Then it applies one `MemberRemove` for each removed broker. "Remove zone" with `force=true` uses the same transformer. `RemoveZoneTransformer` selects the coordinator as the lowest member outside the removed zone. This can be a broker that is down.
 - `MemberId.ID_COMPARATOR` sorts by node index, then by zone. The zone of a broker is part of its `MemberId` (`<zone>_<nodeIdx>`).
-- On `main`, a zone has no "control" role, and `numberOfReplicas` must be 1 or more. The PoC adds `ZoneRole.CONTROL`.
+- On `main`, a zone has no "control" role, and `numberOfReplicas` must be 1 or more. The earlier failover PoC adds `ZoneRole.CONTROL`. (This is not the PoC of section 9.)
 - Zone priorities are in `ZoneSpec` and can change at runtime (`UpdateZonePrioritiesTransformer`).
 - At start-up, the `FileInitializer` loads the stored dynamic configuration first. A broker that was down while it was removed thus sees itself as a member until it receives a newer configuration from other brokers.
 - With dynamic node ids, each lease creates a new versioned data directory. The data partitions copy their data from the previous version (`VersionedNodeIdBasedDataDirectoryProvider`).
@@ -112,7 +116,7 @@ Broker paths are relative to `zeebe/broker/src/main/java/io/camunda/zeebe/broker
 **Default values.**
 
 - Data zone: the `numberOfReplicas` of the zone.
-- Control zone: 1. This needs the control role of the PoC (`ZoneRole.CONTROL`).
+- Control zone: 1. This needs the control role of the earlier failover PoC (`ZoneRole.CONTROL`, 4.2).
 - Cluster that is not zone-aware: the largest odd number that is not more than the replication factor and not more than the cluster size.
 
 **Validation at start-up.**
@@ -123,6 +127,8 @@ Broker paths are relative to `zeebe/broker/src/main/java/io/camunda/zeebe/broker
 - If the total is even, the broker logs a warning.
 
 **Storage.** The Raft configuration of the system partition stores the policy, as it stores the fence list. The policy has the voter count of each zone and the order of the zones. It is not a separate record in the system partition state. The order comes from the zone priorities of the static configuration at the bootstrap. Later changes of the zone priorities in the dynamic configuration do not change it.
+
+**Control zone and zones.** The control zone is the first zone of the policy. The policy has no other field for it. The broker that makes a policy (the bootstrap, or "update system partition voter policy") puts the control zone first, then the data zones in the order of their priority. A dual-region policy starts with the data zone of the highest priority. The zone of a member is the zone of its `MemberId`. A member without a zone is in the zone `""` (empty). A zone that is not in the policy has 0 slots.
 
 The initial configuration (index 0) has the policy from the static configuration (5.4.1). The configuration entry of the first leader has the same policy (5.4.2). At a restart, each broker reads the policy from its stored configuration. Thus, the priorities are available at once, also without a leader. At start-up, each broker compares its static policy with the policy in its stored configuration. If they are different, the broker logs a warning and uses the policy in the configuration.
 
@@ -148,7 +154,7 @@ For each zone:
 2. If the zone has more voters than slots, the voters with the highest node index are extra. The leader demotes them (5.6.4).
 3. If the zone has fewer voters than slots, the slots stay empty. Self-promotion fills them (5.6.4).
 
-Members of a zone that is not in the policy are always passive. The liveness of a broker never changes the voters (D6).
+Members of a zone that is not in the policy are always passive, because the zone has 0 slots. The liveness of a broker never changes the voters (D6).
 
 The leader rejects a promotion if the member did not answer within the election timeout (R9). Thus, a broker that is down is never promoted.
 
@@ -156,12 +162,14 @@ The leader rejects a promotion if the member did not answer within the election 
 
 The broker calculates the priority from the Raft configuration and its voter policy. Raft does not store the priority.
 
-1. Sort the voters. Control-zone voters come first. Then sort by the zone order of the policy. Then sort by node index, low to high.
-2. The priority of a voter is `policyTotal - position`. `policyTotal` is the total number of voters in the policy. Each voter has a different priority.
+1. Sort the voters by the zone order of the policy. The control zone is the first zone (5.1), thus control-zone voters come first. Voters of a zone that is not in the policy come last. Then sort by node index, low to high.
+2. The priority of a voter is `max(1, policyTotal - position)`. `policyTotal` is the total number of voters in the policy. `position` starts at 0. If each zone has no more voters than slots, each voter has a different priority. If a zone has more voters than slots, the last voters get priority 1. Thus, each voter keeps a positive priority and can start an election.
 3. The target priority is `policyTotal`. It changes only when the policy changes (R12).
 4. A passive member has priority 0.
 
 The broker calculates the priority at start-up from its stored configuration. It calculates it again on each new configuration (R10), and calls `reconfigurePriority` if the value changed. A new policy comes in a new configuration.
+
+The priority election does not take the leadership from a leader that runs. A voter with a higher priority becomes the leader only after the current leader steps down. Thus, when a voter with a higher priority than the current leader has caught up, the broker starts the existing leadership balancing, or a leadership transfer to the voter with the highest priority. A transfer goes only to a voter (R6). Example: `C1` comes back after the control zone failed (5.10.2).
 
 ### 5.4 Start of the system partition
 
@@ -171,15 +179,15 @@ The start step does not block the start of the broker. The broker becomes ready 
 
 The broker uses the first row of this table that applies:
 
-| # |                                                   Condition                                                   |                                                                                                     Action                                                                                                     |
-|---|---------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 1 | The broker has a stored Raft configuration (`.conf`) for the system partition.                                | Start with the stored configuration (`bootstrap`).                                                                                                                                                             |
-| 2 | No stored Raft configuration, and one probe answer has a configuration index above 0.                         | Delete local system partition data, if any. Ask to join as `PASSIVE` with a new incarnation and the empty-start guard (5.4.3). The leader admits the join only if the broker is `JOINING` or `ACTIVE` (5.4.4). |
-| 3 | No stored Raft configuration, and all static brokers answer "no data" or index 0, with the same hash (5.4.2). | Bootstrap with the initial configuration (5.4.1). No empty-start guard.                                                                                                                                        |
+| # |                                                   Condition                                                   |                                                                                                                                                                           Action                                                                                                                                                                            |
+|---|---------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1 | The broker has a stored Raft configuration (`.conf`) for the system partition.                                | Start with the stored configuration (`bootstrap`). The member ids and types for `bootstrap` come from the stored configuration, not from the static configuration. A broker that a scale-up added has no entry in the static configuration. If the empty-start marker exists, join instead, with the incarnation and the `probeTerm` of the marker (5.4.3). |
+| 2 | No stored Raft configuration, and one probe answer has a configuration index above 0.                         | Delete local system partition data, if any. Ask to join as `PASSIVE` with a new incarnation and the empty-start guard (5.4.3). The leader admits the join only if the broker is `JOINING` or `ACTIVE` (5.4.4).                                                                                                                                              |
+| 3 | No stored Raft configuration, and all static brokers answer "no data" or index 0, with the same hash (5.4.2). | Bootstrap with the initial configuration (5.4.1). No empty-start guard.                                                                                                                                                                                                                                                                                     |
 
 If no row applies, the probe retries (5.4.2).
 
-A voter that was removed, and starts with old data, uses row 1. It sends polls and votes. The members reject them, because its id and incarnation are on the fence list (5.6.6). When the leader tells it that it is fenced, it deletes its data and asks to join. The leader refuses the join until the broker is `JOINING` or `ACTIVE` again.
+A voter that was removed, and starts with old data, uses row 1. It sends polls and votes. The members reject them, because its id and incarnation are on the fence list (5.6.6). When it gets a `FENCED` rejection or the fenced notice of the leader, it deletes its data and asks to join. The leader refuses the join until the broker is `JOINING` or `ACTIVE` again.
 
 A passive member that was removed, and starts with old data, also uses row 1. It sends no requests, thus no member rejects it. It is never accessible, because no leader sends it entries. Step 3 of `MemberJoin` deletes its data when the cluster adds it again (5.6.1).
 
@@ -201,7 +209,7 @@ The probe finds out if the system partition already exists. The broker asks each
 - "no data", or the stored configuration index and term, and the current Raft term;
 - a hash of the voter policy and of the initial configuration.
 
-The first leader of the system partition appends a configuration entry right after its initial entry. It does this before it commits any other entry (R14). The entry has the members and the voter policy of the initial configuration. Thus, a configuration index above 0 shows that the system partition exists.
+The first leader of the system partition appends a configuration entry when its initial entry is committed. It does this before it appends any other entry and before it announces its leadership (R14, D19). The entry has the members and the voter policy of the initial configuration. Thus, a configuration index above 0 shows that the system partition exists.
 
 The broker decides:
 
@@ -219,12 +227,14 @@ A broker that joins without data (row 2) can be a voter in the current configura
 
 The guard (R7):
 
-1. Before the broker asks to join, it generates a random 64-bit incarnation. It writes an "empty start" marker and stores the incarnation with it.
-2. The broker repeats the probe until it has answers from a quorum of the voters of the highest configuration that it found. `probeTerm` is the highest Raft term that these voters reported. The broker does not use terms from other brokers. It keeps `probeTerm` with the marker.
-3. While the marker exists, the broker does not grant votes or polls, and it does not start an election.
-4. The broker removes the marker when its commit index reaches the commit index of an append from a leader with a term of `probeTerm` or more.
+1. Before the broker asks to join, it generates a random 64-bit incarnation. It writes an "empty start" marker on its disk and stores the incarnation with it.
+2. The broker repeats the probe until it has answers from a quorum of the voters of the highest configuration that it found. `probeTerm` is the highest Raft term that these voters reported. The broker does not use terms from other brokers. It stores `probeTerm` with the marker.
+3. The broker joins with `JoinOptions`: the incarnation, the version of its dynamic configuration (5.4.4) and `probeTerm`. Raft activates the guard. While the guard is active, the broker does not grant votes or polls, and it does not start an election.
+4. Raft releases the guard when its commit index reaches the commit index of an append from a leader with a term of `probeTerm` or more. Then the broker removes the marker.
 
 A leader with a lower term can be a deposed leader on a minority side. Its commit index can be too low.
+
+Raft keeps the guard only in memory. The broker keeps the marker, the incarnation and `probeTerm` on its disk. At each start and at each join while the marker exists, the broker joins with the stored incarnation and `probeTerm` (row 1 of 5.4). Thus, a restart does not release the guard.
 
 After "force system partition voters", the highest configuration has fewer voters. Thus, a broker that lost its disk can complete the probe with the answers of the surviving voters.
 
@@ -240,28 +250,30 @@ The broker:
 
 1. Waits until its local dynamic configuration is initialized.
 2. Does not ask to join while its local dynamic configuration shows it as `LEAVING`, `LEFT`, or as the target of a pending removal.
-3. Sends a join request with its incarnation and with the version of its local dynamic configuration that shows it as `JOINING` or `ACTIVE`.
+3. Joins with `JoinOptions`: its incarnation, the version of its local dynamic configuration that shows it as `JOINING` or `ACTIVE`, and `probeTerm` of the empty-start guard (5.4.3).
 4. Retries with a backoff until the leader admits it. If a join try reaches its deadline, the loop starts a new try.
 
 The leader checks the request with the admission hook (R13):
 
-1. If its dynamic configuration is not initialized, it refuses with "not ready".
-2. If the version of its dynamic configuration is lower than the version in the request, it refuses with "not ready".
-3. If the broker is not `JOINING` or `ACTIVE` in its dynamic configuration, it refuses with "not a cluster member". `LEAVING` and `LEFT` are refused.
-4. If the broker is the target of a pending `MemberLeave` or `MemberRemove`, it refuses with "not a cluster member".
+1. If its dynamic configuration is not initialized, it refuses with `NOT_READY`.
+2. If the version of its dynamic configuration is lower than the version in the request, it refuses with `NOT_READY`.
+3. If the broker is not `JOINING` or `ACTIVE` in its dynamic configuration, it refuses with `NOT_A_MEMBER`. `LEAVING` and `LEFT` are refused.
+4. If the broker is the target of a pending `MemberLeave` or `MemberRemove`, it refuses with `NOT_A_MEMBER`.
 5. If the sender id and incarnation match a fence entry, it rejects the request (5.6.6).
 
-Both refusals are retriable. The hook checks each change that adds a member: a join and a `reconfigure` (5.5). The leader reads its dynamic configuration at runtime. Later, when the dynamic configuration moves into the system partition, the leader reads the cluster members from the system partition state (Q5).
+`NOT_A_MEMBER` and `NOT_READY` are two new Raft errors. Both are retriable, and `ReconfigurationHelper.join` retries them. The hook checks each change that adds a member: a join, a join with a new incarnation of a member, and a `reconfigure` (5.5). The leader reads its dynamic configuration at runtime. Later, when the dynamic configuration moves into the system partition, the leader reads the cluster members from the system partition state (Q5).
 
-A join retry with the same incarnation is a no-op. If the broker is already a member with a different incarnation, the leader writes a new configuration with the new incarnation (R15). Old fence entries of the broker stay. They do not match the new incarnation (5.6.6).
+A join retry with the same incarnation is a no-op. If the broker is already a member with a different incarnation, the leader writes a new configuration with the new incarnation (R15). The member keeps its type. Thus, a voter that lost its disk stays a voter. Its empty-start guard keeps it from voting until it has caught up (5.4.3). Old fence entries of the broker stay. They do not match the new incarnation (5.6.6).
 
 ### 5.5 How a change gets to Raft
 
 The broker that runs an operation calculates the target configuration. It sends the full configuration to the leader:
 
 ```
-RaftPartition.reconfigure(Map<MemberId, Type> members, VoterPolicy policy, long configurationIndex, long configurationTerm)
+RaftPartition.reconfigure(Map<MemberId, Type> members, Collection<FenceEntry> fenced, VoterPolicy policy, long configurationIndex, long configurationTerm)
 ```
+
+`fenced` are the entries that the change adds to the fence list. The leader never removes an entry. `policy` is null if the change does not change the policy. The request sets only the types. Each member keeps the incarnation that it has in the current configuration. Only a join changes an incarnation (5.4.4).
 
 Rules for this new API (R3):
 
@@ -269,10 +281,12 @@ Rules for this new API (R3):
 - The leader rejects a new member that is `ACTIVE`. A new member must first be `PASSIVE`.
 - The admission hook (R13) checks each member that the change adds (5.4.4).
 - The leader rejects a change from a fenced sender (R8).
-- The leader rejects a promotion that puts more voters in a zone than the policy of its current configuration allows.
+- The leader rejects a target configuration in which a fenced member (id and incarnation) is a voter. The leader does not replicate to a fenced member. Thus, such a voter would stop each commit.
+- The leader rejects a change that adds voters to a zone, if the zone then has more voters than the target policy allows. A zone that is not in the policy has 0 slots. A member without a zone is in the zone `""` (5.1). The leader accepts a change that does not add voters to a zone, also if the zone has too many voters. Thus, the leader can demote extra voters one at a time, and a policy change does not have to correct all zones at once.
 - A rejection contains the leader's current configuration (index, term, typed members, incarnations, fence list, policy). The broker calculates the target again from it.
 - If the configuration is already the target, the leader returns OK and makes no change (`equalMembership`, which must also compare the incarnations, the fence list and the policy).
-- A member that is not the leader forwards the request to the leader. A broker that is not a member sends it to the members that it knows, as `join` does today.
+- A member that is not the leader forwards the request to the leader. If it knows no leader, it answers `NO_LEADER`, and the sender retries.
+- A broker that is not a member does not forward a request, and it cannot send `reconfigure` itself. A broker that is not a member only joins (5.4.4). Usually, the broker that runs an operation is a member. Q11 asks if forwarding by non-members is necessary.
 
 "Update system partition voter policy" uses this API. It sends the current members with the new policy.
 
@@ -290,8 +304,8 @@ The new broker applies `MemberJoin`. The applier can run more than once. When it
 
 1. Get the leader's current configuration (5.5).
 2. If this broker is in it with its current incarnation, and no fence entry matches it, continue at step 5. The broker already joined, maybe in an earlier try.
-3. Else, if the system partition runs with old data, stop it and delete the data. The data is from a time before the broker was removed. This also cleans up a removed passive member (5.4).
-4. Start the background join as `PASSIVE` with a new incarnation and the empty-start guard (5.4.4). The dynamic configuration now shows the broker as `JOINING`. If the leader's view is older, the leader answers "not ready" and the join retries.
+3. Else, if the system partition runs with old data, close it and delete the data (R11). The data is from a time before the broker was removed. This also cleans up a removed passive member (5.4).
+4. Start the background join as `PASSIVE` with a new incarnation and the empty-start guard (5.4.4). The dynamic configuration now shows the broker as `JOINING`. If the leader's view is older, the leader answers `NOT_READY` and the join retries.
 5. `MemberJoin` completes after the broker has asked to join. It does not wait for the admission or for a promotion. The background join finishes the join.
 
 The global operations run one at a time. Thus, `MemberJoin` must not wait for the admission or a promotion. Self-promotion fills an empty slot later. The excluded set (5.2) and I1 stay true, because the leader admits only a broker that is `JOINING` or `ACTIVE` (5.4.4).
@@ -308,6 +322,8 @@ The leaving broker applies `MemberLeave`:
 4. If no replacement is possible within the timeout, remove the broker without a replacement. The slot stays empty until self-promotion fills it.
 
 Each removal also puts the broker on the fence list with its incarnation. If a removed voter starts again later with its old data, the members reject its requests (5.6.6). A removed passive member sends no requests (5.4).
+
+**No answer to the removal.** When the removal commits, the leaving broker is fenced. The leader sends it the fenced notice, and the broker stops its system partition (5.6.6). This can happen before the answer to its request arrives. Thus, the applier waits for the answer with a timeout. When the timeout ends, the applier starts again at step 1 and gets the leader's configuration again. If the broker is not in it, `MemberLeave` completes.
 
 `MemberRemove` uses `MemberLeaveApplier` too. If the member is not the local broker, the applier checks the system partition again. Usually phase 0 of the force-remove plan did the removal already (5.6.3). If the broker is still a member, the applier removes it in one change and puts it on the fence list.
 
@@ -338,8 +354,9 @@ The operation tells the executor to change the Raft configuration. It does not w
   3. If no member with the most recent log is in a zone of the policy, take one of them anyway. The leader demotes it later, when a member of a policy zone is promoted (5.6.4).
   4. All other remaining members are passive.
   5. The removed brokers go on the fence list with their incarnations (R8).
-  6. Call `forceConfigure`. The executor sends it to all members that answered in step 1, with a best-effort wait. Only the voters of the new configuration must answer (R2).
-  7. After the new leader is elected, self-promotion and the leader's demotion restore the policy (5.6.4).
+  6. Each voter of the current configuration that is not removed, but that is not a voter of the forced configuration, also goes on the fence list with its incarnation. This is a voter that does not have the most recent log, or that did not answer in step 1. The forced configuration gets to it only with a best-effort send. Thus, it can keep an old configuration in which it is a voter. 5.6.5 fences the down brokers for the same reason. The fenced voter stays a member. It deletes its data and joins again with a new incarnation (5.6.6). The leader admits it, because it is `JOINING` or `ACTIVE`.
+  7. Call `forceConfigure`. The executor sends it to all members that answered in step 1, with a best-effort wait. Only the voters of the new configuration must answer (R2).
+  8. After the new leader is elected, self-promotion and the leader's demotion restore the policy (5.6.4).
 
 The forced change can lose entries that were committed only on the removed brokers. The design accepts this. It is the same for data partitions today.
 
@@ -357,13 +374,13 @@ These rules keep the configuration in line with the policy. Each rule changes on
 2. Its zone has fewer voters than slots in the committed configuration.
 3. It is not excluded (5.2) and not fenced (no fence entry matches its id and its incarnation).
 4. It has no empty-start marker.
-5. Its local commit index is the same as the leader's commit index, as far as it knows.
+5. Its local commit index is not lower than the leader's commit index. The broker learns the leader's commit index from the append requests and heartbeats that it receives (R10).
 
 If all conditions are true, it sends a change that promotes itself. A broker with a lower node index waits a shorter time before it sends. The leader rejects a promotion that puts more voters in a zone than the policy allows (5.5).
 
 **Self-join.** A broker that is not a member of the system partition, or that is fenced (5.6.6), deletes its system partition data and asks to join (5.4.4). It does not ask while its local dynamic configuration shows it as `LEAVING`, `LEFT`, or as the target of a pending removal. The leader admits it only if it is `JOINING` or `ACTIVE`. This repairs the case in which a plan was cancelled after the system partition step (for example after phase 0, or after the removal in `MemberLeave`). If the broker is still `JOINING` or `ACTIVE`, the leader admits it.
 
-**Demotion of extra voters.** The leader checks each new configuration. If a zone has more voters than slots, the leader demotes the extra voter with the highest node index. It demotes one voter in each change. This can demote a voter that is down. That is safe, because the quorum gets smaller. A voter of a zone that is not in the policy is also extra. The leader demotes it only after a member of a policy zone is promoted.
+**Demotion of extra voters.** The leader checks each new configuration. If a zone has more voters than slots, the leader demotes the extra voter with the highest node index. It demotes one voter in each change. This can demote a voter that is down. That is safe, because the quorum gets smaller. A voter of a zone that is not in the policy is also extra. The leader demotes it only after a member of a policy zone is promoted. The leader check of 5.5 accepts each demotion, also when a zone has too many voters.
 
 #### 5.6.5 Force system partition voters
 
@@ -392,18 +409,19 @@ This operation is not a plan of the dynamic configuration. It never waits in a q
 A broker on the fence list can have an old configuration in which it is a voter. Its log can have entries that the survivors do not have. Thus (R8):
 
 - A fence entry has a broker id and an incarnation. Raft requests (poll, vote, append, configure, join, reconfigure) carry the incarnation of the sender.
-- A member rejects a request only if the sender id and the sender incarnation match a fence entry. It does not update its term from such a request. The rejection says "fenced".
-- A member also ignores the term in a response from a fenced sender (`LeaderAppender`, `FollowerRole`, `CandidateRole`).
-- The leader does not send entries to a fenced member. It sends only a "fenced" notice. The leader rejects a join or a `reconfigure` from a fenced sender.
-- A broker acts on a fence entry only if the incarnation of the entry is its own current incarnation. In addition, the entry must be in a committed configuration, or the leader must send a "fenced" notice.
-- Then the broker stops the system partition and deletes its data. It asks to join with a new incarnation, an empty log and the empty-start guard (5.4.4).
+- A member rejects a request only if the sender id and the sender incarnation match a fence entry in its configuration. It rejects the request before a role handles it. Thus, it does not update its term from such a request.
+- The error of the rejection depends on the view of the member. If the fence entry is committed in its own view, the error is `FENCED`. Else the error is `ILLEGAL_MEMBER_STATE`, and the sender ignores it. An entry is committed in the view of a member if the configuration is forced, if the commit index of the member is at the configuration index or higher, or if the stored (committed) configuration of the member has the entry.
+- A response from a fenced member counts as a response from a member that is not reachable. Thus, the receiver also ignores the term in the response. One wrapper of the outbound protocol does this for all requests.
+- The leader does not replicate entries to a fenced member. When the configuration that fences the member is committed, the leader sends it the fenced notice: the committed configuration in a `ConfigureRequest` that is marked as committed. The leader sends the notice at most once per heartbeat interval. The leader rejects a join or a `reconfigure` from a fenced sender.
+- A broker acts on a fence entry only if the incarnation of the entry is its own current incarnation. In addition, one of these must be true: the entry is in a configuration that the broker knows as committed (also its stored configuration at a restart), a member sent a `FENCED` rejection, or the leader sent the fenced notice.
+- Then Raft makes the member inactive and calls the fenced listener. The broker closes the system partition (R11) and deletes its data. It asks to join with a new incarnation, an empty log and the empty-start guard (5.4.4).
 - A join with a new incarnation matches no fence entry. The leader admits it only if the broker is `JOINING` or `ACTIVE`.
 - Fence entries are never cleared. A broker that joins again has a new incarnation. Thus, old entries never match it. The number of entries is not more than the number of removals and forced changes (D17).
 
 The fence list has two kinds of entries:
 
 - Brokers that a removal took out of the system partition (`MemberLeave`, phase 0). They usually are not cluster members any more. Their join is refused until the cluster adds them again.
-- Brokers that "force system partition voters" made passive. They are still cluster members, thus their join is admitted.
+- Brokers that "force system partition voters" made passive, and voters that a forced change of phase 0 made passive (5.6.3). They are still cluster members, thus their join is admitted.
 
 A removed passive member sends no requests. Thus, no member rejects it. It is never accessible. Step 3 of `MemberJoin` deletes its data (5.6.1).
 
@@ -413,7 +431,7 @@ The fence list protects the survivors. It does not protect against an isolated g
 
 #### 5.6.7 Restart of one broker
 
-The broker uses row 1. Raft loads its stored configuration. The broker calculates its priority from that configuration and its voter policy.
+The broker uses row 1, with the member ids and types of its stored configuration. Raft loads its stored configuration. The broker calculates its priority from that configuration and its voter policy.
 
 #### 5.6.8 Restart of the cluster
 
@@ -422,7 +440,7 @@ All brokers restart at the same time. Each broker uses row 1 with its stored con
 - The voters elect a leader. The voter with the highest priority usually wins. The priorities come from the stored configurations, thus they are available at once.
 - Passive members start in the passive role. They do not start elections.
 - A broker that missed the last change has an older configuration. If it is passive in that configuration, it does no harm. The leader sends it the current configuration. If it is a voter in the older configuration but not in the current one, it cannot win an election, because the current voters have a more recent log.
-- A fenced or removed voter that starts with old data sends polls. The members reject them (5.6.6). When the leader sends a "fenced" notice, the broker deletes its data. It asks to join when its local dynamic configuration allows it (5.4.4). The leader answers "not ready" until its own dynamic configuration is initialized.
+- A fenced or removed voter that starts with old data sends polls. The members reject them (5.6.6). When it gets a `FENCED` rejection or the fenced notice of the leader, the broker deletes its data. It asks to join when its local dynamic configuration allows it (5.4.4). The leader answers `NOT_READY` until its own dynamic configuration is initialized.
 - A removed passive member that starts with old data sends no requests. No member rejects it. It is never accessible. `MemberJoin` deletes its data if the cluster adds it again (5.6.1).
 - Self-promotion waits until the local dynamic configuration is initialized (5.6.4).
 - A broker without a stored configuration uses the probe (rows 2 and 3).
@@ -431,7 +449,7 @@ All brokers restart at the same time. Each broker uses row 1 with its stored con
 
 A broker that lost its disk and is still a cluster member uses row 2. It asks to join as `PASSIVE`, with a new incarnation and the empty-start guard. The leader admits it, because it is `JOINING` or `ACTIVE`. The leader writes the new incarnation into the configuration (R15).
 
-- If it is still a voter in the configuration, the leader does not demote it. It gets the current configuration and is a voter again. It does not vote until it has caught up with the current leader.
+- If it is still a voter in the configuration, the leader does not demote it. The join with the new incarnation keeps its type (5.4.4). It gets the current configuration and is a voter again. It does not vote until it has caught up with the current leader.
 - If it is passive, it catches up as a passive member.
 
 #### 5.6.10 Zone changes
@@ -452,32 +470,34 @@ A broker that lost its disk and is still a cluster member uses row 2. It asks to
 
 ### 5.8 Changes to Raft
 
-|       #       |                                                                                                                                                                      Change                                                                                                                                                                      |                                                                    Why                                                                     |
-|---------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
-| R1            | Bootstrap with member types, the voter policy and incarnation 0 for each member. `createInitialConfig` uses the given types.                                                                                                                                                                                                                     | Today the initial configuration makes all members `ACTIVE`.                                                                                |
-| R2            | `forceConfigure` waits only for the `ACTIVE` members of the new configuration. The member set of `ForceConfigureQuorum` has no passive members. It must work when the caller is passive. The caller sends the change to all reachable members, with a best-effort wait.                                                                          | Today one passive member that is down stops the recovery.                                                                                  |
-| R3            | `reconfigure(Map<MemberId, Type>, policy, index, term)` on `RaftPartition`. Exact index match. Reject a new member that is `ACTIVE`. Return the current configuration in a rejection. Forward to the leader. The admission hook (R13) checks each added member. The leader rejects a promotion beyond the slots of the policy.                   | Today the API changes only the local member's type, and the index check accepts a higher index.                                            |
-| R4            | Tests for the promotion from `PASSIVE` to `ACTIVE`.                                                                                                                                                                                                                                                                                              | Production promotes only from `PROMOTABLE` today.                                                                                          |
-| R5 (optional) | Send new committed entries to passive members when the commit index moves.                                                                                                                                                                                                                                                                       | Today passive members get them only on the next heartbeat.                                                                                 |
-| R6            | `anoint()` and leadership transfer reject a member that is not `ACTIVE`.                                                                                                                                                                                                                                                                         | Today a passive member can become a candidate through `anoint()`.                                                                          |
-| R7            | Empty-start guard with `probeTerm` (5.4.3).                                                                                                                                                                                                                                                                                                      | Today a voter with an empty log gives any vote, and it lost its record of its last vote.                                                   |
-| R8            | Fence list of (broker id, incarnation) in the configuration (5.6.6). Part of membership equality. Requests carry the sender incarnation. Members reject votes, polls, appends, joins and `reconfigure` requests from a fenced sender, and ignore its terms in responses. A broker acts only on a committed entry or on a notice from the leader. | Today the `force` flag protects only until the next normal configuration.                                                                  |
-| R9            | The promotion check also requires an answer from the member within the election timeout.                                                                                                                                                                                                                                                         | Today a passive member that is down can pass the check.                                                                                    |
-| R10           | A listener for configuration changes, and a read of the typed configuration with incarnations, fence list, policy, index, term and joint state.                                                                                                                                                                                                  | The priority and `selectVoters` need them.                                                                                                 |
-| R11           | `RaftPartition.join` closes a server that runs, or rejects the call.                                                                                                                                                                                                                                                                             | Today it creates a second server on the same directory.                                                                                    |
-| R12           | The target priority can change at runtime.                                                                                                                                                                                                                                                                                                       | The policy can change (5.1).                                                                                                               |
-| R13           | A join admission hook on the leader. The broker supplies the check (5.4.4). The refusals "not a cluster member" and "not ready" have their own reasons. `ReconfigurationHelper.join` retries them.                                                                                                                                               | The start of the system partition cannot read the dynamic configuration (5.4.4).                                                           |
-| R14           | The first leader appends a configuration entry right after its initial entry, before it commits any other entry.                                                                                                                                                                                                                                 | Today a partition that never changed its members keeps configuration index 0. The probe cannot see that the partition exists (D19).        |
-| R15           | Each member has an incarnation in the configuration. A join request carries it. A join retry with the same incarnation is a no-op. `onJoin` writes a new configuration when the incarnation changes.                                                                                                                                             | Fence entries must match only one life of a broker (D17). Today `onJoin` writes nothing for a member that is already in the configuration. |
+|       #       |                                                                                                                                                                                                                                                                                                                                                  Change                                                                                                                                                                                                                                                                                                                                                   |                                                                    Why                                                                     |
+|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| R1            | Bootstrap with member types, the voter policy and incarnation 0 for each member. `createInitialConfig` uses the given types.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Today the initial configuration makes all members `ACTIVE`.                                                                                |
+| R2            | `forceConfigure` waits only for the `ACTIVE` members of the new configuration. The member set of `ForceConfigureQuorum` has no passive members. It must work when the caller is passive. The caller sends the change to all reachable members, with a best-effort wait.                                                                                                                                                                                                                                                                                                                                                                                                                                   | Today one passive member that is down stops the recovery.                                                                                  |
+| R3            | `reconfigure(Map<MemberId, Type>, fenced, policy, index, term)` on `RaftPartition`. Exact index match. Reject a new member that is `ACTIVE`. Reject a target in which a fenced member is a voter. Return the current configuration in a rejection. Forward to the leader. A member that knows no leader answers `NO_LEADER`, and the sender retries. A broker that is not a member does not forward (Q11). The admission hook (R13) checks each added member. The leader rejects a change that adds voters to a zone beyond its slots (5.5).                                                                                                                                                              | Today the API changes only the local member's type, and the index check accepts a higher index.                                            |
+| R4            | Tests for the promotion from `PASSIVE` to `ACTIVE`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Production promotes only from `PROMOTABLE` today.                                                                                          |
+| R5 (optional) | Send new committed entries to passive members when the commit index moves. Not done in the PoC.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Today passive members get them only on the next heartbeat.                                                                                 |
+| R6            | `anoint()` and leadership transfer reject a member that is not `ACTIVE`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Today a passive member can become a candidate through `anoint()`.                                                                          |
+| R7            | Empty-start guard with `probeTerm` (5.4.3). Raft keeps the guard in memory. A join takes `JoinOptions`: the incarnation, the version of the dynamic configuration and `probeTerm`. The broker keeps the marker and `probeTerm` on its disk and passes `probeTerm` on each join.                                                                                                                                                                                                                                                                                                                                                                                                                           | Today a voter with an empty log gives any vote, and it lost its record of its last vote.                                                   |
+| R8            | Fence list of (broker id, incarnation) in the configuration (5.6.6). Part of membership equality. Requests and responses carry the sender incarnation. Members reject votes, polls, appends, joins and `reconfigure` requests from a fenced sender before a role handles them: `FENCED` if the entry is committed in their own view, else `ILLEGAL_MEMBER_STATE`, which the sender ignores. A response from a fenced member counts as from a member that is not reachable. The leader does not replicate to a fenced member. It sends the committed configuration as the fenced notice, at most once per heartbeat interval. A broker acts only on a committed entry, a `FENCED` rejection or the notice. | Today the `force` flag protects only until the next normal configuration.                                                                  |
+| R9            | The promotion check also requires an answer from the member within the election timeout.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Today a passive member that is down can pass the check.                                                                                    |
+| R10           | A listener for configuration changes, and a read of the typed configuration with incarnations, fence list, policy, index, term and joint state. A passive member learns the commit index of the leader, for example from the append or heartbeat requests that it receives.                                                                                                                                                                                                                                                                                                                                                                                                                               | The priority, `selectVoters` and self-promotion (5.6.4) need them.                                                                         |
+| R11           | `RaftPartition.join` fails while a server exists that was not closed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Today it creates a second server on the same directory.                                                                                    |
+| R12           | The target priority can change at runtime.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | The policy can change (5.1).                                                                                                               |
+| R13           | A join admission hook on the leader. The broker supplies the check (5.4.4). The refusals are two new Raft errors, `NOT_A_MEMBER` and `NOT_READY`. Both are retriable. `ReconfigurationHelper.join` retries them.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | The start of the system partition cannot read the dynamic configuration (5.4.4).                                                           |
+| R14           | When its initial entry is committed, the first leader appends a configuration entry. It does this before it appends any other entry and before it announces its leadership. Only a configuration with a voter policy gets this entry.                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Today a partition that never changed its members keeps configuration index 0. The probe cannot see that the partition exists (D19).        |
+| R15           | Each member has an incarnation in the configuration. A join request carries it. A join retry with the same incarnation is a no-op. `onJoin` writes a new configuration when the incarnation changes, and keeps the type of the existing member.                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Fence entries must match only one life of a broker (D17). Today `onJoin` writes nothing for a member that is already in the configuration. |
 
-The configuration format gets new fields (types at bootstrap, incarnations, fence list, voter policy). Only the system partition writes the incarnations, the fence list and the policy. Thus, data partitions keep their format.
+The configuration format gets new fields (incarnations, fence list, voter policy). The format version of the configuration entry and of the `.conf` file (`raft-entry-schema.xml`) goes from 4 to 5. Data with version 4 reads as incarnation 0 for each member, an empty fence list and no policy. Only the system partition writes incarnations other than 0, fence entries and a policy. Data partitions write version 5 with these empty values. Their behavior does not change: without a policy, the first leader appends no configuration entry.
 
 ### 5.9 Changes to the broker and the dynamic configuration
 
-- A start step for the system partition, with the start table of 5.4 and the probe. It runs before the dynamic configuration starts. It does not block the readiness of the broker.
+- A start step for the system partition, with the start table of 5.4 and the probe. It runs before the dynamic configuration starts. It does not block the readiness of the broker. Row 1 uses the member ids and types of the stored configuration. The step keeps the empty-start marker, the incarnation and `probeTerm` on the disk, and passes them on each join (5.4.3).
 - A background join loop (5.4.4). It waits for the local dynamic configuration, and it retries after the join deadline.
+- A fenced listener. It closes the system partition, deletes its data and starts the background join with a new incarnation (5.6.6).
+- Leadership balancing for the system partition. When a voter with a higher priority than the leader has caught up, the broker starts the leadership balancing or a transfer to the voter with the highest priority (5.3).
 - A `SystemPartitionMembership` component: `selectVoters`, the priority, the join admission check (on the leader), the rules of 5.6.4 and the flows of 5.6.
-- `MemberJoinApplier` and `MemberLeaveApplier` call `SystemPartitionMembership`. Each wait has a limit. `MemberJoin` completes after the broker has asked to join. The `MemberRemove` applier checks the system partition again.
+- `MemberJoinApplier` and `MemberLeaveApplier` call `SystemPartitionMembership`. Each wait has a limit. `MemberJoin` completes after the broker has asked to join. `MemberLeave` gets the leader's configuration again after a timeout, because the leaving broker can stop before it gets the answer (5.6.2). The `MemberRemove` applier checks the system partition again.
 - A new global operation `SystemPartitionRemoveMembers(executor, removedBrokers)`. `ForceScaleDownRequestTransformer` adds it as phase 0.
 - The force-remove request and `RemoveZoneTransformer` select a coordinator that is not removed and that is reachable.
 - New management operations: "force system partition voters" (5.6.5), which is not a plan, and "update system partition voter policy" (5.1), which is a Raft configuration change.
@@ -516,9 +536,21 @@ The first leader appends a configuration entry with the same members and policy.
 
 The system partition tolerates no failure now. This is the same as the data partitions, which have only the 2 replicas in zone A.
 
-If only `A3` had the most recent log, the forced configuration would be `{A3 V, A1 P, A2 P, A4 P}`. Then self-promotion promotes `A1`, and zone A has 2 voters again. If `A1` to `A4` all had the most recent log, the policy `A: 2` limits the voters to `A1` and `A2`.
+**Only one member has the most recent log.** Example: `A1` was cut off, and entries committed on `A2`, `B1` and `B2`. `A3` received them as a passive member. Then `A2` failed together with zone B. `A1` can be reached again. Of the reachable members, only `A3` has the most recent log. The forced configuration is:
 
-**Restart of the cluster after the forced change.** `A1` and `A2` load the forced configuration with the fence list. They elect a leader with 2 of 2 votes. `A3` and `A4` start as passive members. `B1` and `B2` start with old data. They were voters, thus they send polls. `A1` and `A2` reject them (fence list), and the leader sends a "fenced" notice. They delete their data and ask to join. The leader refuses, because they are `LEFT`. `B3` and `B4` were passive. They send no requests and are never accessible.
+```
+{A3 V, A1 P, A2 P, A4 P}   fence: [A1, A2, B1, B2, B3, B4]     quorum: 1 of 1
+```
+
+`A1` and `A2` were voters, but they are not voters of the forced configuration. Thus, they go on the fence list too (5.6.3, step 3, item 6). `A1` gets the fenced notice. It deletes its data and joins again with a new incarnation. When `A2` comes back with its old data, it is a voter in its old configuration and sends polls. The members reject them, and the leader sends `A2` the fenced notice. `A2` deletes its data and joins again with a new incarnation. Both are `ACTIVE` cluster members, thus the leader admits them. When `A1` has caught up, it promotes itself, and zone A has 2 voters again:
+
+```
+{A3 V, A1#3 P, A2#6 P, A4 P}  ->  {A3 V, A1#3 V, A2#6 P, A4 P}   fence: [A1, A2, B1, B2, B3, B4]
+```
+
+If `A1` to `A4` all had the most recent log, the policy `A: 2` limits the voters to `A1` and `A2`.
+
+**Restart of the cluster after the forced change.** `A1` and `A2` load the forced configuration with the fence list. They elect a leader with 2 of 2 votes. `A3` and `A4` start as passive members. `B1` and `B2` start with old data. They were voters, thus they send polls. `A1` and `A2` reject them (fence list), and the leader sends the fenced notice. They delete their data and ask to join. The leader refuses, because they are `LEFT`. `B3` and `B4` were passive. They send no requests and are never accessible.
 
 **Failback.** The operator adds `B1` to `B4` again. Each one is now `JOINING`. `MemberJoin` deletes old data, if any. Each broker asks to join as `P` with an empty log and a new incarnation. The leader admits it. The old fence entries stay, but they do not match the new incarnations. Self-promotion fills the 2 slots of zone B:
 
@@ -539,7 +571,7 @@ If only `A3` had the most recent log, the forced configuration would be `{A3 V, 
 {C1 V, A1 V, A2 V, B1 V, B2 V, A3 P, B3 P}     quorum: 3 of 5
 ```
 
-The first leader appends a configuration entry with the same members and policy. `C1` has the highest priority (5), thus it is the leader when it is up.
+The first leader appends a configuration entry with the same members and policy. `C1` has the highest priority (5), thus it usually wins the first election. The priorities are `C1` 5, `A1` 4, `A2` 3, `B1` 2, `B2` 1. `A3` and `B3` have 0.
 
 **Zone A fails: automatic failover.** 3 of 5 voters are alive (`B1, B2, C1`). The failure detector commits the failover decision. The failover runs the force-remove plan for zone A. Phase 0: `B1, B2, C1` are a quorum of 5. Thus, a **normal** change:
 
@@ -549,7 +581,7 @@ The first leader appends a configuration entry with the same members and policy.
 
 No forced change is necessary. The system partition still tolerates one failure. The slots of zone A stay empty.
 
-**Zone A comes back before the failback.** `A1` and `A2` have 2 of 5 old votes, thus they cannot elect a leader. They send polls. The survivors reject them (fence list), and the leader sends a "fenced" notice. They delete their data and ask to join. The leader refuses, because they are `LEFT`. `A3` was passive. It sends no requests and is never accessible.
+**Zone A comes back before the failback.** `A1` and `A2` have 2 of 5 old votes, thus they cannot elect a leader. They send polls. The survivors reject them (fence list), and the leader sends the fenced notice. They delete their data and ask to join. The leader refuses, because they are `LEFT`. `A3` was passive. It sends no requests and is never accessible.
 
 **Failback.** The failback adds `A1` to `A3` again. They are now `JOINING`. `MemberJoin` deletes old data, if any. They join as `P` with an empty log and new incarnations, and the leader admits them. The old fence entries stay. Self-promotion fills the slots of zone A:
 
@@ -557,7 +589,7 @@ No forced change is necessary. The system partition still tolerates one failure.
 {C1 V, B1 V, B2 V, B3 P, A1#4 P, A2#7 P, A3#3 P}  ->  ...  ->  {C1 V, A1#4 V, A2#7 V, B1 V, B2 V, A3#3 P, B3 P}
 ```
 
-**The control zone fails.** 4 of 5 voters are alive. The cluster does nothing (#21). The leader moves to the data voter with the next priority. When `C1` comes back with its disk, it catches up as a voter and becomes the leader again. If `C1` comes back with an empty disk, it joins with a new incarnation and the empty-start guard. It does not vote until it has caught up with the current leader.
+**The control zone fails.** 4 of 5 voters are alive. The cluster does nothing (#21). The leader moves to the data voter with the next priority. When `C1` comes back with its disk, it catches up as a voter. The priority election does not take the leadership from the leader that runs (5.3). Thus, `C1` is the leader again only after the current leader steps down: when `C1` has caught up, the broker starts the leadership balancing. If `C1` comes back with an empty disk, it joins with a new incarnation and the empty-start guard. It does not vote until it has caught up with the current leader.
 
 **The control zone and zone A fail.** 2 of 5 voters are alive. No quorum. Processing stops (#21).
 
@@ -581,11 +613,13 @@ No forced change is necessary. The system partition still tolerates one failure.
 
 **Restart of the cluster after the forced change.** `B1` and `B2` load the stored configuration with the fence list and elect a leader. `B3` starts as passive. `C1`, `A1` and `A2` were voters. If they start with old data, they send polls and are rejected (fence list). They delete their data and ask to join. The leader refuses zone A, because it is `LEFT`. `A3` was passive. It sends no requests and is never accessible.
 
-**Return of the control zone.** `C1` starts. If it has old data, it starts with row 1. The survivors reject it, because `C1` with incarnation 0 is on the fence list. The leader sends a "fenced" notice. `C1` deletes its data and asks to join with an empty log and a new incarnation. `C1` is still `ACTIVE` in the dynamic configuration, thus the leader admits it. The old entry for `C1` stays, but it does not match the new incarnation. When `C1` has caught up, it promotes itself:
+**Return of the control zone.** `C1` starts. If it has old data, it starts with row 1. The survivors reject it, because `C1` with incarnation 0 is on the fence list. The leader sends the fenced notice. `C1` deletes its data and asks to join with an empty log and a new incarnation. `C1` is still `ACTIVE` in the dynamic configuration, thus the leader admits it. The old entry for `C1` stays, but it does not match the new incarnation. When `C1` has caught up, it promotes itself:
 
 ```
 {B1 V, B2 V, B3 P, C1#9 P}  fence: [A1, A2, A3, C1]  ->  {C1#9 V, B1 V, B2 V, B3 P}  fence: [A1, A2, A3, C1]
 ```
+
+`C1` gets the highest priority (5) again. It is the leader only after the leadership balancing (5.3).
 
 Automatic failover is available again. Then the failback adds zone A. `A1` to `A3` join with an empty log and new incarnations. Their old fence entries stay. The failback is manual here, because #21 counts the forced change as a configuration change.
 
@@ -629,7 +663,7 @@ Automatic failover is available again. Then the failback adds zone A. `A1` to `A
 
 **Alternatives that were rejected:**
 
-- *One total count, round-robin across zones, as in the PoC.* After a failover the leader fills the missing slots from the remaining zone, and at failback it must demote them again.
+- *One total count, round-robin across zones, as in the earlier failover PoC.* After a failover the leader fills the missing slots from the remaining zone, and at failback it must demote them again.
 - *One total count at bootstrap, then replace a voter only in its zone.* The slots of a zone are lost after the zone is empty.
 - *Use only the static configuration at runtime.* Brokers with different static values calculate different targets.
 - *Store the policy in the dynamic configuration (`ZoneSpec`).* This makes a new dependency on the dynamic configuration (D1).
@@ -705,13 +739,13 @@ Automatic failover is available again. Then the failback adds zone A. `A1` to `A
 
 ### D10. The election priority comes from the Raft configuration and its voter policy
 
-**Decision.** Each broker calculates its priority from the Raft configuration and the voter policy in it. The target priority is the total of the policy. The zone order is frozen in the policy.
+**Decision.** Each broker calculates its priority from the Raft configuration and the voter policy in it. The target priority is the total of the policy. The priority of a voter is at least 1. The zone order is frozen in the policy. The priority election does not take the leadership from a leader that runs. The broker starts the leadership balancing when a voter with a higher priority has caught up (5.3).
 
 **Why.** The voters change at runtime. A target from the policy is the same on all brokers. If the target were the current number of voters, brokers that did not restart would keep an old target, and several voters would start elections at the same time. The zone priorities of the dynamic configuration can change at runtime, thus brokers could calculate different priorities. The policy is in the stored configuration. Thus, each broker has its priority at a restart, also without a leader.
 
 ### D11. The voters of a forced configuration are the members with the most recent log
 
-**Decision.** Before a forced change, the broker collects the logs of the reachable members. Only the members with the most recent log become voters. Each zone gets at most the number of voters that its slots allow. If no member with the most recent log is in a zone of the policy, one of them becomes a voter anyway. Self-promotion and the leader's demotion restore the policy later.
+**Decision.** Before a forced change, the broker collects the logs of the reachable members. Only the members with the most recent log become voters. Each zone gets at most the number of voters that its slots allow. If no member with the most recent log is in a zone of the policy, one of them becomes a voter anyway. In phase 0, each voter that the forced change demotes goes on the fence list (5.6.3). Self-promotion and the leader's demotion restore the policy later.
 
 **Why.** The member with the most recent log has all entries that any reachable member knows as committed (Raft log matching and leader completeness). If a member with an older log were also a voter, it could win an election without the most recent member. Then a passive member that had more entries would have to truncate below its commit index. Raft cannot do that, and local readers already saw the entries. The slot limit keeps the number of voters in a zone inside the policy, as the leader check of R3 expects.
 
@@ -775,7 +809,7 @@ Automatic failover is available again. Then the failback adds zone A. `A1` to `A
 
 **Decision.** The start of the system partition uses only local data, the static configuration and the probe. A broker without data asks to join. The leader admits the join only if the broker is `JOINING` or `ACTIVE` and not the target of a pending removal (R13). Each removal puts the broker on the fence list, so that a removed broker with old data is rejected.
 
-**Why.** The dynamic configuration starts after the system partition. Thus, a starting broker cannot know if it is a cluster member. The leader reads its dynamic configuration at runtime, after it is initialized. Until then, it answers "not ready", and the broker retries. The join request has the version of the joiner's dynamic configuration. Thus, a leader with an older view also answers "not ready". A `LEAVING` broker, or the target of a pending removal, will soon not be a cluster member. If the leader admitted it, I1 could become false. Later, the cluster members are in the system partition state, and the same check reads them there. Thus, the design does not change when the dynamic configuration moves into the system partition.
+**Why.** The dynamic configuration starts after the system partition. Thus, a starting broker cannot know if it is a cluster member. The leader reads its dynamic configuration at runtime, after it is initialized. Until then, it answers `NOT_READY`, and the broker retries. The join request has the version of the joiner's dynamic configuration. Thus, a leader with an older view also answers `NOT_READY`. A `LEAVING` broker, or the target of a pending removal, will soon not be a cluster member. If the leader admitted it, I1 could become false. Later, the cluster members are in the system partition state, and the same check reads them there. Thus, the design does not change when the dynamic configuration moves into the system partition.
 
 **Alternatives that were rejected:**
 
@@ -785,9 +819,9 @@ Automatic failover is available again. Then the failback adds zone A. `A1` to `A
 
 ### D17. Fence entries have an incarnation and are never cleared
 
-**Decision.** Each member has an incarnation (R15). A fence entry is a broker id and an incarnation. A member rejects a request only if both match. A broker acts on an entry only if the incarnation is its own, and the entry is committed or the leader sent a notice. Fence entries are never cleared.
+**Decision.** Each member has an incarnation (R15). A fence entry is a broker id and an incarnation. A member rejects a request only if both match. A broker acts on an entry only if the incarnation is its own, and the entry is committed, a member answered `FENCED`, or the leader sent the fenced notice. A member answers `FENCED` only if the entry is committed in its own view. Fence entries are never cleared.
 
-**Why.** A broker that joins again has a new incarnation. Thus, its old entries never match it, also on a member with an old stored configuration. The number of entries is not more than the number of removals and forced changes. An uncommitted entry can disappear. Thus, a broker must not delete its data because of it.
+**Why.** A broker that joins again has a new incarnation. Thus, its old entries never match it, also on a member with an old stored configuration. The number of entries is not more than the number of removals and forced changes. An uncommitted entry can disappear. Thus, a broker must not delete its data because of it. For the same reason, a member that has the entry only in a configuration that is not committed answers `ILLEGAL_MEMBER_STATE`, and the sender ignores it.
 
 **Alternatives that were rejected:**
 
@@ -806,9 +840,11 @@ Automatic failover is available again. Then the failback adds zone A. `A1` to `A
 
 ### D19. The first leader appends a configuration entry
 
-**Decision.** The first leader of the system partition appends a configuration entry right after its initial entry, before it commits any other entry (R14). The probe uses a configuration index above 0 to find out that the system partition exists.
+**Decision.** When its initial entry is committed, the first leader of the system partition appends a configuration entry. It does this before it appends any other entry and before it announces its leadership (R14). The probe uses a configuration index above 0 to find out that the system partition exists.
 
 **Why.** Today the first leader appends only an initial entry. A cluster that never changed its members keeps configuration index 0. The probe then cannot see that the system partition exists. With the new entry, nothing with data commits before the index is above 0. Thus, a late broker that bootstraps at index 0 loses nothing.
+
+The PoC showed why the leader waits until the initial entry is committed. A follower can reset its log on the first append from the leader. Then it loads its stored configuration again and loses a configuration that it received before that append. Its stored configuration has index 0, and the leader does not send the configuration again to a member that reports index 0. Thus, the follower would keep index 0. In addition, the PoC does not load the stored configuration again if the reset deletes no entries.
 
 **Alternative that was rejected:**
 
@@ -827,23 +863,127 @@ Automatic failover is available again. Then the failback adds zone A. `A1` to `A
 - **Q7. Zone migration.** 5.6.10 gives only the rule. It needs a separate design.
 - **Q8. Voters after a scale-down.** A scale-down below the number of slots of a zone leaves fewer voters in that zone. The validation checks only the policy, not the actual voters.
 - **Q9. Lost and resurrected entries.** A forced change can lose system partition entries that were committed only on the fenced brokers. Also, an entry that was never committed can become committed after a forced change. For example, a deposed leader appended the entry. Consumers of the system partition state must accept this, as they must for data partitions.
+- **Q11. Forwarding by non-members.** A broker that is not a member does not forward a `reconfigure` request, and it cannot send one itself (5.5). A member that knows no leader answers `NO_LEADER`, and the sender retries. Usually, the broker that runs an operation is a member. Is forwarding by non-members necessary? This is a minor question.
 
 ## 8. Tests
 
 - Raft: bootstrap with typed members, the policy and incarnation 0. Restart keeps the types and the policy. A passive member never becomes a candidate, also with `anoint()`.
-- Raft: the first leader appends a configuration entry before it commits any other entry. After that, the configuration index is above 0.
-- Raft: promotion from `PASSIVE` to `ACTIVE`. A member that did not answer within the election timeout is not promoted. A promotion beyond the slots of the policy is rejected.
+- Raft: the first leader appends a configuration entry when its initial entry is committed, before any other entry and before it announces its leadership. After that, the configuration index is above 0.
+- Raft: promotion from `PASSIVE` to `ACTIVE`. A member that did not answer within the election timeout is not promoted. A change that adds a voter to a zone beyond its slots is rejected. A demotion in a zone with too many voters is accepted. A target with a fenced voter is rejected.
 - Raft: a forced change completes when a passive member is down. Only the members with the most recent log become voters, and not more than the slots of each zone. The change goes to all members that answered.
 - Raft: `reconfigure` with a different index or term is rejected, and the rejection has the current configuration. A policy change through `reconfigure` commits.
 - Raft: empty-start guard. A broker with the marker does not vote. A leader with a term below `probeTerm` does not release it. `probeTerm` uses only the voters of the highest configuration. After "force system partition voters", a broker that lost its disk completes the probe.
-- Raft: fence list. Members reject a fenced (id, incarnation) without a term update, also in responses. The fenced broker deletes its data and joins again with a new incarnation. The old entry stays and does not reject it. A member with an old stored configuration accepts the appends of the rejoined broker. An uncommitted entry without a leader notice does not make a broker delete its data.
-- Raft: join. A retry with the same incarnation writes no configuration. A join with a new incarnation writes a new configuration.
+- Raft: fence list. Members reject a fenced (id, incarnation) without a term update, also in responses. A member answers `FENCED` only for a fence entry that is committed in its view, else `ILLEGAL_MEMBER_STATE`. The leader sends the fenced notice at most once per heartbeat interval and no entries. The fenced broker deletes its data and joins again with a new incarnation. The old entry stays and does not reject it. A member with an old stored configuration accepts the appends of the rejoined broker. An uncommitted entry without a leader notice does not make a broker delete its data.
+- Raft: join. A retry with the same incarnation writes no configuration. A join with a new incarnation writes a new configuration and keeps the type of the member. `RaftPartition.join` fails while a server that was not closed exists.
+- Raft: storage. Decode real version-4 bytes of a configuration entry and of a `.conf` file. The result has incarnation 0 for each member, an empty fence list and no policy.
+- Unit: priorities. A zone with more voters than slots gives each voter a priority of 1 or more.
+- Unit: phase 0 forced change. A voter that is not removed and is not a voter of the forced configuration goes on the fence list.
 - Unit: `selectVoters` for each case: empty zone, extra voters, excluded brokers (not `JOINING` or `ACTIVE`, targets of pending removals), a zone that is not in the policy.
 - Unit: probe decisions: all "no data", index 0 answers, one index above 0, a different hash at bootstrap, a different hash at a join, missing answers.
-- Unit: join admission: "not ready" before the dynamic configuration is initialized and for an older version; "not a cluster member" for `LEAVING`, `LEFT` and a target of a pending removal; rejection of a fenced sender; the same checks for a `reconfigure` that adds a member.
+- Unit: join admission: `NOT_READY` before the dynamic configuration is initialized and for an older version; `NOT_A_MEMBER` for `LEAVING`, `LEFT` and a target of a pending removal; rejection of a fenced sender; the same checks for a `reconfigure` that adds a member.
 - Integration (2 + 2 + 1 voters on 3 + 3 + 1 brokers): add a broker, remove a voter, failover of a zone, failback, restart of each broker, restart of all brokers, disk loss of a voter and of a passive member, cancelled plan after phase 0, recheck of `MemberRemove` in phase 2.
-- Integration: "force system partition voters" with the control zone and zone A down, then the automatic failover, a restart of all brokers, then the return of `C1`.
+- Integration: "force system partition voters" with the control zone and zone A down, then the automatic failover, a restart of all brokers, then the return of `C1`. `C1` is the leader again after the leadership balancing.
+- Integration: `MemberLeave` of a voter. The leaving broker is fenced before the answer arrives, and the applier completes after its timeout.
 - Integration (4 + 4 brokers without a control zone): force-remove of zone B, a restart of all brokers, then failback.
 - Integration: rolling conversion from dual-region to 2.5 regions with "update system partition voter policy".
 - Integration: restart of all brokers with dynamic node ids.
+
+## 9. Proof of concept
+
+The PoC changes only Raft, in `zeebe/atomix/cluster`. The rules of 5.2 to 5.6 are pure functions in the package `io.atomix.raft.partition.systempartition`:
+
+- `SystemPartitionMembership`: the policy, the initial configuration, `selectVoters`, the priorities, self-promotion, the leader's demotion and the change of `MemberLeave`.
+- `SystemPartitionRecovery`: phase 0 of a force-remove plan (5.6.3) and "force system partition voters" (5.6.5).
+
+The PoC does not change the broker or the dynamic configuration.
+
+### 9.1 Commits
+
+|    Commit     |                                           Header                                            |
+|---------------|---------------------------------------------------------------------------------------------|
+| `c4f52beaee5` | feat: let raft bootstrap with typed members                                                 |
+| `7c5d403d4c4` | feat: let a member request a full typed raft configuration at an exact index                |
+| `c7fd1f4549d` | feat: let raft force a configuration without its passive members                            |
+| `2b777a2962b` | feat: fence raft members by incarnation in the configuration                                |
+| `58da28c5ee9` | feat: let the raft leader refuse joins of members that the cluster does not admit           |
+| `93a144fc07f` | fix: keep a configuration received before the first append on an empty log                  |
+| `2eab594eba7` | feat: let the raft configuration limit voters per zone with a voter policy                  |
+| `73fa36e419a` | feat: keep a raft member that joined with an empty log from voting until caught up          |
+| `ad5f9296a73` | feat: keep raft leadership on voters and expose the typed configuration                     |
+| `617364524c1` | docs: describe how the system partition keeps its voters and passive members                |
+| `1264eb94e2d` | feat: decide system partition voters, priorities and recoveries from the raft configuration |
+| `a0df80a847d` | fix: reject a raft partition join while its server still runs                               |
+| `b612fac81c8` | test: run the system partition deployment examples end to end on raft                       |
+
+### 9.2 What the PoC validates
+
+`SystemPartitionScenarioTest` runs the examples of 5.10 end to end on in-process Raft servers. The test helper `SystemPartitionCluster` does the work of the broker: the start table, the background join of a fenced broker, the priorities, `MemberLeave`, phase 0 and "force system partition voters". A small stand-in of the dynamic configuration supplies the admission hook and the excluded set. Each test checks the members, types, incarnations, fence list and policy at each step. It also checks the quorum, and that committed entries stay readable on the survivors.
+
+|                                                  Scenario                                                   |                         Test (`SystemPartitionScenarioTest`)                         |
+|-------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| 5.10.2 Bootstrap, priorities, restart of all brokers                                                        | `TwoAndAHalfRegions.shouldBootstrapWithControlLeaderAndKeepConfigurationOverRestart` |
+| 5.6.1, 5.6.2 Scale-up of zone B, `MemberLeave` of the voter `B1` in one joint change                        | `TwoAndAHalfRegions.shouldAddBrokerAsPassiveAndSwapLeavingVoterInOneJointChange`     |
+| 5.10.2 Zone A fails (normal change), zone A comes back, failback                                            | `TwoAndAHalfRegions.shouldFailOverZoneWithNormalChangeAndFailBackBySelfPromotion`    |
+| 5.10.2 The control zone fails, `C1` comes back                                                              | `TwoAndAHalfRegions.shouldNotChangeConfigurationWhenControlZoneFails`                |
+| 5.10.2 The control zone and zone A fail, "force system partition voters", failover, restart, return of `C1` | `TwoAndAHalfRegions.shouldForceVotersWhenControlZoneAndZoneFail`                     |
+| 5.6.9 Disk loss of a voter (empty-start guard)                                                              | `TwoAndAHalfRegions.shouldKeepVoterWithLostDiskFromVotingUntilCaughtUp`              |
+| 5.6.9 Disk loss of a passive member                                                                         | `TwoAndAHalfRegions.shouldKeepPassiveMemberWithLostDiskPassive`                      |
+| 5.10.1 Zone B fails (forced change), restart of the cluster, failback                                       | `DualRegion.shouldForceZoneAWhenZoneBFailsAndFailBack`                               |
+| 5.10.1 Only one member has the most recent log                                                              | `DualRegion.shouldForceOnlyMemberWithMostRecentLogAndRestorePolicyBySelfPromotion`   |
+
+The Raft changes and the rules have their own tests:
+
+- `SystemPartitionRaftTest`: typed bootstrap (R1), `reconfigure` with an exact index (R3, R4), `forceConfigure` without passive members (R2), fencing (R8, R15), the join admission hook (R13), the voter policy in the configuration (R14, the zone check of 5.5), the empty-start guard (R7), voters and the configuration view (R6, R9, R10).
+- `SystemPartitionMembershipTest`: the policy, `selectVoters`, the priorities, self-promotion, the demotion and the change of `MemberLeave`.
+- `SystemPartitionRecoveryTest`: phase 0 (`RemoveMembers`) and "force system partition voters" (`ForceVoters`).
+- `RaftPartitionJoinTest`: R11.
+- `RaftNamespacesTest` (serialization of the new request fields), `RaftEntrySBESerializerTest` and `MetaStoreTest` (format version 5), `PriorityElectionTimerTest` (R12).
+
+Status of the Raft changes (5.8):
+
+- Done: R1, R2, R4, R6, R8, R9, R11, R12, R13, R14, R15.
+- Done in part: R3 (no forwarding by non-members, Q11), R7 (the guard in memory; the marker on disk is a broker change), R10 (a passive member does not yet learn the commit index of the leader).
+- Not done: R5 (optional).
+
+### 9.3 What the PoC changed in the design
+
+The PoC deviated from revision 5 in these points. Revision 6 adopts them:
+
+- The first leader appends its configuration entry when its initial entry is committed, before any other entry and before it announces its leadership (5.4.2, R14, D19).
+- A member answers `FENCED` only if the fence entry is committed in its own view. Else it answers `ILLEGAL_MEMBER_STATE`, and the sender ignores it (5.6.6, R8).
+- The fenced notice is the committed configuration in a `ConfigureRequest` that is marked as committed, at most once per heartbeat interval. The leader does not replicate entries to a fenced member (5.6.6).
+- A response from a fenced member counts as a response from a member that is not reachable (5.6.6).
+- A join with a new incarnation keeps the type of the member. The leader rejects a target in which a fenced member is a voter (5.4.4, 5.5, R15).
+- Raft keeps the empty-start guard in memory. The broker keeps the marker and `probeTerm` on its disk and passes them in `JoinOptions` on each join (5.4.3, R7).
+- A zone that is not in the policy has 0 slots. A member without a zone is in the zone `""`. The leader rejects only a change that adds voters to a zone over its limit (5.1, 5.5).
+- The control zone is the first zone of the policy (5.1).
+- The configuration format version goes from 4 to 5 (5.8).
+- The join refusals are the new retriable errors `NOT_A_MEMBER` and `NOT_READY` (5.4.4, R13).
+- A non-member does not forward a request (5.5, R3, Q11).
+
+The scenario tests found these gaps in revision 5. Revision 6 closes them:
+
+- The priority election does not take the leadership from a leader that runs. The broker must start the leadership balancing (5.3, 5.9, 5.10.2). The PoC test makes the leader step down.
+- A forced change of phase 0 also fences the voters that it demotes (5.6.3, 5.10.1). The PoC code does not do this yet. In `shouldForceOnlyMemberWithMostRecentLogAndRestorePolicyBySelfPromotion`, `A2` is not fenced and becomes passive when it comes back.
+- Row 1 uses the member ids and types of the stored configuration, not the static configuration (5.4, 5.6.7). The test helper does this.
+- The priority of a voter is at least 1 (5.3). `SystemPartitionMembership.priorities` does this.
+- Self-promotion needs the commit index of the leader. R10 now includes it (5.6.4). The PoC test reads it from the leader directly.
+- `MemberLeave` waits for the answer with a timeout and then checks the leader's configuration again (5.6.2). The test helper does this.
+
+### 9.4 What the PoC does not cover
+
+- The start step of the broker, with the probe and the empty-start marker on disk (5.4).
+- The appliers of the dynamic configuration (`MemberJoin`, `MemberLeave`, `MemberRemove`) and the phase 0 operation `SystemPartitionRemoveMembers` (5.6, 5.9).
+- The management operations "force system partition voters" and "update system partition voter policy". The PoC has only their decisions and Raft calls.
+- R5.
+- A test that decodes real version-4 bytes (8).
+- Forwarding by non-members (Q11).
+
+### 9.5 How to run the tests
+
+In the repository root, after `./mvnw install -pl zeebe/atomix/cluster -am -Dquickly -T1C`:
+
+```bash
+./mvnw verify -pl zeebe/atomix/cluster -Dtest='SystemPartition*,RaftPartitionJoinTest' -DskipTests=false -DskipITs -Dquickly
+```
 
