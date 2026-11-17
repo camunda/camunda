@@ -50,14 +50,25 @@ function listDirs(dir) {
 }
 
 // Every nightly run of one version, with the fingerprints it saw flaking.
+//
+// Keyed by run id, not by cell: one nightly run uploads a report per cell --
+// the API nightly runs its profiles and all-in-one jobs under a single run id
+// -- and counting those separately would make one night read as two. A night
+// the test failed in one of them and passed in the other is one night, and it
+// is a night the test flaked.
 function runsOf(reportsDir, version) {
-  const runs = [];
+  const runs = new Map();
   for (const cell of listDirs(join(reportsDir, version))) {
     for (const runId of listDirs(join(reportsDir, version, cell))) {
       const runDir = join(reportsDir, version, cell, runId);
       const createdAt = readJson(join(runDir, 'meta.json'), {})?.created_at;
-      const ran = new Set();
-      const flaked = new Set();
+      let run = runs.get(runId);
+      if (!run) {
+        run = {runId, createdAt, ran: new Set(), flaked: new Set()};
+        runs.set(runId, run);
+      } else if (!run.createdAt) {
+        run.createdAt = createdAt;
+      }
       for (const resultsFile of findFiles(runDir, 'results.json')) {
         const report = readJson(resultsFile, null);
         if (!report) continue;
@@ -66,15 +77,14 @@ function runsOf(reportsDir, version) {
           for (const test of spec.tests ?? []) {
             const outcome = testOutcome(test);
             if (!outcome) continue;
-            ran.add(fp);
-            if (outcome !== 'passed') flaked.add(fp);
+            run.ran.add(fp);
+            if (outcome !== 'passed') run.flaked.add(fp);
           }
         }
       }
-      runs.push({cell, runId, createdAt, ran, flaked});
     }
   }
-  return runs;
+  return [...runs.values()];
 }
 
 // The verdict, and the sentence the Slack board and the PR comment both read.
@@ -121,18 +131,20 @@ export function postMerge({reportsDir, ledger = {}, merged = {}, now}) {
     const runs = runsByVersion.get(version).filter((r) => r.createdAt);
     const mergedMs = Date.parse(mergedAt);
 
-    // The oldest run of this version we hold. If it is newer than the merge,
-    // the window cannot see every night the fix has been live for.
-    const windowStart = runs
+    // The window is only as old as the oldest night that actually ran this
+    // test. Runs of cells the test does not live in -- and the metadata-only
+    // directories a failed artifact download leaves behind -- say nothing
+    // about it, so letting them start the window would report a fix as clean
+    // on the strength of nights that never exercised it.
+    const informative = runs.filter((r) => r.ran.has(fp));
+    const windowStart = informative
       .map((r) => r.createdAt)
       .sort()
       .at(0);
     const windowCoversMerge =
       windowStart !== undefined && Date.parse(windowStart) <= mergedMs;
 
-    const after = runs.filter(
-      (r) => Date.parse(r.createdAt) > mergedMs && r.ran.has(fp),
-    );
+    const after = informative.filter((r) => Date.parse(r.createdAt) > mergedMs);
     const hits = after.filter((r) => r.flaked.has(fp));
     const {verdict, summary} = verdictOf({
       nightlies: after.length,

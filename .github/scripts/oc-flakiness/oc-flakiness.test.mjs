@@ -967,3 +967,64 @@ test('a second pick in a day replaces the post-merge verdicts it carries', () =>
   assert.equal(merged.post_merge.length, 1);
   assert.equal(kept.post_merge[0].verdict, 'clean');
 });
+
+test('should count one nightly that uploaded several cells as a single night', () => {
+  // given — the API nightly runs its profiles and all-in-one jobs under one
+  // run id, so the same night arrives as two reports.
+  const run = (cell, tests) => ({
+    version: '8.10',
+    cell,
+    runId: '7',
+    createdAt: '2026-11-03T02:00:00Z',
+    tests,
+  });
+  const dir = nightlyDir([run('api-profiles', [flaky]), run('api-all-in-one', [passed])]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger(),
+    merged: {[MERGED_FP]: '2026-11-02T09:00:00Z'},
+    now: '2026-11-05T06:00:00Z',
+  });
+
+  // then — one night, and a night the test flaked in.
+  assert.equal(result.post_merge.nightlies, 1);
+  assert.equal(result.post_merge.flaked, 1);
+  assert.equal(
+    result.post_merge.summary,
+    're-flaked in 1 of 1 night(s) since the merge',
+  );
+});
+
+test('should start the window at the oldest night that ran the test', () => {
+  // given — a report holding nothing about this test (another cell, or the
+  // husk of a failed download) from before the merge, and two nights that did
+  // run it, both after.
+  const dir = nightlyDir([
+    {
+      version: '8.10',
+      cell: 'api-profiles',
+      runId: '1',
+      createdAt: '2026-11-01T02:00:00Z',
+      tests: [],
+    },
+    night('2', '2026-11-03T02:00:00Z', [passed]),
+    night('3', '2026-11-04T02:00:00Z', [passed]),
+  ]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger(),
+    merged: {[MERGED_FP]: '2026-11-02T09:00:00Z'},
+    now: '2026-11-05T06:00:00Z',
+  });
+
+  // then — the nights before the merge were never measured, so this is not
+  // clean outright.
+  assert.equal(result.verdict, 'clean-in-window');
+  assert.equal(result.post_merge.window_covers_merge, false);
+  assert.equal(result.post_merge.window_start, '2026-11-03T02:00:00Z');
+  assert.equal(result.post_merge.nightlies, 2);
+});

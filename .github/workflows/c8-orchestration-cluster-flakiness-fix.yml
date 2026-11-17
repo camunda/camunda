@@ -173,6 +173,11 @@ jobs:
       # none.
       - name: Measure post-merge survival
         run: |
+          # The runner starts a `run:` block with `bash -e`, and `set -uo
+          # pipefail` does not turn that off. Nothing in a report about the
+          # work may take the work down with it, so errexit goes off
+          # explicitly and the step ends on a success.
+          set +e
           set -uo pipefail
           s=.github/scripts/oc-flakiness
           echo '[]' > "$RUNNER_TEMP/postmerge.json"
@@ -199,10 +204,18 @@ jobs:
           # Fold the verdicts into the ledger this run ranks against: a fix
           # that did not hold loses its cooldown, so the test is eligible for
           # today's pick instead of waiting out the 14 days it was given.
+          #
+          # Only while the entry still stands on that merged PR. Once a later
+          # attempt has given the test a cooldown of its own -- a run that did
+          # not reproduce it, or one whose branch was deleted -- that cooldown
+          # is about the newer attempt, and clearing it every night on the
+          # strength of the old measurement would make the test eligible for
+          # ever.
           jq --slurpfile pm "$RUNNER_TEMP/postmerge.json" '
             reduce $pm[0][] as $r (.;
               .[$r.fp].post_merge = $r.post_merge
-              | if $r.verdict == "re-flaked" then del(.[$r.fp].cooldown_until) else . end)
+              | if $r.verdict == "re-flaked" and .[$r.fp].last_action == "open_pr"
+                then del(.[$r.fp].cooldown_until) else . end)
           ' "$RUNNER_TEMP/ledger.json" > "$RUNNER_TEMP/ledger.tmp" \
             && mv "$RUNNER_TEMP/ledger.tmp" "$RUNNER_TEMP/ledger.json"
 
@@ -213,7 +226,9 @@ jobs:
             echo "|---|---|---|---|---|---|"
             jq -r '.[] | "| \(.version) | `\(.file)` › \(.title) | \(.post_merge.merged_at[0:10]) | \(.post_merge.nightlies) | \(.post_merge.flaked) | \(.post_merge.summary) |"' \
               "$RUNNER_TEMP/postmerge.json"
-          } >> "$GITHUB_STEP_SUMMARY"
+          } >> "$GITHUB_STEP_SUMMARY" || echo "::warning::could not write the post-merge summary"
+
+          exit 0
 
       - name: Rank flaky tests
         id: rank
@@ -283,6 +298,10 @@ jobs:
           TOKEN: ${{ steps.github-token.outputs.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
+          # As above: the runner's `bash -e` would turn an unguarded git or
+          # comment failure here into a failed pick. Recording the verdicts is
+          # worth a warning, never the dispatch.
+          set +e
           set -uo pipefail
           count=$(jq 'length' "$RUNNER_TEMP/postmerge.json" 2>/dev/null || echo 0)
           [[ "$count" -gt 0 ]] || exit 0
@@ -321,16 +340,22 @@ jobs:
               git -C "$state" rm -rq --cached . 2>/dev/null || true
             fi
             [[ -f "$state/ledger.json" ]] || echo '{}' > "$state/ledger.json"
-            # Only entries the branch still carries: a ledger the janitor has
-            # pruned must not be refilled from a stale measurement.
+            # Only entries the branch still carries, and only while they still
+            # stand on the PR that was measured. A ledger the janitor has
+            # pruned must not be refilled from a stale measurement, and a
+            # concurrent run that has since recorded a NEW PR for this test
+            # must not inherit the old one's verdict: that would attach the
+            # previous fix's `pr_flagged_at` to a PR nobody has flagged, and
+            # clear a cooldown that belongs to the new attempt.
             jq --slurpfile pm "$RUNNER_TEMP/postmerge.json" \
                --argjson flagged "$flagged" --arg now "$now" '
               reduce $pm[0][] as $r (.;
-                if (. | has($r.fp)) | not then .
+                if ((. | has($r.fp)) | not) or ((.[$r.fp].pr // "") != $r.pr) then .
                 else
                   .[$r.fp].post_merge = ($r.post_merge
                     + (if ($flagged | index($r.fp)) then {pr_flagged_at: $now} else {} end))
-                  | if $r.verdict == "re-flaked" then del(.[$r.fp].cooldown_until) else . end
+                  | if $r.verdict == "re-flaked" and .[$r.fp].last_action == "open_pr"
+                    then del(.[$r.fp].cooldown_until) else . end
                 end)
             ' "$state/ledger.json" > "$state/ledger.tmp" || break
             mv "$state/ledger.tmp" "$state/ledger.json"
@@ -974,9 +999,9 @@ jobs:
               })
               | if $cooldown != "" then .[$fp].cooldown_until = $cooldown else del(.[$fp].cooldown_until) end
               | del(.[$fp].verified_at)
-              # A new PR makes the last fix's post-merge measurement -- and the
-              # note that its PR was already flagged -- say nothing about this
-              # one.
+              # A new PR makes the previous post-merge measurement -- and the
+              # note that the PR it belonged to was already flagged -- say
+              # nothing about this one.
               | if $pr != "" then .[$fp].pr = $pr | del(.[$fp].post_merge) else . end
             ' "$state/ledger.json" > "$state/ledger.tmp"
             mv "$state/ledger.tmp" "$state/ledger.json"
