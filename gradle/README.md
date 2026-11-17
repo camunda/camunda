@@ -4,9 +4,10 @@ The Gradle build is an experimental parallel path for local development and pari
 remains authoritative** for module behavior, dependency versions, tests, publication, and distribution
 contents. Gradle publication is not authorized. When behavior differs, use Maven as the reference.
 
-The focused Gradle CI jobs compile production and test classes, package the distribution, and compare
-its JAR inventory with Maven. They do not run the full Gradle application-test suite. Maven remains
-the application-test and landing-gate path; see
+The focused Gradle job in Unified CI compiles production and test classes, packages the
+distribution, and compares its JAR inventory with Maven. A separate non-blocking job in
+`.github/workflows/gradle-ci.yml` runs the Gradle unit-test suite. Maven remains the application-test
+and landing-gate path; see
 [ADR 001](../docs/adr/gradle/001-gradle-experimental-ci-integration.md).
 
 Run all commands below from the repository root.

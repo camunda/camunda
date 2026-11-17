@@ -28,12 +28,12 @@ The focused compile and distribution-parity check in Unified CI is part of `chec
 blocks pull requests and merge groups. It runs on GCP and downloads the Maven distball from GCS;
 fork PRs without GCS credentials use the GitHub artifact fallback. The Gradle check compares
 that distball directly with Gradle's gzipped distribution TAR; it does not download the Maven
-SNAPSHOT archive. The separate experimental isolated-project check in `gradle-ci.yml` remains
-non-blocking; failures on `main` send a Slack notification (see the ADR).
+SNAPSHOT archive. The Gradle unit-test job in `gradle-ci.yml` remains non-blocking; failures on
+`main` send a Slack notification (see the ADR).
 
-This keeps the Gradle signal scoped: it validates compilation and packaged artifact names, but it
-is not a Gradle application-test suite. Maven remains the application-test path for pull requests,
-merge groups, protected-branch pushes, schedules, and manual runs.
+Unified CI's Gradle signal remains scoped to compilation and packaged artifact names. The separate
+`gradle-ci.yml` workflow runs unit tests as a non-blocking experiment. Maven remains the application-
+test landing-gate path for pull requests and merge groups.
 
 ## Fix Workflow
 
