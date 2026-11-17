@@ -43,10 +43,16 @@ public final class RaftCfg implements ConfigurationEntry {
         + '}';
   }
 
-  public record FlushConfig(boolean enabled, Duration delayTime) {
-    public FlushConfig(final boolean enabled, final Duration delayTime) {
-      this.enabled = enabled;
-      this.delayTime = delayTime == null ? Duration.ZERO : delayTime;
+  /**
+   * Unset components fall back to the safe defaults (flush enabled, no delay). Spring constructs a
+   * fresh record as soon as any flush sub-property is configured, so the defaults must live here
+   * rather than only in {@link #DEFAULT_FLUSH_CONFIG}; otherwise setting just {@code delayTime}
+   * would bind {@code enabled} to {@code false} and silently disable explicit flushing.
+   */
+  public record FlushConfig(Boolean enabled, Duration delayTime) {
+    public FlushConfig {
+      enabled = enabled == null || enabled;
+      delayTime = delayTime == null ? Duration.ZERO : delayTime;
     }
   }
 }
