@@ -508,27 +508,40 @@ public final class ReconfigurationHelper {
    * </pre>
    */
   public CompletableFuture<Void> forceConfigure(final Map<MemberId, Type> newMembersIds) {
-    return forceConfigure(newMembersIds, List.of());
+    final CompletableFuture<Void> future = new CompletableFuture<>();
+    threadContext.execute(
+        () -> {
+          final var currentConfiguration = raftContext.getCluster().getConfiguration();
+          triggerForceConfigure(
+              withKnownIncarnations(newMembersIds),
+              List.of(),
+              currentConfiguration == null ? null : currentConfiguration.voterPolicy(),
+              future);
+        });
+    return future;
   }
 
   /**
-   * Like {@link #forceConfigure(Map)}, and adds the given entries to the fence list of the forced
-   * configuration. The voter policy and the incarnations of the members stay as they are.
+   * Like {@link #forceConfigure(Map)}, with the members (types and incarnations), fence list and
+   * voter policy of the given target instead of the local configuration. The local fence entries
+   * are kept.
    */
-  public CompletableFuture<Void> forceConfigure(
-      final Map<MemberId, Type> newMembersIds, final Collection<FenceEntry> fenced) {
+  public CompletableFuture<Void> forceConfigure(final Configuration target) {
     final CompletableFuture<Void> future = new CompletableFuture<>();
-
-    threadContext.execute(() -> triggerForceConfigure(newMembersIds, fenced, future));
+    threadContext.execute(
+        () ->
+            triggerForceConfigure(
+                // Beware that using ImmutableCollections can break Kryo serialization
+                new HashSet<>(target.newMembers()), target.fenced(), target.voterPolicy(), future));
     return future;
   }
 
   private void triggerForceConfigure(
-      final Map<MemberId, Type> newMembersIds,
+      final Set<RaftMember> newMembers,
       final Collection<FenceEntry> fenced,
+      final @Nullable VoterPolicy voterPolicy,
       final CompletableFuture<Void> future) {
     final var currentConfiguration = raftContext.getCluster().getConfiguration();
-    final Set<RaftMember> newMembers = withKnownIncarnations(newMembersIds);
     final var newFenced =
         new LinkedHashSet<>(
             currentConfiguration == null ? List.<FenceEntry>of() : currentConfiguration.fenced());
@@ -556,7 +569,7 @@ public final class ReconfigurationHelper {
               Set.of(),
               true,
               List.copyOf(newFenced),
-              currentConfiguration == null ? null : currentConfiguration.voterPolicy());
+              voterPolicy);
 
       raftContext.getCluster().configure(newConfiguration);
     } else if (!(currentConfiguration.allMembers().equals(newMembers))) {

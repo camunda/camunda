@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.FenceEntry;
+import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.cluster.VoterPolicy.ZoneVoters;
@@ -143,11 +144,53 @@ final class SystemPartitionRecoveryTest {
       final var decision = SystemPartitionRecovery.removeMembers(Set.of(B1, B2, B3, B4), reports);
 
       // then
-      assertThat(decision)
-          .isEqualTo(
-              new ForcedChange(
-                  members(A1, ACTIVE, A2, ACTIVE, A3, PASSIVE, A4, PASSIVE),
-                  fenced(B1, B2, B3, B4)));
+      assertThat(decision).isInstanceOf(ForcedChange.class);
+      assertThat(((ForcedChange) decision).members())
+          .isEqualTo(members(A1, ACTIVE, A2, ACTIVE, A3, PASSIVE, A4, PASSIVE));
+      assertThat(((ForcedChange) decision).fenced())
+          .containsExactlyInAnyOrderElementsOf(fenced(B1, B2, B3, B4));
+    }
+
+    @Test
+    void shouldBuildForcedTargetFromHighestReport() {
+      // given - A4 lags: it missed the rejoin of A3 with incarnation 7 and the fence of X1
+      final var old = configuration(3, dualRegion(), DUAL_REGION);
+      final var current =
+          new Configuration(
+              4,
+              3,
+              1,
+              raftMembers(dualRegion(), Map.of(A3, 7L)),
+              List.of(),
+              false,
+              List.of(new FenceEntry(X1, 2)),
+              DUAL_REGION);
+      final var reports =
+          List.of(
+              report(A1, current, 30),
+              report(A2, current, 30),
+              report(A3, current, 30),
+              report(A4, old, 28));
+
+      // when
+      final var decision = SystemPartitionRecovery.removeMembers(Set.of(B1, B2, B3, B4), reports);
+
+      // then - the target has the incarnations, fence list and policy of the highest report
+      assertThat(decision).isInstanceOf(ForcedChange.class);
+      final var target = ((ForcedChange) decision).target();
+      assertThat(target.force()).isTrue();
+      assertThat(target.voterPolicy()).isEqualTo(DUAL_REGION);
+      assertThat(target.newMembers())
+          .filteredOn(member -> member.memberId().equals(A3))
+          .extracting(RaftMember::getIncarnation)
+          .containsExactly(7L);
+      assertThat(target.fenced())
+          .containsExactlyInAnyOrder(
+              new FenceEntry(X1, 2),
+              new FenceEntry(B1, 0),
+              new FenceEntry(B2, 0),
+              new FenceEntry(B3, 0),
+              new FenceEntry(B4, 0));
     }
 
     @Test
@@ -244,11 +287,7 @@ final class SystemPartitionRecoveryTest {
       final var decision = SystemPartitionRecovery.removeMembers(Set.of(B1, B2, B3, B4), reports);
 
       // then
-      assertThat(decision)
-          .isEqualTo(
-              new ResendForced(
-                  members(A1, ACTIVE, A2, ACTIVE, A3, PASSIVE, A4, PASSIVE),
-                  fenced(B1, B2, B3, B4)));
+      assertThat(decision).isEqualTo(new ResendForced(forced));
     }
 
     @Test
@@ -306,13 +345,14 @@ final class SystemPartitionRecoveryTest {
       final var decision = SystemPartitionRecovery.forceVoters(Set.of(A1, A2, A3, C1), reports);
 
       // then - the policy b:2 limits the voters to B1 and B2
-      assertThat(decision)
+      assertThat(decision).isInstanceOf(ForcedChange.class);
+      assertThat(((ForcedChange) decision).members())
           .isEqualTo(
-              new ForcedChange(
-                  members(
-                      B1, ACTIVE, B2, ACTIVE, A1, PASSIVE, A2, PASSIVE, A3, PASSIVE, B3, PASSIVE,
-                      C1, PASSIVE),
-                  fenced(A1, C1, A2, A3)));
+              members(
+                  B1, ACTIVE, B2, ACTIVE, A1, PASSIVE, A2, PASSIVE, A3, PASSIVE, B3, PASSIVE, C1,
+                  PASSIVE));
+      assertThat(((ForcedChange) decision).fenced())
+          .containsExactlyInAnyOrderElementsOf(fenced(A1, C1, A2, A3));
     }
 
     @Test

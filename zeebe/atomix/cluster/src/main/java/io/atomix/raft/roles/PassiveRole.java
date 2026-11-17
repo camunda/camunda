@@ -19,6 +19,7 @@ package io.atomix.raft.roles;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.RaftServer;
+import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.SnapshotReplicationMetrics;
 import io.atomix.raft.protocol.AppendResponse;
@@ -61,6 +62,8 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -337,7 +340,7 @@ public class PassiveRole extends InactiveRole {
                   request.newMembers(),
                   List.of(), // Skip joint consensus
                   true,
-                  request.fenced(),
+                  mergedFenceList(currentConfiguration, request.fenced()),
                   request.voterPolicy()));
     } else if (!currentConfiguration.allMembers().equals(request.newMembers())) {
       // This is not expected. When force configuration is retried, we expect that they are retried
@@ -444,6 +447,18 @@ public class PassiveRole extends InactiveRole {
     logRequest(request);
     updateTermAndLeader(request.term(), null);
     return CompletableFuture.completedFuture(logResponse(handleVote(request)));
+  }
+
+  /**
+   * Fence entries are never removed: a forced configuration from a member with an older
+   * configuration must not drop the entries that this member already has.
+   */
+  private static List<FenceEntry> mergedFenceList(
+      final Configuration current, final Collection<FenceEntry> requested) {
+    final var fenced =
+        new LinkedHashSet<>(current == null ? List.<FenceEntry>of() : current.fenced());
+    fenced.addAll(requested);
+    return List.copyOf(fenced);
   }
 
   /** Handles a poll request. */

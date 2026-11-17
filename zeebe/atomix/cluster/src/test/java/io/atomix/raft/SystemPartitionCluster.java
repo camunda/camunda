@@ -18,7 +18,6 @@ package io.atomix.raft;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.VoterPolicy;
@@ -439,11 +438,17 @@ final class SystemPartitionCluster implements AutoCloseable {
    * configuration marks the removed brokers LEFT (phase 2).
    */
   RecoveryDecision forceRemove(final Set<MemberId> removed) {
+    return forceRemove(removed, null);
+  }
+
+  /** Like {@link #forceRemove(Set)}, run by the given broker instead of the lowest one. */
+  RecoveryDecision forceRemove(final Set<MemberId> removed, final MemberId executor) {
     removed.forEach(dynamic::addPendingRemoval);
     final var decision =
         applyRecovery(
             removed,
             reports -> SystemPartitionRecovery.removeMembers(removed, reports),
+            executor,
             "phase 0 removes " + removed);
     removed.forEach(member -> dynamic.setState(member, MemberState.LEFT));
     return decision;
@@ -454,12 +459,14 @@ final class SystemPartitionCluster implements AutoCloseable {
     return applyRecovery(
         down,
         reports -> SystemPartitionRecovery.forceVoters(down, reports),
+        null,
         "force voters without " + down);
   }
 
   private RecoveryDecision applyRecovery(
       final Set<MemberId> failed,
       final Function<List<MemberReport>, RecoveryDecision> decide,
+      final MemberId executorId,
       final String description) {
     final var first = new AtomicReference<RecoveryDecision>();
     Awaitility.await(description)
@@ -471,10 +478,12 @@ final class SystemPartitionCluster implements AutoCloseable {
               first.compareAndSet(null, decision);
               final var executor =
                   brokers.get(
-                          reports.stream()
-                              .map(MemberReport::memberId)
-                              .min(MemberId.ID_COMPARATOR)
-                              .orElseThrow())
+                          executorId != null
+                              ? executorId
+                              : reports.stream()
+                                  .map(MemberReport::memberId)
+                                  .min(MemberId.ID_COMPARATOR)
+                                  .orElseThrow())
                       .server;
               LOG.info("{}: {}", description, decision);
               return switch (decision) {
@@ -488,20 +497,17 @@ final class SystemPartitionCluster implements AutoCloseable {
                             normal.index(),
                             normal.term()));
                 case final RecoveryDecision.ForcedChange forced ->
-                    forceConfigure(executor, forced.members(), forced.fenced());
+                    forceConfigure(executor, forced.target());
                 case final RecoveryDecision.ResendForced resend ->
-                    forceConfigure(executor, resend.members(), resend.fenced());
+                    forceConfigure(executor, resend.target());
               };
             });
     return first.get();
   }
 
-  private static boolean forceConfigure(
-      final RaftServer executor,
-      final Map<MemberId, Type> members,
-      final Collection<FenceEntry> fenced) {
+  private static boolean forceConfigure(final RaftServer executor, final Configuration target) {
     try {
-      executor.forceConfigure(members, fenced).get(30, TimeUnit.SECONDS);
+      executor.forceConfigure(target).get(30, TimeUnit.SECONDS);
       return true;
     } catch (final Exception e) {
       LOG.info("Forced change failed, trying again", e);

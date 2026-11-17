@@ -24,12 +24,15 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.FenceEntry;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
+import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.system.Configuration;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,8 +43,8 @@ import org.jspecify.annotations.NullMarked;
  * The decisions of the recovery operations of the system partition: phase 0 of a force-remove plan
  * (design 5.6.3) and "force system partition voters" (5.6.5). Pure functions of the reports that
  * the executor collected from the reachable members; the executor applies the decision with {@link
- * io.atomix.raft.RaftServer#reconfigure} or {@link io.atomix.raft.RaftServer#forceConfigure(Map,
- * Collection)}.
+ * io.atomix.raft.RaftServer#reconfigure} or {@link
+ * io.atomix.raft.RaftServer#forceConfigure(Configuration)}.
  *
  * <p>A forced configuration gets as voters only the members with the most recent log (highest last
  * term, then highest last index): they have every entry that any reachable member knows as
@@ -75,8 +78,7 @@ public final class SystemPartitionRecovery {
             .toList();
 
     if (configuration.force() && fencedIds.containsAll(removed)) {
-      return new RecoveryDecision.ResendForced(
-          typesOf(configuration.newMembers()), List.copyOf(configuration.fenced()));
+      return new RecoveryDecision.ResendForced(configuration);
     }
     if (removedMembers.isEmpty()) {
       return new RecoveryDecision.AlreadyDone(configuration);
@@ -93,7 +95,7 @@ public final class SystemPartitionRecovery {
     }
 
     return new RecoveryDecision.ForcedChange(
-        forcedMembers(configuration, reports, removed, true), fence);
+        forcedTarget(configuration, forcedMembers(configuration, reports, removed, true), fence));
   }
 
   /**
@@ -114,8 +116,7 @@ public final class SystemPartitionRecovery {
             .toList();
 
     if (configuration.force() && fencedIds.containsAll(down)) {
-      return new RecoveryDecision.ResendForced(
-          typesOf(configuration.newMembers()), List.copyOf(configuration.fenced()));
+      return new RecoveryDecision.ResendForced(configuration);
     }
     if (downMembers.stream().allMatch(configuration::isFenced)
         && downMembers.stream().noneMatch(member -> member.getType() == Type.ACTIVE)) {
@@ -123,7 +124,50 @@ public final class SystemPartitionRecovery {
     }
 
     return new RecoveryDecision.ForcedChange(
-        forcedMembers(configuration, reports, down, false), fenceEntries(downMembers));
+        forcedTarget(
+            configuration,
+            forcedMembers(configuration, reports, down, false),
+            fenceEntries(downMembers)));
+  }
+
+  /**
+   * The full target of a forced change, built from the chosen (highest) configuration and not from
+   * the executor's own one, which can lag: the members keep the incarnations of the chosen
+   * configuration, the fence list is the chosen one plus the new entries, and the voter policy is
+   * the chosen one.
+   */
+  private static Configuration forcedTarget(
+      final Configuration chosen,
+      final Map<MemberId, Type> types,
+      final Collection<FenceEntry> newFenceEntries) {
+    final var incarnations =
+        chosen.allMembers().stream()
+            .collect(
+                Collectors.toMap(
+                    RaftMember::memberId, RaftMember::getIncarnation, (first, second) -> first));
+    final var now = Instant.now();
+    final List<RaftMember> members =
+        types.entrySet().stream()
+            .map(
+                entry ->
+                    (RaftMember)
+                        new DefaultRaftMember(
+                            entry.getKey(),
+                            entry.getValue(),
+                            now,
+                            incarnations.getOrDefault(entry.getKey(), 0L)))
+            .toList();
+    final var fenced = new LinkedHashSet<>(chosen.fenced());
+    fenced.addAll(newFenceEntries);
+    return new Configuration(
+        chosen.index(),
+        chosen.term(),
+        chosen.time(),
+        members,
+        List.of(),
+        true,
+        List.copyOf(fenced),
+        chosen.voterPolicy());
   }
 
   private static Map<MemberId, Type> forcedMembers(
@@ -247,10 +291,15 @@ public final class SystemPartitionRecovery {
 
     /**
      * An earlier try already made a forced change; send it again, unchanged, with {@link
-     * io.atomix.raft.RaftServer#forceConfigure(Map, Collection)}.
+     * io.atomix.raft.RaftServer#forceConfigure(Configuration)}.
+     *
+     * @param target the forced configuration of the earlier try
      */
-    record ResendForced(Map<MemberId, Type> members, List<FenceEntry> fenced)
-        implements RecoveryDecision {}
+    record ResendForced(Configuration target) implements RecoveryDecision {
+      public Map<MemberId, Type> members() {
+        return typesOf(target.newMembers());
+      }
+    }
 
     /**
      * A normal (joint) change with {@link io.atomix.raft.RaftServer#reconfigure(Map, Collection,
@@ -260,10 +309,19 @@ public final class SystemPartitionRecovery {
         implements RecoveryDecision {}
 
     /**
-     * A forced change with {@link io.atomix.raft.RaftServer#forceConfigure(Map, Collection)}: the
+     * A forced change with {@link io.atomix.raft.RaftServer#forceConfigure(Configuration)}: the
      * remaining voters are not a quorum.
+     *
+     * @param target the full target configuration, see {@link #forcedTarget}
      */
-    record ForcedChange(Map<MemberId, Type> members, List<FenceEntry> fenced)
-        implements RecoveryDecision {}
+    record ForcedChange(Configuration target) implements RecoveryDecision {
+      public Map<MemberId, Type> members() {
+        return typesOf(target.newMembers());
+      }
+
+      public Collection<FenceEntry> fenced() {
+        return target.fenced();
+      }
+    }
   }
 }

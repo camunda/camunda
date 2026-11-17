@@ -293,11 +293,12 @@ public interface RaftServer {
       long term);
 
   /**
-   * Like {@link #forceConfigure(Map)}, and adds the given entries to the fence list of the forced
-   * configuration.
+   * Like {@link #forceConfigure(Map)}, with a full target configuration: the members with their
+   * types and incarnations, the fence list and the voter policy are taken from {@code target}
+   * instead of from the local configuration, which can lag. Its index, term and old members are
+   * ignored. The local fence entries are kept: fence lists are merged, never replaced.
    */
-  CompletableFuture<RaftServer> forceConfigure(
-      Map<MemberId, Type> membersToRetain, Collection<FenceEntry> fenced);
+  CompletableFuture<RaftServer> forceConfigure(Configuration target);
 
   /**
    * Bootstraps the cluster with typed members, see {@link

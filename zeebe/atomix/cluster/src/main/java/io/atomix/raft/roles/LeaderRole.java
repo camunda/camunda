@@ -74,6 +74,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -187,8 +188,22 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   @Override
   public CompletableFuture<ReconfigureResponse> onReconfigure(final ReconfigureRequest request) {
+    return reconfigure(request, false);
+  }
+
+  /**
+   * @param changesIncarnation true only for the change of a join: a member's incarnation changes
+   *     only when the member itself joins again. Any other request keeps the leader's incarnations
+   *     of the existing members, because the requester may have an older configuration.
+   */
+  private CompletableFuture<ReconfigureResponse> reconfigure(
+      final ReconfigureRequest request, final boolean changesIncarnation) {
     raft.checkThread();
     logRequest(request);
+    final var requestedMembers =
+        changesIncarnation
+            ? request.members()
+            : withCurrentIncarnations(request.members(), raft.getCluster().getConfiguration());
 
     // Configuration changes should not be allowed until the leader has committed a no-op entry.
     // See https://groups.google.com/forum/#!topic/raft-dev/t4xj6dJTP6E
@@ -224,7 +239,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
        that start() runs once the no-op entry has committed, and until then there is nothing to
        hook onto. Reject the request as retriable instead of returning null.
       */
-      if (isDuplicateReconfigureRequest(request) && ongoingReconfigurationRequestFuture != null) {
+      if (isDuplicateReconfigureRequest(request, requestedMembers)
+          && ongoingReconfigurationRequestFuture != null) {
         return ongoingReconfigurationRequestFuture;
       }
       return CompletableFuture.completedFuture(
@@ -243,7 +259,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     final var targetFenced = targetFenced(configuration, request);
     final var targetVoterPolicy = targetVoterPolicy(configuration, request);
     if (request.exactIndex()
-        && equalMembership(configuration.newMembers(), request.members())
+        && equalMembership(configuration.newMembers(), requestedMembers)
         && configuration.fenced().equals(targetFenced)
         && Objects.equals(configuration.voterPolicy(), targetVoterPolicy)
         && !configuration.requiresJointConsensus()) {
@@ -288,7 +304,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     // Write a new configuration entry with the updated member list.
     final var currentMembers = raft.getCluster().getMembers();
-    final var updatedMembers = request.members();
+    final var updatedMembers = requestedMembers;
 
     // A configuration with members but no ACTIVE ones could neither elect a leader nor commit
     // entries, permanently stranding the remaining members. The empty configuration stays allowed:
@@ -537,6 +553,31 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                 member -> Objects.toString(member.memberId().zone(), ""), Collectors.counting()));
   }
 
+  /**
+   * Replaces the incarnation of each requested member that is in the configuration with its
+   * incarnation there.
+   */
+  private static Collection<RaftMember> withCurrentIncarnations(
+      final Collection<RaftMember> requested, final Configuration configuration) {
+    final var incarnations = new HashMap<MemberId, Long>();
+    configuration.newMembers().forEach(m -> incarnations.put(m.memberId(), m.getIncarnation()));
+    configuration
+        .oldMembers()
+        .forEach(m -> incarnations.putIfAbsent(m.memberId(), m.getIncarnation()));
+    // Beware that immutable collections cannot be serialized by Kryo
+    return requested.stream()
+        .map(
+            member -> {
+              final var incarnation = incarnations.get(member.memberId());
+              return incarnation == null || incarnation == member.getIncarnation()
+                  ? member
+                  : (RaftMember)
+                      new DefaultRaftMember(
+                          member.memberId(), member.getType(), Instant.now(), incarnation);
+            })
+        .collect(Collectors.toCollection(ArrayList::new));
+  }
+
   /** The fence list only grows: the request can add entries, but never remove one. */
   private static List<FenceEntry> targetFenced(
       final Configuration configuration, final ReconfigureRequest request) {
@@ -625,7 +666,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .build()));
     }
 
-    return onReconfigure(
+    return reconfigure(
             ReconfigureRequest.builder()
                 .withIndex(currentConfiguration.index())
                 // The same term the validation in onReconfigure expects, see
@@ -636,7 +677,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                 // Override local member with the new type.
                 .withMember(joiningMember)
                 .from(raft.getCluster().getLocalMember().memberId().id())
-                .build())
+                .build(),
+            true)
         .handle(
             (reconfigureResponse, throwable) -> {
               if (throwable != null) {
@@ -762,8 +804,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
             });
   }
 
-  private boolean isDuplicateReconfigureRequest(final ReconfigureRequest request) {
-    final var requestedUpdate = request.members();
+  private boolean isDuplicateReconfigureRequest(
+      final ReconfigureRequest request, final Collection<RaftMember> requestedUpdate) {
     final var configuration = raft.getCluster().getConfiguration();
     final var ongoingFenced =
         ongoingTargetFenced != null ? ongoingTargetFenced : configuration.fenced();

@@ -552,6 +552,44 @@ final class SystemPartitionScenarioTest {
     }
 
     @Test
+    void shouldForceConfigurationOfHighestReportFromLaggingPassiveExecutor() {
+      // given - A4 is cut off; while it lags, A3 loses its disk and joins again with a new
+      // incarnation, and B3 leaves and is fenced
+      bootstrap();
+      cluster.awaitLeader();
+      cluster.appendEntry();
+      cluster.partition(A4);
+      cluster.loseDisk(A3);
+      cluster.joinWithoutData(A3);
+      cluster.joined(A3).orTimeout(60, TimeUnit.SECONDS).join();
+      cluster.memberLeave(B3);
+      final var afterLeave =
+          members(
+              A1, ACTIVE, A2, ACTIVE, B1, ACTIVE, B2, ACTIVE, A3, PASSIVE, A4, PASSIVE, B4,
+              PASSIVE);
+      awaitConfiguration(List.of(A1, A2, A3), afterLeave, fenced(B3), policy);
+      cluster.appendEntry();
+
+      // when - zone b fails, A4 can be reached again, and A4 runs phase 0 with its old
+      // configuration
+      List.of(B1, B2, B4).forEach(cluster::stop);
+      cluster.awaitNoLeaderFor(NO_QUORUM_PERIOD);
+      assertThat(SystemPartitionCluster.typesOf(cluster.configuration(A4))).containsKey(B3);
+      cluster.heal(A4);
+      final var decision = cluster.forceRemove(Set.of(B1, B2, B4), A4);
+
+      // then - the forced configuration is the one of the highest report: A3 keeps its new
+      // incarnation and B3 stays fenced
+      assertThat(decision).isInstanceOf(ForcedChange.class);
+      final var forced = members(A1, ACTIVE, A2, ACTIVE, A3, PASSIVE, A4, PASSIVE);
+      awaitConfiguration(List.of(A1, A2, A3, A4), forced, fenced(B1, B2, B3, B4), policy);
+      cluster.awaitLeader();
+      assertThat(incarnationInConfiguration(A3)).isEqualTo(cluster.incarnation(A3));
+      cluster.appendEntry();
+      cluster.assertCommittedEntriesReadable(List.of(A1, A2, A3, A4));
+    }
+
+    @Test
     void shouldForceOnlyMemberWithMostRecentLogAndRestorePolicyBySelfPromotion() {
       // given - A1 does not lead, A1 and A4 are cut off while entries commit on A2, B1 and B2
       bootstrap();

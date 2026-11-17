@@ -392,6 +392,51 @@ final class SystemPartitionRaftTest {
     }
 
     @Test
+    void shouldKeepIncarnationsOfLeaderForRequestOfLaggingMember() throws IOException {
+      // given - passive member 4 lags: it misses that member 3 joins again with incarnation 77
+      final var members =
+          Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.PASSIVE, id4, Type.PASSIVE);
+      final var m1 = createServer(id1, id2, id3, id4);
+      final var m2 = createServer(id2, id1, id3, id4);
+      final var m3 = createServer(id3, id1, id2, id4);
+      final var m4 = createServer(id4, id1, id2, id3);
+      CompletableFuture.allOf(
+              m1.bootstrap(members),
+              m2.bootstrap(members),
+              m3.bootstrap(members),
+              m4.bootstrap(members))
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+      final var leader = awaitLeader(m1, m2);
+      final var index = appendEntry(leader);
+      Awaitility.await("passive member 4 caught up")
+          .untilAsserted(() -> assertThat(commitIndex(m4)).isGreaterThanOrEqualTo(index));
+      ((TestRaftServerProtocol) leader.getContext().getProtocol()).disconnect(id4);
+      m3.shutdown().join();
+      servers.remove(m3);
+      FileUtil.deleteFolderIfExists(tmp.resolve(id3.id()));
+      createServer(id3, id1, id2, id4)
+          .join(Type.PASSIVE, List.of(id1, id2), JoinOptions.withIncarnation(77L))
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+
+      // when - member 4 asks for the current types, with the incarnations it knows
+      final var current = configurationId(leader);
+      final var response =
+          m4.reconfigure(members, current.index(), current.term())
+              .orTimeout(10, TimeUnit.SECONDS)
+              .join();
+
+      // then - the leader keeps the incarnation of member 3
+      assertThat(response.status()).isEqualTo(Status.OK);
+      assertThat(configurationId(leader)).isEqualTo(current);
+      assertThat(leader.getConfiguration().join().newMembers())
+          .filteredOn(member -> member.memberId().equals(id3))
+          .extracting(RaftMember::getIncarnation)
+          .containsExactly(77L);
+    }
+
+    @Test
     void shouldRejectNewActiveMember() {
       // given
       final var cluster = bootstrapTwoVotersOnePassive();

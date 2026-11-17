@@ -176,11 +176,8 @@ public class DefaultRaftServer implements RaftServer {
   }
 
   @Override
-  public CompletableFuture<RaftServer> forceConfigure(
-      final Map<MemberId, Type> membersToRetain, final Collection<FenceEntry> fenced) {
-    return new ReconfigurationHelper(context)
-        .forceConfigure(membersToRetain, fenced)
-        .thenApply(v -> this);
+  public CompletableFuture<RaftServer> forceConfigure(final Configuration target) {
+    return new ReconfigurationHelper(context).forceConfigure(target).thenApply(v -> this);
   }
 
   @Override
