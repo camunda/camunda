@@ -257,7 +257,7 @@ final class SegmentsManager implements AutoCloseable {
     while ((segment = segmentsToDelete.peek()) != null) {
       LOG.trace("{} - Deleting segment: {}", name, segment);
       segment.delete();
-      segmentsToDelete.poll();
+      segmentsToDelete.remove();
     }
   }
 
