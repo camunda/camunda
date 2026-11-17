@@ -80,8 +80,12 @@ final class SegmentsManager implements AutoCloseable {
         journalMetrics,
         metaStore,
         () ->
-            Executors.newThreadPerTaskExecutor(
-                Thread.ofVirtual().name("journal-bg-io-" + name + "-", 0).factory()));
+            Executors.newSingleThreadExecutor(
+                task ->
+                    Thread.ofPlatform()
+                        .name("journal-bg-io-" + name)
+                        .daemon(true)
+                        .unstarted(task)));
   }
 
   @VisibleForTesting

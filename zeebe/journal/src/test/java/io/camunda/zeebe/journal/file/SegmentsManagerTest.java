@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayUtil;
@@ -308,7 +307,7 @@ class SegmentsManagerTest {
   }
 
   @Test
-  void shouldPrepareNextSegmentOnVirtualThread() {
+  void shouldPrepareNextSegmentOnBgIoThread() {
     // given - the next segment is prepared asynchronously; this does blocking I/O, so it must not
     // occupy a thread of the JVM-wide common ForkJoinPool, where it could starve unrelated work
     final var loader = Mockito.spy(journalFactory.segmentLoader());
@@ -327,17 +326,18 @@ class SegmentsManagerTest {
     segments.getNextSegment();
     segments.getNextSegment();
 
-    // then
+    // then - the prep runs on the journal's dedicated background I/O platform thread; the thread
+    // name is the identity the executor exposes, and is what operators see in thread dumps
     assertThat(preparingThread.get())
         .isNotNull()
-        .isNotInstanceOf(ForkJoinWorkerThread.class)
-        .matches(Thread::isVirtual, "is a virtual thread");
+        .extracting(Thread::getName)
+        .isEqualTo("journal-bg-io-journal");
   }
 
   @Test
   void shouldCloseBackgroundIoExecutor() {
     // given
-    final var bgIoExecutor = Executors.newVirtualThreadPerTaskExecutor();
+    final var bgIoExecutor = Executors.newSingleThreadExecutor();
     segments = journalFactory.segmentsManager(directory, () -> bgIoExecutor);
     segments.open();
 
