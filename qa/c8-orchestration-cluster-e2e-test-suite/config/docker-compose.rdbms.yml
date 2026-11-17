@@ -1,0 +1,68 @@
+# Overlay that points the `camunda` service of docker-compose.yml at a
+# relational secondary storage instead of Elasticsearch, so the API test
+# selection of the RDBMS nightlies can be reproduced on an ordinary runner.
+#
+# Usage (from config/):
+#   DATABASE=rdbms-postgres docker compose \
+#     -f docker-compose.yml -f docker-compose.rdbms.yml up -d camunda
+#
+# DATABASE selects both the database service `camunda` depends on and the
+# envs/.env.database.<DATABASE> file it loads, so one database family is one
+# service here plus one env file there. The storage type itself cannot live in
+# that env file: docker-compose.yml sets
+# CAMUNDA_DATA_SECONDARY_STORAGE_TYPE=elasticsearch in the service's
+# `environment:` block, and Compose lets `environment:` win over `env_file`.
+#
+# This is NOT the environment the RDBMS nightly builds. The nightly builds the
+# distribution from the branch and runs dev-dist/bin/camunda; this runs the
+# published SNAPSHOT image of the same branch. The settings below mirror
+# c8-orchestration-cluster-reusable-rdbms-api-tests.yml's start step, but the
+# two binaries are built at different times from the same branch HEAD, so a
+# green run here is evidence about the branch, not proof about the nightly's
+# exact binary.
+
+services:
+  # Postgres is the only family wired up so far: the camunda image already
+  # ships the Postgres JDBC driver (dist/pom.xml depends on org.postgresql),
+  # while MySQL, MariaDB, MSSQL and Oracle need a driver installed next to the
+  # binary, which the nightly does with a curl into dev-dist/lib and an image
+  # cannot do without mounting a jar. Host port 5433 keeps this clear of the
+  # Keycloak `postgres` service of docker-compose.yml, which binds 5432.
+  rdbms-postgres:
+    container_name: rdbms-postgres
+    image: postgres:${RDBMS_IMAGE_VERSION:-17-alpine}
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: camunda
+      POSTGRES_PASSWORD: camunda
+      POSTGRES_DB: camunda
+    ports:
+      - '5433:5432'
+    networks:
+      - zeebe_network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U camunda -d camunda']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  camunda:
+    environment:
+      # Family-independent half of the nightly's RDBMS wiring; the connection
+      # itself comes from envs/.env.database.${DATABASE}.
+      CAMUNDA_DATA_SECONDARY_STORAGE_TYPE: rdbms
+      CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_AUTO_DDL: 'true'
+      CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_FLUSH_INTERVAL: PT0S
+      CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_HISTORY_DEFAULT_HISTORY_TTL: PT60S
+      CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_HISTORY_MIN_HISTORY_CLEANUP_INTERVAL: PT10S
+      CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_HISTORY_MAX_HISTORY_CLEANUP_INTERVAL: PT60S
+      # The nightly runs the plain product profiles and turns the clock
+      # control on by hand, where docker-compose.yml's default adds the
+      # `e2e-test` profile. Match the nightly: a test that needs `e2e-test`
+      # would not be passing there either.
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-broker,consolidated-auth,admin,operate,tasklist}
+      ZEEBE_CLOCK_CONTROLLED: 'true'
+      # The nightly's audit-log excludes, which differ from the ES stack's.
+      CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES_1: BATCH
+      CAMUNDA_DATA_AUDITLOG_CLIENT_EXCLUDES_0: PROCESS_INSTANCE
