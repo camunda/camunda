@@ -1,4 +1,4 @@
-# description: Non-blocking experimental Gradle check for isolated-project compatibility.
+# description: Non-blocking experimental Gradle build and unit test checks.
 # test location: /
 # type: CI
 # owner: @camunda/engineering-operations
@@ -90,6 +90,47 @@ jobs:
           secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
           secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
 
+  gradle-unit-tests:
+    name: "Gradle / Unit Tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      id-token: write # Vault JWT login
+      contents: read
+    env:
+      TEST_PRODUCT: Gradle
+      TEST_TYPE: CI
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      # `build-tool: gradle` also wires the shared Gradle cache, so the job needs no
+      # separate setup-gradle step and skips the Maven cache.
+      - uses: ./.github/actions/setup-build
+        with:
+          build-tool: gradle
+          locale: C.UTF-8
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-jwt-role: ${{ secrets.VAULT_JWT_ROLE }}
+          vault-jwt-path: ${{ secrets.VAULT_JWT_PATH }}
+          vault-jwt-audience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+      - name: Run Gradle unit tests
+        run: ./gradlew --build-cache --console=plain -Ptest.max.forks=2 test
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_jwtRole: ${{ secrets.VAULT_JWT_ROLE }}
+          secret_vault_jwtPath: ${{ secrets.VAULT_JWT_PATH }}
+          secret_vault_jwtAudience: ${{ secrets.VAULT_JWT_AUDIENCE }}
+
   # Experimental checks stay outside Unified CI and do not block pull requests or merge groups.
   # Failures on main are reported to Slack instead.
   gradle-notify-failure:
@@ -99,8 +140,11 @@ jobs:
       github.repository == 'camunda/camunda' &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
-      needs.gradle-experimental-checks.result == 'failure'
-    needs: [ gradle-experimental-checks ]
+      (
+        needs.gradle-experimental-checks.result == 'failure' ||
+        needs.gradle-unit-tests.result == 'failure'
+      )
+    needs: [ gradle-experimental-checks, gradle-unit-tests ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -138,7 +182,7 @@ jobs:
           webhook: ${{ steps.secrets.outputs.GRADLE_BUILD_NOTIFICATIONS_WEBHOOK_URL }}
           webhook-type: webhook-trigger
           payload: |
-            text: "Gradle experimental checks on main failed (${{ needs.gradle-experimental-checks.result }})"
+            text: "Gradle checks on main failed (experimental: ${{ needs.gradle-experimental-checks.result }}, unit tests: ${{ needs.gradle-unit-tests.result }})"
             commit: "${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
             pr: "${{ steps.pr.outputs.number && format('{0}/{1}/pull/{2}', github.server_url, github.repository, steps.pr.outputs.number) || 'n/a' }}"
             run_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
