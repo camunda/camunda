@@ -57,7 +57,7 @@ public final class CslTenantCheck {
    * tenant); otherwise the authorized tenant IDs come from the resolved {@link
    * io.camunda.security.api.model.CamundaAuthentication}.
    */
-  public TenantAccess resolveAuthorizedTenants(final Map<String, Object> authorizations) {
+  public TenantAccess resolveAuthorizedTenantsWithClaims(final Map<String, Object> authorizations) {
     if (isAnonymousCommand(authorizations)) {
       return TenantAccess.wildcard(List.of());
     }
@@ -77,14 +77,14 @@ public final class CslTenantCheck {
   /**
    * Resolves the {@link TenantAccess} for a command. Use this variant for every command. When
    * multi-tenancy checks are enabled, an internal command that is not distributed is authorized for
-   * every tenant. Otherwise the result is that of {@link #resolveAuthorizedTenants(Map)} for the
-   * claims of the command.
+   * every tenant. Otherwise the result is that of {@link #resolveAuthorizedTenantsWithClaims} for
+   * the claims of the command.
    */
   public TenantAccess resolveAuthorizedTenants(final TypedRecord<?> command) {
     if (securityConfig.isMultiTenancyChecksEnabled() && isInternalNotDistributed(command)) {
       return TenantAccess.wildcard(List.of());
     }
-    return resolveAuthorizedTenants(command.getAuthorizations());
+    return resolveAuthorizedTenantsWithClaims(command.getAuthorizations());
   }
 
   /**
@@ -154,7 +154,7 @@ public final class CslTenantCheck {
         && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
       return Either.right(value);
     }
-    if (resolveAuthorizedTenants(authorizations).isAuthorizedForTenantId(tenantId)) {
+    if (resolveAuthorizedTenantsWithClaims(authorizations).isAuthorizedForTenantId(tenantId)) {
       return Either.right(value);
     }
     return Either.left(notAssignedRejection);
