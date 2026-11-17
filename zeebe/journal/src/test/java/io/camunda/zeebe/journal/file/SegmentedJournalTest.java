@@ -780,7 +780,8 @@ class SegmentedJournalTest {
 
     // when - then
     assertThatThrownBy(() -> journal.append(journalFactory.entry()))
-        .isInstanceOf(OutOfDiskSpace.class);
+        .isInstanceOf(OutOfDiskSpace.class)
+        .satisfies(error -> assertThat(error.getSuppressed()).isNotEmpty());
   }
 
   @Test
