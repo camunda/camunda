@@ -86,7 +86,7 @@ test.describe('Swagger UI Tests', () => {
   });
 
   // Skipped due to bug #67555: https://github.com/camunda/camunda/issues/67555
-  test.skip('CSRF token is filled in and Swagger UI is accessible with CSRF token', async ({
+  test('CSRF token is filled in and Swagger UI is accessible with CSRF token', async ({
     loginPage,
     operateHomePage,
     page,
@@ -121,7 +121,7 @@ test.describe('Swagger UI Tests', () => {
   });
 
   // Skipped due to bug #67555: https://github.com/camunda/camunda/issues/67555
-  test.skip('CSRF token is NOT filled in and Swagger UI is accessible', async ({
+  test('CSRF token is NOT filled in and Swagger UI is accessible', async ({
     swaggerPage,
   }) => {
     // go to swagger UI
