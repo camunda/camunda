@@ -1,4 +1,4 @@
--- Top tests per branch for the flaky and failed test summaries, with up to 3 runs per test.
+-- Top tests per branch for the flaky and failed test summaries, with up to 3 jobs per test.
 --
 -- Parameters:
 --   @days         window: the last @days full days (UTC)
@@ -16,6 +16,8 @@ WITH test_rows AS (
     ts.build_id,
     ts.job_name,
     ts.report_time,
+    -- NULL in rows written before the submit actions sent it, and for some aborted jobs
+    COALESCE(ts.job_id, bs.job_id) AS job_id,
     REPLACE(IF(bs.build_trigger = "push", bs.build_ref, bs.build_base_ref), "refs/heads/", "") AS branch
   FROM `ci-30-162810.prod_ci_analytics.test_status_v1` ts
   JOIN `ci-30-162810.prod_ci_analytics.build_status_v2` bs
@@ -40,7 +42,10 @@ per_test AS (
 ),
 -- One row per job, so a test row joined to a repeated build row does not repeat a link
 jobs AS (
-  SELECT branch, test_class_name, test_name, build_id, job_name, MAX(report_time) AS report_time
+  SELECT
+    branch, test_class_name, test_name, build_id, job_name,
+    MAX(job_id) AS job_id,
+    MAX(report_time) AS report_time
   FROM test_rows
   GROUP BY branch, test_class_name, test_name, build_id, job_name
 )
@@ -54,9 +59,11 @@ SELECT
     STRUCT(
       SPLIT(j.build_id, "/")[SAFE_OFFSET(0)] AS run_id,
       SPLIT(j.build_id, "/")[SAFE_OFFSET(1)] AS run_attempt,
-      j.job_name
+      j.job_name,
+      j.job_id
     )
-    ORDER BY j.report_time DESC
+    -- Prefer links that open the job over links that open the whole run
+    ORDER BY j.job_id IS NULL, j.report_time DESC
     LIMIT 3
   ) AS links
 FROM per_test p
