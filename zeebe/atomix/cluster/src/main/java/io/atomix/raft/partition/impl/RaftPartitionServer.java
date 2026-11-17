@@ -23,12 +23,14 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.atomix.raft.FencedListener;
 import io.atomix.raft.JoinAdmission;
 import io.atomix.raft.JoinOptions;
 import io.atomix.raft.LeadershipTransferCoordinatorCheck;
 import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
+import io.atomix.raft.RaftConfigurationListener;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
@@ -46,6 +48,7 @@ import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.roles.RaftRole;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
+import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.serializer.Serializer;
 import io.camunda.cluster.PhysicalTenantIds;
@@ -248,6 +251,23 @@ public class RaftPartitionServer implements HealthMonitorable {
 
   public CompletableFuture<Void> stop() {
     return server != null ? server.shutdown() : CompletableFuture.completedFuture(null);
+  }
+
+  public CompletableFuture<Void> reconfigureTargetPriority(final int newTargetPriority) {
+    return server.reconfigureTargetPriority(newTargetPriority);
+  }
+
+  /** See {@link RaftServer#getConfiguration()}. */
+  public CompletableFuture<Configuration> getConfiguration() {
+    return server.getConfiguration();
+  }
+
+  public void addConfigurationListener(final RaftConfigurationListener listener) {
+    server.addConfigurationListener(listener);
+  }
+
+  public void addFencedListener(final FencedListener listener) {
+    server.addFencedListener(listener);
   }
 
   public CompletableFuture<Void> reconfigurePriority(final int newPriority) {

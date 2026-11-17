@@ -405,8 +405,12 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       // uncommitted tail - the leader replicates to it from a committed reader, whose
       // bytesUntilEnd() measures to the end of the journal - so a fully caught-up PASSIVE member
       // could never work its lag off and its promotion would be rejected forever.
+      // The member must also have answered within an election timeout: a member that is down can
+      // look caught up from an old acknowledgement, and as a voter it would block commits.
       final var caughtUp =
           memberContext != null
+              && System.currentTimeMillis() - memberContext.getResponseTime()
+                  <= raft.getElectionTimeout().toMillis()
               && memberContext.getMatchIndex() > 0
               && (memberContext.getMatchIndex() >= raft.getCommitIndex()
                   || memberContext.getReplicationLagBytes() <= raft.getPromotionLagThreshold());
@@ -414,7 +418,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
         return CompletableFuture.completedFuture(
             rejectReconfigure(
                 Type.CONFIGURATION_ERROR,
-                "Cannot promote %s to ACTIVE because it is not caught up (match index %s, commit index %d, replication lag %s bytes, threshold %d bytes)"
+                "Cannot promote %s to ACTIVE because it is not caught up or did not answer recently (match index %s, commit index %d, replication lag %s bytes, threshold %d bytes)"
                     .formatted(
                         updatedMember.memberId(),
                         memberContext == null
@@ -1036,7 +1040,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   public CompletableFuture<TransferResponse> onTransfer(final TransferRequest request) {
     logRequest(request);
 
-    if (!raft.getCluster().isMember(request.member())) {
+    // Only a voter may become the leader.
+    if (!raft.getCluster().isMember(request.member())
+        || !raft.getCluster().isVoter(request.member())) {
       return CompletableFuture.completedFuture(
           logResponse(
               TransferResponse.builder()

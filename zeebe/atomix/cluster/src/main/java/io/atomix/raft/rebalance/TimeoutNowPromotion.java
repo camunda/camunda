@@ -74,7 +74,7 @@ final class TimeoutNowPromotion implements TransferPhase {
 
   CompletableFuture<LeadershipTransferResult> start() {
     raft.checkThread();
-    if (!raft.getCluster().isMember(target)) {
+    if (!raft.getCluster().isMember(target) || !raft.getCluster().isVoter(target)) {
       result.complete(LeadershipTransferResult.NOT_MEMBER);
       return result;
     }

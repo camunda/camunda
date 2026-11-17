@@ -1034,4 +1034,94 @@ final class SystemPartitionRaftTest {
           .untilAsserted(() -> assertThat(leaderOf(m2, rejoined)).isEmpty());
     }
   }
+
+  @Nested
+  final class VotersAndConfigurationView {
+
+    @Test
+    void shouldNotAnointPassiveMember() {
+      // given
+      final var cluster = bootstrapTwoVotersOnePassive();
+      awaitLeader(cluster.toArray(RaftServer[]::new));
+      final var m3 = cluster.get(2);
+
+      // when - then
+      assertThatThrownBy(() -> m3.anoint().orTimeout(10, TimeUnit.SECONDS).join())
+          .hasMessageContaining("not ACTIVE");
+      assertThat(m3.getRole()).isEqualTo(Role.PASSIVE);
+    }
+
+    @Test
+    void shouldNotPromoteMemberThatDidNotAnswerRecently() {
+      // given - the passive member caught up, then went down
+      final var cluster = bootstrapTwoVotersOnePassive();
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+      final var m3 = cluster.get(2);
+      final var index = appendEntry(leader);
+      Awaitility.await("passive member caught up")
+          .untilAsserted(() -> assertThat(commitIndex(m3)).isGreaterThanOrEqualTo(index));
+      m3.shutdown().join();
+
+      // when - promoted after more than an election timeout without an answer
+      final var response =
+          Awaitility.await("leader answers after an election timeout")
+              .pollDelay(Duration.ofSeconds(1))
+              .until(
+                  () -> {
+                    final var current = configurationId(leader);
+                    return leader
+                        .reconfigure(
+                            Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE),
+                            current.index(),
+                            current.term())
+                        .orTimeout(10, TimeUnit.SECONDS)
+                        .join();
+                  },
+                  r -> r.error() == null || r.error().message().contains("not caught up"));
+
+      // then
+      assertThat(response.status()).isEqualTo(Status.ERROR);
+      assertThat(response.error().message()).contains("did not answer recently");
+    }
+
+    @Test
+    void shouldNotifyConfigurationListenerAndReadTypedConfiguration() {
+      // given
+      final var cluster = bootstrapTwoVotersOnePassive();
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+      final var m3 = cluster.get(2);
+      final var committed = new java.util.concurrent.ConcurrentLinkedQueue<Configuration>();
+      m3.addConfigurationListener(
+          (configuration, isCommitted) -> {
+            if (isCommitted) {
+              committed.add(configuration);
+            }
+          });
+      final var target =
+          Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.PASSIVE, id4, Type.PASSIVE);
+
+      // when
+      awaitReconfigured(leader, leader, target);
+
+      // then
+      Awaitility.await("passive member is notified of the committed configuration")
+          .untilAsserted(
+              () ->
+                  assertThat(committed)
+                      .anySatisfy(
+                          configuration ->
+                              assertThat(configuration.newMembers()).hasSize(target.size())));
+      final var view = leader.getConfiguration().orTimeout(5, TimeUnit.SECONDS).join();
+      assertThat(view.index()).isEqualTo(configurationId(leader).index());
+      assertThat(view.term()).isEqualTo(configurationId(leader).term());
+      assertThat(view.requiresJointConsensus()).isFalse();
+      assertThat(view.newMembers())
+          .extracting(RaftMember::memberId, RaftMember::getType)
+          .containsExactlyInAnyOrder(
+              tuple(id1, Type.ACTIVE),
+              tuple(id2, Type.ACTIVE),
+              tuple(id3, Type.PASSIVE),
+              tuple(id4, Type.PASSIVE));
+    }
+  }
 }

@@ -90,7 +90,9 @@ final class LeadershipTransferAdmission {
       return Optional.of(LeadershipTransferResult.CONFIGURATION_CHANGE_IN_PROGRESS);
     }
     final var desiredContext = raft.getCluster().getMemberContext(desiredLeader);
-    if (desiredContext == null || !raft.getCluster().isMember(desiredLeader)) {
+    if (desiredContext == null
+        || !raft.getCluster().isMember(desiredLeader)
+        || !raft.getCluster().isVoter(desiredLeader)) {
       return Optional.of(LeadershipTransferResult.NOT_MEMBER);
     }
     if (!desiredContext.hasAckedAppend()) {

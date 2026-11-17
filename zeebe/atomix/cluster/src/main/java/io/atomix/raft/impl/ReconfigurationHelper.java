@@ -665,6 +665,16 @@ public final class ReconfigurationHelper {
   }
 
   private void anointInternal(final CompletableFuture<Void> future) {
+    // Only a voter may become the leader: a non-voter that is elected would lead a configuration
+    // in which it does not count for the quorum.
+    final var localType = raftContext.getCluster().getLocalMember().getType();
+    if (localType != Type.ACTIVE) {
+      future.completeExceptionally(
+          new IllegalStateException(
+              "Cannot become leader, the local member is %s and not %s"
+                  .formatted(localType, Type.ACTIVE)));
+      return;
+    }
     // Register a leader election listener to wait for the election of this node.
     final Consumer<RaftMember> electionListener =
         new Consumer<>() {

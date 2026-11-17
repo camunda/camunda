@@ -313,6 +313,16 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   }
 
   /**
+   * @return true if the given member is a voter ({@link Type#ACTIVE}) in the new members of the
+   *     current configuration
+   */
+  public boolean isVoter(final MemberId memberId) {
+    return configuration != null
+        && configuration.newMembers().stream()
+            .anyMatch(m -> m.memberId().equals(memberId) && m.getType() == Type.ACTIVE);
+  }
+
+  /**
    * @return true if the given member is part of the cluster, false otherwise
    */
   public boolean isMember(final MemberId memberId) {
@@ -618,6 +628,8 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       updateMemberContext(member, time);
     }
     this.configuration = configuration;
+    raft.notifyConfigurationListeners(
+        configuration, configuration.force() || raft.getCommitIndex() >= configuration.index());
   }
 
   private void removeMemberContext(final RaftMember member) {
@@ -688,6 +700,8 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     // initial config, PassiveRole/InactiveRole onConfigure) may invoke this repeatedly for the same
     // configuration.
     pruneMembersNotInConfiguration();
+
+    raft.notifyConfigurationListeners(configuration, true);
 
     // Apply the configuration to the local server state.
     raft.transition(localMember.getType());

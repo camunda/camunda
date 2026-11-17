@@ -65,6 +65,30 @@ final class PriorityElectionTimerTest {
   }
 
   @Test
+  void shouldUseChangedTargetPriorityAfterReset() {
+    // given - a node whose priority is the target, so it triggers at the first timeout
+    final AtomicInteger triggerCount = new AtomicInteger();
+    final Duration electionTimeout = Duration.ofMillis(100);
+    final PriorityElectionTimer timer =
+        new PriorityElectionTimer(
+            electionTimeout, threadContext, triggerCount::getAndIncrement, log, 1, 1);
+
+    // when - the target priority is raised at runtime
+    timer.setTargetPriority(3);
+    timer.reset();
+    threadContext
+        .getDeterministicScheduler()
+        .tick(electionTimeout.toMillis(), TimeUnit.MILLISECONDS);
+
+    // then - the node waits until the target priority came down to its own
+    assertThat(triggerCount.get()).isZero();
+    threadContext
+        .getDeterministicScheduler()
+        .tick(2 * electionTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    assertThat(triggerCount.get()).isOne();
+  }
+
+  @Test
   void shouldHighPriorityNodeStartElectionFirst() {
     // given
     final String highPrioId = "highPrioTimer";

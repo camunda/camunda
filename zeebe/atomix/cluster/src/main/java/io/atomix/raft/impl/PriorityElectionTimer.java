@@ -28,7 +28,7 @@ public class PriorityElectionTimer implements ElectionTimer {
   private final ThreadContext threadContext;
   private final Runnable triggerElection;
   private final Logger log;
-  private final int initialTargetPriority;
+  private int initialTargetPriority;
   private int nodePriority;
   private int targetPriority;
 
@@ -64,6 +64,11 @@ public class PriorityElectionTimer implements ElectionTimer {
 
   public void setNodePriority(final int newPriority) {
     nodePriority = newPriority;
+  }
+
+  /** Changes the target priority; the countdown starts from it with the next reset. */
+  public void setTargetPriority(final int newTargetPriority) {
+    initialTargetPriority = newTargetPriority;
   }
 
   private void onElectionTimeout() {

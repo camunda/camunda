@@ -34,6 +34,7 @@ import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
+import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import io.camunda.cluster.PartitionId;
@@ -442,6 +443,25 @@ public interface RaftServer {
    * @return a future to be completed when the new priority is applied
    */
   CompletableFuture<Void> reconfigurePriority(int newPriority);
+
+  /**
+   * Changes the target priority of the priority election at runtime. Has no effect if priority
+   * election is disabled.
+   */
+  CompletableFuture<Void> reconfigureTargetPriority(int newTargetPriority);
+
+  /**
+   * Returns the local view of the current configuration: the new members with their types and
+   * incarnations, the old members while a joint change is in progress, the fence list, the voter
+   * policy and the index. The term is the one that {@link #reconfigure(Map, long, long)} expects.
+   * Null if the server has no configuration yet.
+   */
+  CompletableFuture<Configuration> getConfiguration();
+
+  /** Adds a listener for configuration changes, see {@link RaftConfigurationListener}. */
+  void addConfigurationListener(RaftConfigurationListener listener);
+
+  void removeConfigurationListener(RaftConfigurationListener listener);
 
   /**
    * Ensures that all records written to the log are flushed to disk

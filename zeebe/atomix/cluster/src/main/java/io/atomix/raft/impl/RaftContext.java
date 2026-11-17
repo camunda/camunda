@@ -30,6 +30,7 @@ import io.atomix.raft.LeadershipTransferCoordinatorCheck;
 import io.atomix.raft.LeadershipTransferWriteBarrier;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
+import io.atomix.raft.RaftConfigurationListener;
 import io.atomix.raft.RaftException.CommitFailedException;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
@@ -76,6 +77,7 @@ import io.atomix.raft.roles.RaftRole;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.StorageException;
 import io.atomix.raft.storage.log.RaftLog;
+import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.raft.utils.StateUtil;
 import io.atomix.raft.zeebe.EntryValidator;
@@ -131,6 +133,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   protected final RaftServerProtocol protocol;
   private final RaftServerProtocol outboundProtocol;
   private final Set<FencedListener> fencedListeners = new CopyOnWriteArraySet<>();
+  private final Set<RaftConfigurationListener> configurationListeners = new CopyOnWriteArraySet<>();
   private boolean fenced;
   private volatile JoinAdmission joinAdmission = JoinAdmission.ADMIT_ALL;
   private EmptyStartGuard emptyStartGuard;
@@ -1530,6 +1533,45 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   public void setPreferSnapshotReplicationThreshold(final int snapshotReplicationThreshold) {
     partitionConfig.setPreferSnapshotReplicationThreshold(snapshotReplicationThreshold);
+  }
+
+  /**
+   * Changes the target priority of the priority election at runtime, for example when the voter
+   * policy changes the order of the zones.
+   */
+  public CompletableFuture<Void> reconfigureTargetPriority(final int newTargetPriority) {
+    final CompletableFuture<Void> configureFuture = new CompletableFuture<>();
+    threadContext.execute(
+        () -> {
+          electionConfig.setInitialTargetPriority(newTargetPriority);
+          if (role instanceof final FollowerRole followerRole
+              && followerRole.getElectionTimer()
+                  instanceof final PriorityElectionTimer priorityElectionTimer) {
+            priorityElectionTimer.setTargetPriority(newTargetPriority);
+          }
+          configureFuture.complete(null);
+        });
+    return configureFuture;
+  }
+
+  public void addConfigurationListener(final RaftConfigurationListener listener) {
+    configurationListeners.add(listener);
+  }
+
+  public void removeConfigurationListener(final RaftConfigurationListener listener) {
+    configurationListeners.remove(listener);
+  }
+
+  /** Called by the cluster context when a configuration is applied or committed. */
+  public void notifyConfigurationListeners(
+      final Configuration configuration, final boolean committed) {
+    for (final var listener : configurationListeners) {
+      try {
+        listener.onConfigurationChanged(configuration, committed);
+      } catch (final Exception e) {
+        LOGGER.warn("Configuration listener {} failed", listener, e);
+      }
+    }
   }
 
   public CompletableFuture<Void> reconfigurePriority(final int newPriority) {

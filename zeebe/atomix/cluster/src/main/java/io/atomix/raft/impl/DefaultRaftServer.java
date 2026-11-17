@@ -23,6 +23,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.FencedListener;
 import io.atomix.raft.JoinAdmission;
 import io.atomix.raft.JoinOptions;
+import io.atomix.raft.RaftConfigurationListener;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftThreadContextFactory;
@@ -33,6 +34,7 @@ import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.impl.RaftContext.State;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.system.Configuration;
 import io.camunda.zeebe.util.health.FailureListener;
 import java.util.Collection;
 import java.util.Map;
@@ -179,6 +181,43 @@ public class DefaultRaftServer implements RaftServer {
     return new ReconfigurationHelper(context)
         .forceConfigure(membersToRetain, fenced)
         .thenApply(v -> this);
+  }
+
+  @Override
+  public CompletableFuture<Void> reconfigureTargetPriority(final int newTargetPriority) {
+    return context.reconfigureTargetPriority(newTargetPriority);
+  }
+
+  @Override
+  public CompletableFuture<Configuration> getConfiguration() {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          final var cluster = context.getCluster();
+          final var configuration = cluster.getConfiguration();
+          if (configuration == null) {
+            return null;
+          }
+          return new Configuration(
+              configuration.index(),
+              cluster.getConfigurationTerm(),
+              configuration.time(),
+              configuration.newMembers(),
+              configuration.oldMembers(),
+              configuration.force(),
+              configuration.fenced(),
+              configuration.voterPolicy());
+        },
+        context.getThreadContext());
+  }
+
+  @Override
+  public void addConfigurationListener(final RaftConfigurationListener listener) {
+    context.addConfigurationListener(listener);
+  }
+
+  @Override
+  public void removeConfigurationListener(final RaftConfigurationListener listener) {
+    context.removeConfigurationListener(listener);
   }
 
   @Override

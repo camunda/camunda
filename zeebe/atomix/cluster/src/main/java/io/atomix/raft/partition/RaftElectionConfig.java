@@ -18,7 +18,7 @@ package io.atomix.raft.partition;
 public final class RaftElectionConfig {
 
   private final boolean priorityElectionEnabled;
-  private final int initialTargetPriority;
+  private int initialTargetPriority;
   private int nodePriority;
 
   private RaftElectionConfig(
@@ -45,6 +45,10 @@ public final class RaftElectionConfig {
 
   public int getInitialTargetPriority() {
     return initialTargetPriority;
+  }
+
+  public void setInitialTargetPriority(final int initialTargetPriority) {
+    this.initialTargetPriority = initialTargetPriority;
   }
 
   public int getNodePriority() {
