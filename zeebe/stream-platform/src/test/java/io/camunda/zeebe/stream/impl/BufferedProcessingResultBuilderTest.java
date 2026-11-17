@@ -132,14 +132,14 @@ class BufferedProcessingResultBuilderTest {
             "user",
             "authorized_client_id",
             "client");
-    assertThat(authorizations.get(0).toClaimsMap())
+    assertThat(authorizations.get(0).getClaims())
         .as("internal follow-up command")
         .isEqualTo(actorClaims);
     assertThat(authorizations.get(1).getFormat())
         .as("follow-up event")
         .isEqualTo(AuthDataFormat.PRE_AUTHORIZED);
     assertThat(authorizations.get(1).getClaims()).as("follow-up event").isEqualTo(actorClaims);
-    assertThat(authorizations.get(2)).as("rejection").isEqualTo(authInfo);
+    assertThat(authorizations.get(2).getClaims()).as("rejection").isEqualTo(actorClaims);
     assertThat(authorizations.get(3)).as("batch operation command").isEqualTo(authInfo);
   }
 
