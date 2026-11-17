@@ -18,6 +18,7 @@ package io.camunda.zeebe.journal.file;
 import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
@@ -36,11 +37,14 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.SortedMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Phaser;
@@ -970,6 +974,59 @@ class SegmentedJournalTest {
     assertThatThrownBy(() -> journal.append(1L, "data".getBytes(StandardCharsets.UTF_8)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessage("journal not open");
+  }
+
+  // A leader flushes only on commit, so its uncommitted tail can span a segment boundary. When it
+  // becomes a follower and the new leader's log differs after an entry in the newer segment, the
+  // truncation keeps the unflushed entries before it. They must be flushed like any other entry:
+  // after a crash, everything up to the truncation index has to be on disk.
+  @Test
+  void shouldNotLoseUnflushedEntriesBeforeTruncationIntoNewerSegmentOnCrash() throws Exception {
+    // given - a crash keeps only what was flushed: the segments each flush forces are copied to a
+    // separate directory (a file read sees the mapped writes), and the journal restarts from there
+    journalFactory = new TestJournalFactory("test", 5);
+    final var flushed = directory.resolve("flushed");
+    Files.createDirectories(flushed.resolve("data"));
+    final var segments = spy(journalFactory.segmentsManager(directory));
+    doAnswer(
+            invocation -> {
+              final var tail = (SortedMap<?, ?>) invocation.callRealMethod();
+              for (final var segment : tail.values()) {
+                final var file = ((Segment) segment).file().file().toPath();
+                Files.copy(
+                    file,
+                    flushed.resolve("data").resolve(file.getFileName()),
+                    StandardCopyOption.REPLACE_EXISTING);
+              }
+              return tail;
+            })
+        .when(segments)
+        .getTailSegments(anyLong());
+    journal = journalFactory.journal(segments);
+    closeables.add(journal);
+
+    // entries 1-7 are flushed: segment 1 holds 1-5, segment 2 holds 6-7
+    for (int i = 0; i < 7; i++) {
+      journal.append(journalFactory.entry());
+    }
+    journal.flush();
+    // as a leader, 8-12 are appended without flushing: 8-10 in segment 2, 11-12 in segment 3
+    for (int i = 0; i < 5; i++) {
+      journal.append(journalFactory.entry());
+    }
+
+    // when - the new leader's log differs after 11, so the follower truncates and flushes
+    journal.deleteAfter(11);
+    journal.flush();
+
+    // then - after a crash, the journal restarts with every entry up to 11
+    final var restartFactory = new TestJournalFactory("test", 5);
+    restartFactory
+        .metaStore()
+        .storeLastFlushedIndex(journalFactory.metaStore().loadLastFlushedIndex());
+    final var restarted = restartFactory.journal(restartFactory.segmentsManager(flushed));
+    closeables.add(restarted);
+    assertThat(restarted.getLastIndex()).isEqualTo(11);
   }
 
   private SegmentedJournal openJournal(final int entriesPerSegment) {
