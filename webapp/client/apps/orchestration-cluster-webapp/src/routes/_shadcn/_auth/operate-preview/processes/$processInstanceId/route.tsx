@@ -13,6 +13,7 @@ import {ProcessInstance} from '#/operate/pages/ProcessInstance/shadcn.components
 import {ProcessInstanceWithVisibleTabs} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceWithVisibleTabs';
 import {
 	getProcessInstanceTabFromPath,
+	getVisibleProcessInstanceTabs,
 	type ProcessInstanceTab,
 } from '#/operate/pages/ProcessInstance/shadcn.components/processInstanceTabs';
 import {ProcessInstanceBreadcrumb} from '#/operate/pages/ProcessInstance/shadcn.components/ProcessInstanceBreadcrumb';
@@ -46,7 +47,17 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 				]
 			: [],
 	}),
-	pendingComponent: () => <ProcessInstance activeTab="variables" header={<ProcessInstanceHeaderSkeleton />} />,
+	pendingComponent: () => (
+		<ProcessInstance
+			activeTab="variables"
+			visibleTabs={getVisibleProcessInstanceTabs({
+				hasIncidentsTab: false,
+				hasSelection: false,
+				isProcessLevelWaiting: false,
+			})}
+			header={<ProcessInstanceHeaderSkeleton />}
+		/>
+	),
 	component: function ProcessInstanceRoute() {
 		const {processInstanceId} = Route.useParams();
 		const search = Route.useSearch();
@@ -55,27 +66,54 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 		const {data: hierarchy} = useCallHierarchy(processInstanceId, {enabled: true});
 		const {pathname} = useLocation();
 
+		const withoutTabSearch = <T extends {sort?: string; operationType?: unknown; entityType?: unknown}>(prev: T) => ({
+			...prev,
+			sort: undefined,
+			operationType: undefined,
+			entityType: undefined,
+		});
 		const changeTab = (tab: ProcessInstanceTab) => {
 			switch (tab) {
 				case 'incidents':
 					return navigate({
 						to: '/operate-preview/processes/$processInstanceId/incidents',
 						params: {processInstanceId},
-						search: true,
+						search: withoutTabSearch,
+						hash: true,
+					});
+				case 'input-mappings':
+					return navigate({
+						to: '/operate-preview/processes/$processInstanceId/input-mappings',
+						params: {processInstanceId},
+						search: withoutTabSearch,
+						hash: true,
+					});
+				case 'output-mappings':
+					return navigate({
+						to: '/operate-preview/processes/$processInstanceId/output-mappings',
+						params: {processInstanceId},
+						search: withoutTabSearch,
+						hash: true,
+					});
+				case 'operations-log':
+					return navigate({
+						to: '/operate-preview/processes/$processInstanceId/operations-log',
+						params: {processInstanceId},
+						search: withoutTabSearch,
 						hash: true,
 					});
 				case 'listeners':
 					return navigate({
 						to: '/operate-preview/processes/$processInstanceId/listeners',
 						params: {processInstanceId},
-						search: true,
+						search: withoutTabSearch,
 						hash: true,
 					});
 				case 'details':
 					return navigate({
 						to: '/operate-preview/processes/$processInstanceId/details',
 						params: {processInstanceId},
-						search: true,
+						search: withoutTabSearch,
 						hash: true,
 					});
 				case 'variables':
@@ -83,7 +121,7 @@ export const Route = createFileRoute('/_shadcn/_auth/operate-preview/processes/$
 					return navigate({
 						to: '/operate-preview/processes/$processInstanceId/variables',
 						params: {processInstanceId},
-						search: true,
+						search: withoutTabSearch,
 						hash: true,
 					});
 			}

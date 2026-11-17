@@ -11,12 +11,12 @@ import {useTranslation} from 'react-i18next';
 import {Badge, Heading, PageLayout, Tabs, TabsContent, TabsList, TabsTrigger, Text} from '@camunda/design-system';
 import {PanelHeader} from '#/operate/shared/PanelHeader/shadcn.components/PanelHeader';
 import {ResizablePanel, SplitDirection} from '#/operate/shared/ResizablePanel/shadcn.components/ResizablePanel';
-import {PROCESS_INSTANCE_TABS, type ProcessInstanceTab} from './processInstanceTabs';
+import {PROCESS_INSTANCE_TABS, TAB_LABEL_KEYS, type ProcessInstanceTab} from './processInstanceTabs';
 import {ProcessInstanceTabPlaceholder} from './ProcessInstanceTabPlaceholder';
 
 type Props = {
 	activeTab: ProcessInstanceTab;
-	visibleTabs?: readonly ProcessInstanceTab[];
+	visibleTabs: readonly ProcessInstanceTab[];
 	onTabChange?: (tab: ProcessInstanceTab) => void;
 	breadcrumb?: React.ReactNode;
 	header: React.ReactNode;
@@ -27,7 +27,7 @@ type Props = {
 
 const ProcessInstance: React.FC<Props> = ({
 	activeTab,
-	visibleTabs = PROCESS_INSTANCE_TABS,
+	visibleTabs,
 	onTabChange,
 	breadcrumb,
 	header,
@@ -79,7 +79,7 @@ const ProcessInstance: React.FC<Props> = ({
 										<TabsList variant="line" aria-label={t('operate.processInstance.history.tabs')}>
 											{visibleTabs.map((tab) => (
 												<TabsTrigger key={tab} value={tab}>
-													{t(`operate.processInstance.history.${tab}`)}
+													{t(TAB_LABEL_KEYS[tab])}
 													{tab === 'incidents' && incidentsCount !== undefined && incidentsCount > 0 && (
 														<Badge
 															variant="danger"

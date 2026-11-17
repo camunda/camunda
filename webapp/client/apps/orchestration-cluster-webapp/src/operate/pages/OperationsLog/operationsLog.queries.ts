@@ -53,7 +53,13 @@ function useAuditLogs(
 		...auditLogsInfiniteQuery(filter, sort),
 		enabled,
 		refetchInterval: 5000,
-		placeholderData: (previousData) => previousData,
+		placeholderData: (previousData, previousQuery) => {
+			const previousFilter = previousQuery?.queryKey[1];
+			const isSameScope =
+				previousFilter?.processInstanceKey === filter.processInstanceKey &&
+				previousFilter?.elementInstanceKey === filter.elementInstanceKey;
+			return isSameScope ? previousData : undefined;
+		},
 	});
 }
 

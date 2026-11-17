@@ -1781,8 +1781,10 @@
 					"table": {
 						"operationType": "Type d'opération",
 						"entityType": "Type d'entité",
-						"entityKey": "Clé d'entité"
-					}
+						"entityKey": "Clé d'entité",
+						"result": "Résultat"
+					},
+					"list": "Liste du journal des opérations"
 				},
 				"variables": {
 					"search": "Rechercher des variables par nom",
@@ -1971,7 +1973,8 @@
 					"noOutput": "Aucun mappage de sortie défini",
 					"localVariableName": "Nom de la variable locale",
 					"processVariableName": "Nom de la variable de processus",
-					"assignmentValue": "Valeur d’affectation de la variable"
+					"assignmentValue": "Valeur d’affectation de la variable",
+					"loading": "Chargement des affectations"
 				},
 				"listeners": {
 					"filter": {
@@ -1988,7 +1991,8 @@
 					"time": "Heure",
 					"emptyAll": "Cet élément n’a ni écouteur d’exécution ni écouteur de tâche utilisateur",
 					"emptyTask": "Cet élément n’a aucun écouteur de tâche utilisateur",
-					"emptyExecution": "Cet élément n’a aucun écouteur d’exécution"
+					"emptyExecution": "Cet élément n’a aucun écouteur d’exécution",
+					"loading": "Chargement des listeners"
 				},
 				"modification": {
 					"pageHeading": "Operate Instance de processus - Mode de modification",
@@ -2190,6 +2194,7 @@
 					"processDefinitions": "définitions de processus",
 					"variables": "variables"
 				},
+				"noActor": "Aucun acteur",
 				"actorTooltip": {
 					"aiAgentOnBehalfOf": "Agent IA pour le compte de {{actorType}}",
 					"mcpToolCall": "Appel d'outil MCP"

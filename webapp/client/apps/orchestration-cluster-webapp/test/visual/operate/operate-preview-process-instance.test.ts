@@ -10,11 +10,17 @@ import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
 import {
 	mockGetElementInstanceEndpoint,
+	mockGetProcessDefinitionXmlEndpoint,
 	mockGetProcessInstanceEndpoint,
+	mockQueryAuditLogsEndpoint,
 	mockQueryElementInstanceIncidentsEndpoint,
+	mockQueryJobsEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
 	mockQueryVariablesEndpoint,
 } from '#/shared-test-modules/mock-handlers';
+import {BPMN_XML} from '#/shared-test-modules/api-mocks/process-definition-xmls';
+import {createAuditLog, createQueryAuditLogsResponse} from '#/shared-test-modules/api-mocks/audit-logs';
+import {createListenerJob} from '#/shared-test-modules/api-mocks/jobs';
 import {createIncident} from '#/shared-test-modules/api-mocks/incidents';
 import {createElementInstance} from '#/shared-test-modules/api-mocks/element-instances';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
@@ -140,4 +146,90 @@ test.describe('incidents tab', () => {
 		await expect(operatePreviewProcessInstancePage.incidentsTable.getByText('Job ID')).toBeVisible();
 		await expect(operatePreviewProcessInstancePage.incidentsList).toHaveScreenshot();
 	});
+});
+
+test('should match the process instance listeners tab snapshot', async ({
+	network,
+	operatePreviewProcessInstancePage,
+}) => {
+	network.use(
+		mockQueryJobsEndpoint({
+			successResponse: HttpResponse.json(
+				createPaginatedResponse({
+					items: [
+						createListenerJob({jobKey: '100', type: 'audit-listener'}),
+						createListenerJob({jobKey: '101', type: 'notify-listener', state: 'FAILED'}),
+					],
+					page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+				}),
+			),
+		}),
+	);
+
+	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+	await operatePreviewProcessInstancePage.tab('Listeners').click();
+
+	await expect(operatePreviewProcessInstancePage.listenersList.getByText('audit-listener')).toBeVisible();
+	await expect(operatePreviewProcessInstancePage.tabPanel).toHaveScreenshot();
+});
+
+test('should match the process instance operations log tab snapshot', async ({
+	network,
+	operatePreviewProcessInstancePage,
+}) => {
+	network.use(
+		mockQueryAuditLogsEndpoint({
+			successResponse: HttpResponse.json(createQueryAuditLogsResponse({items: [createAuditLog()]})),
+		}),
+	);
+
+	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+	await operatePreviewProcessInstancePage.tab('Operations Log').click();
+
+	await expect(operatePreviewProcessInstancePage.operationsLogTable.getByRole('cell', {name: 'Create'})).toBeVisible();
+	await expect(operatePreviewProcessInstancePage.tabPanel).toHaveScreenshot();
+});
+
+test('should match the process instance input mappings tab snapshot', async ({
+	network,
+	page,
+	operatePreviewProcessInstancePage,
+}) => {
+	network.use(
+		mockGetProcessDefinitionXmlEndpoint({
+			successResponse: HttpResponse.text(
+				BPMN_XML.replace(
+					'<zeebe:userTask />',
+					'<zeebe:userTask /><zeebe:ioMapping><zeebe:input source="=orderId" target="localOrderId" /><zeebe:input source="=amount * 2" target="doubledAmount" /></zeebe:ioMapping>',
+				),
+			),
+		}),
+	);
+
+	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID, '/input-mappings?elementId=task-1');
+
+	await expect(page.getByRole('cell', {name: 'localOrderId'})).toBeVisible();
+	await expect(operatePreviewProcessInstancePage.tabPanel).toHaveScreenshot();
+});
+
+test('should match the process instance output mappings tab snapshot', async ({
+	network,
+	page,
+	operatePreviewProcessInstancePage,
+}) => {
+	network.use(
+		mockGetProcessDefinitionXmlEndpoint({
+			successResponse: HttpResponse.text(
+				BPMN_XML.replace(
+					'<zeebe:userTask />',
+					'<zeebe:userTask /><zeebe:ioMapping><zeebe:output source="=result" target="processResult" /><zeebe:output source="=total * 2" target="doubledTotal" /></zeebe:ioMapping>',
+				),
+			),
+		}),
+	);
+
+	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID, '/output-mappings?elementId=task-1');
+
+	await expect(page.getByRole('cell', {name: 'processResult'})).toBeVisible();
+	await expect(operatePreviewProcessInstancePage.tabPanel).toHaveScreenshot();
 });

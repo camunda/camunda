@@ -345,6 +345,27 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 		expect(statisticsRequests).toHaveLength(0);
 	});
 
+	test('should leave the mapping tab when the selection is cleared and the flag is off', async ({
+		operatePreviewProcessInstancePage,
+		page,
+	}) => {
+		await page.route('**/operate/client-config.js', (route) =>
+			route.fulfill({
+				contentType: 'text/javascript',
+				body: createOperateClientConfigScript({waitStatesEnabled: false}),
+			}),
+		);
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await operatePreviewProcessInstancePage.diagramElement('task-1').click();
+		await operatePreviewProcessInstancePage.tab('Input Mappings').click();
+		await expect(operatePreviewProcessInstancePage.tab('Input Mappings')).toHaveAttribute('aria-selected', 'true');
+
+		await operatePreviewProcessInstancePage.diagram.click({position: {x: 5, y: 5}});
+
+		await expect(page).toHaveURL(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables`);
+		await expect(operatePreviewProcessInstancePage.variablesTab).toHaveAttribute('aria-selected', 'true');
+	});
+
 	test('should not render a breadcrumb for a root instance', async ({network, operatePreviewProcessInstancePage}) => {
 		network.use(mockGetProcessInstanceCallHierarchyEndpoint({successResponse: HttpResponse.json([])}));
 
