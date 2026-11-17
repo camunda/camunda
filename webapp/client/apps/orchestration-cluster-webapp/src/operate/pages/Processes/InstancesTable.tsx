@@ -11,7 +11,7 @@ import {useMachine} from '@xstate/react';
 import {useTranslation} from 'react-i18next';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
-import {Button, DataTableSkeleton, SkeletonText} from '@carbon/react';
+import {DataTableSkeleton, SkeletonText} from '@carbon/react';
 import type {
 	BatchOperationItem,
 	BatchOperationItemState,
@@ -151,15 +151,10 @@ const InstancesTable: React.FC<Props> = ({
 		hasNextPage,
 		fetchNextPage,
 	} = useProcessInstancesSearch(search, mode !== 'batch-modification');
-	const exactCountKey = JSON.stringify(filter ?? null);
-	const [exactCountRequestedFor, setExactCountRequestedFor] = useState<string | null>(null);
-	const exactCount = useExactProcessInstancesCount(filter, exactCountRequestedFor === exactCountKey);
+	const exactCount = useExactProcessInstancesCount(filter, cappedHasMoreTotalItems);
 	const totalCount = exactCount.data?.totalItems ?? cappedTotalCount;
 	const hasMoreTotalItems = exactCount.data?.hasMoreTotalItems ?? cappedHasMoreTotalItems;
 	const selection = useProcessInstancesSelection(search, processInstances, totalCount, hasMoreTotalItems);
-	if (selection.isAllSelected && cappedHasMoreTotalItems && exactCountRequestedFor !== exactCountKey) {
-		setExactCountRequestedFor(exactCountKey);
-	}
 	const queryClient = useQueryClient();
 	const navigate = useNavigate();
 	const [operation, send] = useMachine(processBulkOperationMachine, {input: {queryClient, navigate}});
@@ -395,18 +390,7 @@ const InstancesTable: React.FC<Props> = ({
 				title={t('operate.processes.instancesTable.title')}
 				count={totalCount}
 				hasMoreTotalItems={hasMoreTotalItems}
-			>
-				{hasMoreTotalItems && (
-					<Button
-						kind="ghost"
-						size="sm"
-						disabled={exactCount.isFetching}
-						onClick={() => setExactCountRequestedFor(exactCountKey)}
-					>
-						{t('operate.processes.instancesTable.showExactCount')}
-					</Button>
-				)}
-			</PanelHeader>
+			/>
 			{status === 'success' && (
 				<ProcessesToolbar
 					key={filterIdentity}

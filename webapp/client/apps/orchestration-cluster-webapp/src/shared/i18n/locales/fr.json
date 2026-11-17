@@ -1344,7 +1344,6 @@
 				},
 				"instancesTable": {
 					"title": "Instances de processus",
-					"showExactCount": "Afficher le nombre exact",
 					"panelLabel": "Panneau des instances de processus",
 					"name": "Nom",
 					"processInstanceKey": "Clé d'instance de processus",

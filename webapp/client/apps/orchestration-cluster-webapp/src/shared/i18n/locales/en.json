@@ -1353,7 +1353,6 @@
 				},
 				"instancesTable": {
 					"title": "Process Instances",
-					"showExactCount": "Show exact count",
 					"panelLabel": "Process Instances Panel",
 					"name": "Name",
 					"processInstanceKey": "Process Instance Key",

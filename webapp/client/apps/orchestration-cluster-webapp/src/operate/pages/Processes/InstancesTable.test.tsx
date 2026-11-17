@@ -799,7 +799,7 @@ describe('<InstancesTable />', () => {
 		await expect.element(screen.getByText('Failed')).toBeVisible();
 	});
 
-	it('should show the exact count on demand when the total is only a lower bound', async ({worker}) => {
+	it('should show the exact count when the total is only a lower bound', async ({worker}) => {
 		worker.use(
 			mockQueryProcessInstancesEndpoint({
 				schema: z.object({page: z.object({limit: z.literal(0), totalItemsAccuracy: z.number()})}),
@@ -818,12 +818,7 @@ describe('<InstancesTable />', () => {
 
 		const screen = await renderInstancesTable();
 		const panel = screen.getByRole('region', {name: 'Process Instances Panel'});
-		await expect.element(panel.getByText(/10000\+ results/)).toBeVisible();
-
-		await userEvent.click(panel.getByRole('button', {name: 'Show exact count'}));
-
 		await expect.element(panel.getByText(/25000 results/)).toBeVisible();
-		await expect.element(panel.getByRole('button', {name: 'Show exact count'})).not.toBeInTheDocument();
 	});
 
 	it('should not request another page when the reported total is exact', async ({worker}) => {

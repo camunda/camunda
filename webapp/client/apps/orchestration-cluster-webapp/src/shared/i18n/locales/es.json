@@ -1341,7 +1341,6 @@
 				},
 				"instancesTable": {
 					"title": "Instancias de proceso",
-					"showExactCount": "Mostrar recuento exacto",
 					"panelLabel": "Panel de instancias de proceso",
 					"name": "Nombre",
 					"processInstanceKey": "Clave de instancia de proceso",
