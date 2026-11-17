@@ -230,7 +230,8 @@ final class CslTenantCheckTest {
     final var tenantCheck = tenantCheck(false);
 
     // when
-    final var access = tenantCheck.resolveAuthorizedTenants(AuthInfo.ofClaims(Map.of()));
+    final var access =
+        tenantCheck.resolveAuthorizedTenantsWithAuthInfo(AuthInfo.ofClaims(Map.of()));
 
     // then — the default tenant, not a wildcard; resolving the tenant ids must not throw
     assertThat(access.wildcard()).isFalse();
@@ -245,7 +246,7 @@ final class CslTenantCheckTest {
 
     // when
     final var access =
-        tenantCheck.resolveAuthorizedTenants(
+        tenantCheck.resolveAuthorizedTenantsWithAuthInfo(
             AuthInfo.ofClaims(Map.of(Authorization.AUTHORIZED_USERNAME, "demo-user")));
 
     // then — tenant filtering still applies to the default tenant (matches pre-migration behavior)
@@ -261,7 +262,7 @@ final class CslTenantCheckTest {
 
     // when
     final var access =
-        tenantCheck.resolveAuthorizedTenants(
+        tenantCheck.resolveAuthorizedTenantsWithAuthInfo(
             AuthInfo.ofClaims(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true)));
 
     // then — anonymous access is a wildcard grant; no claims conversion needed
@@ -275,7 +276,8 @@ final class CslTenantCheckTest {
     final var tenantCheck = tenantCheck(true);
 
     // when
-    final var access = tenantCheck.resolveAuthorizedTenants(AuthInfo.ofClaims(Map.of()));
+    final var access =
+        tenantCheck.resolveAuthorizedTenantsWithAuthInfo(AuthInfo.ofClaims(Map.of()));
 
     // then — authorized for no tenant (not wildcard), so tenant-scoped lookups return NOT_FOUND
     assertThat(access.wildcard()).isFalse();
@@ -294,7 +296,8 @@ final class CslTenantCheckTest {
     when(claimsConverter.resolve(authorizations)).thenReturn(authentication);
 
     // when
-    final var access = tenantCheck.resolveAuthorizedTenants(AuthInfo.ofClaims(authorizations));
+    final var access =
+        tenantCheck.resolveAuthorizedTenantsWithAuthInfo(AuthInfo.ofClaims(authorizations));
 
     // then — resolved from the converted claims, not the empty no-principal fallback
     assertThat(access.wildcard()).isFalse();
