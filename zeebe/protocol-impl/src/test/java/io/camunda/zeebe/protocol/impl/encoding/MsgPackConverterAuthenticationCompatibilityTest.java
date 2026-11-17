@@ -190,4 +190,34 @@ class MsgPackConverterAuthenticationCompatibilityTest {
     assertThat(authentication.authenticatedRoleIds()).containsExactly("viewer");
     assertThat(authentication.conditionalRoleMemberships()).isEmpty();
   }
+
+  @Test
+  void shouldIgnoreConditionalRoleMembershipsWhenReadingABatchOperationAuthentication() {
+    // given a payload that carries the conditional memberships field under the name the mixin would
+    // use (the record component has no @JsonProperty rename, so it is the plain camelCase name) —
+    // this is what a node on a newer line without the ignore could write
+    final var persistedWithConditionalMemberships =
+        """
+        {
+          "authenticated_username": "demo-user",
+          "anonymous_user": false,
+          "authenticated_role_ids": ["viewer"],
+          "conditionalRoleMemberships": [
+            {"roleId": "reviewer", "conditions": []}
+          ]
+        }
+        """;
+
+    // when the object mapper has FAIL_ON_UNKNOWN_PROPERTIES enabled (the default), so the only
+    // reason this does not throw is the @JsonIgnoreProperties entry
+    final var authentication =
+        MsgPackConverter.convertToObject(
+            new UnsafeBuffer(
+                MsgPackConverter.convertToMsgPack(persistedWithConditionalMemberships)),
+            CamundaAuthentication.class);
+
+    // then the field is dropped on read and the rest is preserved
+    assertThat(authentication.authenticatedRoleIds()).containsExactly("viewer");
+    assertThat(authentication.conditionalRoleMemberships()).isEmpty();
+  }
 }
