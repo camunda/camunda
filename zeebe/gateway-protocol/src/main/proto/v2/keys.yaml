@@ -100,6 +100,15 @@ components:
       allOf:
         - $ref: '#/components/schemas/LongKey'
 
+    ProbeKey:
+      description: System-generated key for a probe.
+      format: ProbeKey
+      x-semantic-type: ProbeKey
+      example: "2251799813685464"
+      type: string
+      allOf:
+        - $ref: '#/components/schemas/LongKey'
+
     DecisionDefinitionKey:
       description: System-generated key for a decision definition.
       format: DecisionDefinitionKey

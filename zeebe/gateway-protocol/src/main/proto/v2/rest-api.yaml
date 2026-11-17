@@ -70,6 +70,7 @@ tags:
   - name: Mapping rule
   - name: Message
   - name: Message subscription
+  - name: Probe
   - name: Process definition
   - name: Process instance
   - name: Recovery
@@ -338,6 +339,14 @@ paths:
     $ref: 'messages.yaml#/paths/~1messages~1correlation'
   /messages/publication:
     $ref: 'messages.yaml#/paths/~1messages~1publication'
+
+  # Probe endpoints
+  /probes:
+    $ref: 'probes.yaml#/paths/~1probes'
+  /probes/activation:
+    $ref: 'probes.yaml#/paths/~1probes~1activation'
+  /probes/{probeKey}/answer:
+    $ref: 'probes.yaml#/paths/~1probes~1{probeKey}~1answer'
 
   # Process definition endpoints
   /process-definitions/resumption:
