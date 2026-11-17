@@ -1,0 +1,581 @@
+## Endpoint definitions
+
+paths:
+  /probes:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Probe
+      operationId: createProbe
+      x-required-permissions:
+        - { resourceType: PROBE, permissionType: CREATE }
+        - dynamic: true
+          note: SECRET:READ on each secret that the input references.
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Create probe (alpha)
+      description: |
+        Asks a worker a short question and waits for its answer in the same request.
+
+        The probe is routed on `probeId`: a worker that polls for this probe ID with
+        `POST /v2/probes/activation` collects it and answers with
+        `POST /v2/probes/{probeKey}/answer`. The engine evaluates `input` when the probe is
+        created and injects the values of the secrets it references before a worker collects it.
+
+        The probe ends at its deadline, `requestTimeout` after the gateway received the request.
+        Wait at least `requestTimeout` plus one second for the HTTP response, so that you get the
+        reason the probe ended instead of a client-side timeout. With `requestTimeout` absent or
+        `0`, the deadline uses the cluster's request timeout, capped at 30 seconds.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProbeCreationRequest'
+      responses:
+        "200":
+          description: |
+            A worker answered. The body is one of three shapes, chosen by `outcome`: `OK` with the
+            worker's `data`, `UNSUPPORTED`, or `ERROR` with a `message`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProbeResult'
+        "400":
+          description: |
+            The request is invalid, or the probe ended because of its secrets.
+
+            The title of the problem tells the two apart:
+            - `INVALID_ARGUMENT`: the body is invalid, for example a blank input, a probe ID that is
+              not valid, a `requestTimeout` out of range, or an input that is not a valid
+              expression or does not evaluate to a context.
+            - `SECRET_RESOLUTION_ERROR`: a secret that the input references could not be resolved,
+              or its value could not be injected into the input.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+              examples:
+                invalidArgument:
+                  value:
+                    type: about:blank
+                    title: INVALID_ARGUMENT
+                    status: 400
+                    detail: Expected a request timeout between 0 and 30000 ms, but it was 60000.
+                    instance: /v2/probes
+                secretResolutionError:
+                  value:
+                    type: about:blank
+                    title: SECRET_RESOLUTION_ERROR
+                    status: 400
+                    detail: Failed to resolve secret 'awsKey' from the configured secret store.
+                    instance: /v2/probes
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: |
+            No worker collected the probe before its deadline: no worker polls this probe ID, or
+            the workers that poll it lack the `ANSWER` permission on it. The title is `NO_WORKER`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+              examples:
+                noWorker:
+                  value:
+                    type: about:blank
+                    title: NO_WORKER
+                    status: 404
+                    detail: >
+                      No worker for 'validate-configuration/io.camunda:aws-credential:1' collected
+                      the probe within 10000 ms. Check that a worker polls this probe ID and holds
+                      PROBE:ANSWER on it, then retry.
+                    instance: /v2/probes
+        "413":
+          description: |
+            The request is too large to be written to the log. The title is `PAYLOAD_TOO_LARGE`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+        "504":
+          description: |
+            The probe got no answer in time.
+
+            The title of the problem tells why:
+            - `WORKER_DID_NOT_ANSWER`: a worker collected the probe but did not answer before its
+              deadline.
+            - `SECRET_RESOLUTION_TIMEOUT`: the probe still waited for the values of its secrets at
+              its deadline.
+            - `DEADLINE_EXCEEDED`: the gateway timed out before the engine answered, for example
+              after a leader change.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+              examples:
+                workerDidNotAnswer:
+                  value:
+                    type: about:blank
+                    title: WORKER_DID_NOT_ANSWER
+                    status: 504
+                    detail: >
+                      The worker 'connectors-runtime' collected the probe but did not answer
+                      within 10000 ms.
+                    instance: /v2/probes
+                secretResolutionTimeout:
+                  value:
+                    type: about:blank
+                    title: SECRET_RESOLUTION_TIMEOUT
+                    status: 504
+                    detail: The secrets of the probe were not resolved within 10000 ms.
+                    instance: /v2/probes
+                deadlineExceeded:
+                  value:
+                    type: about:blank
+                    title: DEADLINE_EXCEEDED
+                    status: 504
+                    detail: Expected to handle request, but request timed out between gateway and broker
+                    instance: /v2/probes
+      x-added-in-version: "8.11"
+      x-scope: physical-tenant
+
+  /probes/activation:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Probe
+      operationId: activateProbes
+      x-permission-enforcement: filter
+      x-required-permissions:
+        - { resourceType: PROBE, permissionType: ANSWER }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Activate probes (alpha)
+      description: |
+        Collects probes of the given probe IDs for a worker, up to the requested maximum.
+
+        Like job activation, the request goes to every partition. When no probe is waiting, it is
+        held until a probe of one of these probe IDs is created or until `requestTimeout`. Probe
+        IDs on which the caller lacks the `ANSWER` permission are skipped. The worker answers each
+        probe with `POST /v2/probes/{probeKey}/answer` before the probe's `deadline`.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProbeActivationRequest'
+      responses:
+        "200":
+          description: The collected probes, none when the request timed out.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProbeActivationResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.11"
+      x-scope: physical-tenant
+
+  /probes/{probeKey}/answer:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Probe
+      operationId: answerProbe
+      x-required-permissions:
+        - { resourceType: PROBE, permissionType: ANSWER }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Answer probe (alpha)
+      description: |
+        Sends a worker's answer to a probe it collected, which ends the probe.
+
+        The body is one of three shapes, chosen by `outcome`: `OK` with the result in `data`,
+        `UNSUPPORTED`, or `ERROR` with a `message`. The client that created the probe gets this
+        answer with the name of the worker that collected the probe.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
+      parameters:
+        - name: probeKey
+          in: path
+          required: true
+          description: The key of the probe to answer.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProbeKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProbeAnswerRequest'
+      responses:
+        "204":
+          description: The answer is accepted.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: >
+            The probe with the given key is not found: it ended already, its deadline passed, or it
+            belongs to a tenant the caller is not assigned to.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: >
+            The probe with the given key is not activated: no worker collected it, or it waits for
+            the values of its secrets.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "413":
+          description: |
+            The answer is too large to be written to the log. The title is `PAYLOAD_TOO_LARGE`.
+            Answer with a short `ERROR` instead, so that the client does not wait for the deadline.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.11"
+      x-scope: physical-tenant
+
+components:
+  schemas:
+    ProbeCreationRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        probeId:
+          description: |
+            The probe ID, as the worker registered it: 1 to 256 characters, without whitespace, and
+            not `*`. The engine matches it to the probe IDs of polling workers by exact equality.
+          type: string
+          minLength: 1
+          maxLength: 256
+          pattern: ^\S+$
+          example: validate-configuration/io.camunda:aws-credential:1
+        input:
+          description: |
+            A FEEL expression that evaluates to a context: the question for the worker, whose shape
+            the worker of the probe ID defines. References to `camunda.vars` and
+            `camunda.secrets` follow the rules of input mappings.
+          type: string
+          minLength: 1
+          example: '={region: "eu-west-1", accessKey: camunda.secrets.awsKey}'
+        tenantId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The tenant of the probe. Required with multi-tenancy.
+        requestTimeout:
+          description: |
+            How long to wait for an answer, in milliseconds, from 0 to 30000. With `0` or absent,
+            the cluster's request timeout is used, capped at 30000.
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 30000
+          example: 10000
+      required:
+        - probeId
+        - input
+
+    ProbeResult:
+      x-polymorphic-schema: true
+      description: |
+        The answer of the worker, one of three shapes chosen by `outcome`.
+      discriminator:
+        propertyName: outcome
+        mapping:
+          OK: '#/components/schemas/ProbeOkResult'
+          UNSUPPORTED: '#/components/schemas/ProbeUnsupportedResult'
+          ERROR: '#/components/schemas/ProbeErrorResult'
+      oneOf:
+        - $ref: '#/components/schemas/ProbeOkResult'
+        - $ref: '#/components/schemas/ProbeUnsupportedResult'
+        - $ref: '#/components/schemas/ProbeErrorResult'
+
+    ProbeOkResult:
+      type: object
+      title: OK probe result
+      description: The worker produced an answer.
+      additionalProperties: false
+      required:
+        - outcome
+        - worker
+        - data
+      properties:
+        outcome:
+          description: The outcome of the probe, `OK`.
+          type: string
+          example: OK
+        worker:
+          description: The name of the worker that answered.
+          type: string
+          example: connectors-runtime
+        data:
+          description: The answer, whose shape the worker of the probe ID defines.
+          type: object
+          additionalProperties: true
+
+    ProbeUnsupportedResult:
+      type: object
+      title: Unsupported probe result
+      description: The worker does not support this probe.
+      additionalProperties: false
+      required:
+        - outcome
+        - worker
+      properties:
+        outcome:
+          description: The outcome of the probe, `UNSUPPORTED`.
+          type: string
+          example: UNSUPPORTED
+        worker:
+          description: The name of the worker that answered.
+          type: string
+          example: connectors-runtime
+
+    ProbeErrorResult:
+      type: object
+      title: Error probe result
+      description: The worker failed to produce an answer.
+      additionalProperties: false
+      required:
+        - outcome
+        - worker
+        - message
+      properties:
+        outcome:
+          description: The outcome of the probe, `ERROR`.
+          type: string
+          example: ERROR
+        worker:
+          description: The name of the worker that answered.
+          type: string
+          example: connectors-runtime
+        message:
+          description: Why the worker failed, at most 500 characters.
+          type: string
+          maxLength: 500
+
+    ProbeActivationRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        probeIds:
+          description: |
+            The probe IDs to collect probes for: 1 to 100 distinct values, each 1 to 256
+            characters, without whitespace, and not `*`. Probe IDs on which the caller lacks the
+            `ANSWER` permission are skipped.
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: string
+            minLength: 1
+            maxLength: 256
+            pattern: ^\S+$
+          example:
+            - validate-configuration/io.camunda:aws-credential:1
+            - validate-configuration/io.camunda:slack:1
+        worker:
+          description: The name of the worker, returned to the client in the answer.
+          type: string
+          example: connectors-runtime
+        maxProbesToActivate:
+          description: The maximum number of probes to collect with this request, at least 1.
+          type: integer
+          format: int32
+          minimum: 1
+          example: 10
+        requestTimeout:
+          description: >
+            The request is completed when at least one probe is collected or after the
+            requestTimeout (in ms). If the requestTimeout = 0, a default timeout is used.
+            If the requestTimeout < 0, long polling is disabled and the request is completed
+            immediately, even when no probe is collected.
+          type: integer
+          format: int64
+          example: 60000
+        tenantIds:
+          description: A list of IDs of tenants for which to collect probes.
+          type: array
+          items:
+            $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        tenantFilter:
+          allOf:
+            - $ref: 'jobs.yaml#/components/schemas/TenantFilterEnum'
+          description: >
+            The tenant filtering strategy - determines whether to use provided tenant IDs or
+            assigned tenant IDs from the authenticated principal's authorized tenants.
+          default: PROVIDED
+      required:
+        - probeIds
+        - maxProbesToActivate
+
+    ProbeActivationResult:
+      description: The collected probes.
+      type: object
+      required:
+        - probes
+      properties:
+        probes:
+          description: The collected probes, none when the request timed out.
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivatedProbeResult'
+
+    ActivatedProbeResult:
+      x-semantic-provider:
+        - probeKey
+      type: object
+      required:
+        - probeKey
+        - probeId
+        - worker
+        - deadline
+        - tenantId
+        - physicalTenantId
+        - input
+        - secretPointers
+      properties:
+        probeKey:
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProbeKey'
+          description: The key to answer the probe with.
+        probeId:
+          description: The probe ID, to pick the handler when the worker polls several probe IDs.
+          type: string
+          example: validate-configuration/io.camunda:aws-credential:1
+        worker:
+          description: The name of the worker that collected the probe.
+          type: string
+          example: connectors-runtime
+        deadline:
+          description: |
+            The deadline of the probe, as a UNIX epoch timestamp in milliseconds. An answer after
+            it gets 404.
+          type: integer
+          format: int64
+          example: 1794232249291
+        tenantId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/TenantId'
+          description: The ID of the tenant of the probe.
+        physicalTenantId:
+          type: string
+          description: |
+            The ID of the physical tenant that the activation request was routed to;
+            the default physical tenant when the request did not specify one.
+        input:
+          description: The evaluated input, with the values of its secrets injected.
+          type: object
+          additionalProperties: true
+        secretPointers:
+          description: |
+            The JSON pointers (RFC 6901) of the `input` values into which the engine injected a
+            secret value; empty when none. Remove these values from logs and error messages.
+          type: array
+          items:
+            type: string
+          example:
+            - /accessKey
+
+    ProbeAnswerRequest:
+      x-polymorphic-schema: true
+      description: |
+        The answer of the worker, one of three shapes chosen by `outcome`.
+      discriminator:
+        propertyName: outcome
+        mapping:
+          OK: '#/components/schemas/ProbeOkAnswerRequest'
+          UNSUPPORTED: '#/components/schemas/ProbeUnsupportedAnswerRequest'
+          ERROR: '#/components/schemas/ProbeErrorAnswerRequest'
+      oneOf:
+        - $ref: '#/components/schemas/ProbeOkAnswerRequest'
+        - $ref: '#/components/schemas/ProbeUnsupportedAnswerRequest'
+        - $ref: '#/components/schemas/ProbeErrorAnswerRequest'
+
+    ProbeOkAnswerRequest:
+      type: object
+      title: OK probe answer
+      description: The worker produced an answer.
+      additionalProperties: false
+      required:
+        - outcome
+        - data
+      properties:
+        outcome:
+          description: The outcome of the probe, `OK`.
+          type: string
+          example: OK
+        data:
+          description: The answer, whose shape the worker of the probe ID defines.
+          type: object
+          additionalProperties: true
+
+    ProbeUnsupportedAnswerRequest:
+      type: object
+      title: Unsupported probe answer
+      description: The worker does not support this probe.
+      additionalProperties: false
+      required:
+        - outcome
+      properties:
+        outcome:
+          description: The outcome of the probe, `UNSUPPORTED`.
+          type: string
+          example: UNSUPPORTED
+
+    ProbeErrorAnswerRequest:
+      type: object
+      title: Error probe answer
+      description: The worker failed to produce an answer.
+      additionalProperties: false
+      required:
+        - outcome
+        - message
+      properties:
+        outcome:
+          description: The outcome of the probe, `ERROR`.
+          type: string
+          example: ERROR
+        message:
+          description: Why the worker failed, 1 to 500 characters.
+          type: string
+          minLength: 1
+          maxLength: 500
