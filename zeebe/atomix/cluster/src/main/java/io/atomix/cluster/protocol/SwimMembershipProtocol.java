@@ -37,6 +37,7 @@ import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -88,6 +89,14 @@ public class SwimMembershipProtocol
       LoggerFactory.getLogger("io.atomix.cluster.protocol.swim.probe");
   private static final Logger SYNC_LOGGER =
       LoggerFactory.getLogger("io.atomix.cluster.protocol.swim.sync");
+  // Probes and syncs run every few seconds or less, so a peer that stays unreachable would log a
+  // warning with a stack trace each time. Each failure kind gets its own throttle so that one does
+  // not hide the other.
+  private static final Duration FAILURE_LOG_INTERVAL = Duration.ofSeconds(30);
+  private static final Logger PROBE_FAILURE_LOGGER =
+      new ThrottledLogger(PROBE_LOGGER, FAILURE_LOG_INTERVAL);
+  private static final Logger SYNC_FAILURE_LOGGER =
+      new ThrottledLogger(SYNC_LOGGER, FAILURE_LOG_INTERVAL);
   private static final String MEMBERSHIP_SYNC = "atomix-membership-sync";
   private static final String MEMBERSHIP_GOSSIP = "atomix-membership-gossip";
   private static final String MEMBERSHIP_PROBE = "atomix-membership-probe";
@@ -615,7 +624,7 @@ public class SwimMembershipProtocol
                     members);
                 members.forEach(this::updateState);
               } else {
-                SYNC_LOGGER.warn(
+                SYNC_FAILURE_LOGGER.warn(
                     "{} - Failed to synchronize membership with {}",
                     localMember.id(),
                     member,
@@ -709,7 +718,7 @@ public class SwimMembershipProtocol
                 final SwimMember swimMember = members.get(member.id());
                 if (swimMember != null
                     && swimMember.getIncarnationNumber() == member.incarnationNumber()) {
-                  PROBE_LOGGER.warn(
+                  PROBE_FAILURE_LOGGER.warn(
                       "{} - Failed to probe {}", localMember.id(), member.id(), error);
                   requestProbes(swimMember.copy());
                 }
