@@ -874,6 +874,40 @@ class SegmentedJournalTest {
   }
 
   @Test
+  void shouldKeepOutOfDiskSpaceWhenSegmentDeletionFails() throws IOException {
+    // given
+    final Queue<Runnable> deletions = new ConcurrentLinkedQueue<>();
+    closeables.add(() -> deletions.forEach(Runnable::run));
+    final AtomicBoolean diskFull = new AtomicBoolean();
+    final SegmentAllocator allocator =
+        (channel, fd, segmentSize) -> {
+          if (diskFull.get()) {
+            throw new OutOfDiskSpace("Disk is full");
+          }
+          SegmentAllocator.posix(SegmentAllocator.noop()).allocate(channel, fd, segmentSize);
+        };
+    journalFactory = new TestJournalFactory("test", 2, allocator);
+    journal = journalFactory.journal(journalFactory.segmentsManager(directory, deletions::add));
+    closeables.add(journal);
+    for (int i = 0; i < 4; i++) {
+      journal.append(journalFactory.entry());
+    }
+    Files.move(
+        directory.resolve("data").resolve("journal-1.log"),
+        directory.resolve("journal-1.log.moved"));
+    journal.deleteUntil(3);
+    deletions.poll().run();
+    diskFull.set(true);
+    for (int i = 0; i < 2; i++) {
+      journal.append(journalFactory.entry());
+    }
+
+    // when - then
+    assertThatThrownBy(() -> journal.append(journalFactory.entry()))
+        .isInstanceOf(OutOfDiskSpace.class);
+  }
+
+  @Test
   void shouldWaitForPendingSegmentDeletionWhenOutOfDiskSpace() {
     // given
     final Path firstSegment = directory.resolve("data").resolve("journal-1.log");
