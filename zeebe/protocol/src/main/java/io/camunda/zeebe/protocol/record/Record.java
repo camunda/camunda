@@ -91,7 +91,8 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
 
   /**
    * Provides the authorization data of the principal that triggered the creation of this record.
-   * Client commands and batch operation commands can contain these entries:
+   * Client commands, batch operation commands, and the commands that the engine distributes for a
+   * client command can contain these entries:
    *
    * <ul>
    *   <li>Key: <code>authorized_anonymous_user</code>; Value: a Boolean, true if the principal is
@@ -105,8 +106,8 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    *   <li>Key: <code>user_token_claims</code>; Value: a Map with the claims of the token.
    * </ul>
    *
-   * <p>Events, rejections, and commands that the engine writes itself contain only the first three
-   * entries.
+   * <p>Events, rejections, and other commands that the engine writes itself contain only the first
+   * three entries.
    *
    * @return a Map of authorization data for this record or an empty Map if not set.
    */
