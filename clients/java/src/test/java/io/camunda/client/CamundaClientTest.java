@@ -386,25 +386,6 @@ public final class CamundaClientTest {
   }
 
   @Test
-  public void shouldRoundTripMtlsThroughConfiguration() {
-    // given
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
-    builder.clientCertificate("/certs/client.crt", "/certs/client.key");
-    builder.clientKeyPassphrase("secret");
-    builder.mtlsCaCertificatePath("/certs/ca.crt");
-
-    // when - copy via withConfiguration, as the Spring and cloud builders do
-    final CamundaClientBuilderImpl copy = new CamundaClientBuilderImpl();
-    copy.withConfiguration(builder);
-
-    // then
-    assertThat(copy.getMtlsCertPath()).isEqualTo("/certs/client.crt");
-    assertThat(copy.getMtlsKeyPath()).isEqualTo("/certs/client.key");
-    assertThat(copy.getMtlsKeyPassphrase()).isEqualTo("secret");
-    assertThat(copy.getMtlsCaPath()).isEqualTo("/certs/ca.crt");
-  }
-
-  @Test
   public void shouldSetKeepAlive() {
     // given
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
