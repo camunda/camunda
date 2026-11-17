@@ -96,23 +96,43 @@ public class SimpleRequestMapper {
         .toList();
   }
 
-  private static List<io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction>
+  private static List<io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction>
       mapCreateProcessInstanceRuntimeInstructions(
           final List<
                   io.camunda.gateway.protocol.model.simple
-                      .ProcessInstanceCreationTerminateInstruction>
+                      .ProcessInstanceCreationRuntimeInstruction>
               instructions) {
     if (instructions == null) {
       return List.of();
     }
     return instructions.stream()
-        .map(
-            instruction ->
-                io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction
-                    .Builder.create()
-                    .afterElementId(instruction.getAfterElementId())
-                    .type(instruction.getType())
-                    .build())
+        .map(SimpleRequestMapper::mapCreateProcessInstanceRuntimeInstruction)
         .toList();
+  }
+
+  private static io.camunda.gateway.protocol.model.ProcessInstanceCreationRuntimeInstruction
+      mapCreateProcessInstanceRuntimeInstruction(
+          final io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationRuntimeInstruction
+              instruction) {
+    if ("RESERVE_JOBS".equals(instruction.getType())) {
+      return io.camunda.gateway.protocol.model.ProcessInstanceCreationReserveJobsInstruction.Builder
+          .create()
+          .jobTypes(instruction.getJobTypes())
+          .reservationToken(instruction.getReservationToken())
+          .type(instruction.getType())
+          .build();
+    }
+    if ("STUB_CALL_ACTIVITIES".equals(instruction.getType())) {
+      return io.camunda.gateway.protocol.model.ProcessInstanceCreationStubCallActivitiesInstruction
+          .Builder.create()
+          .processIds(instruction.getProcessIds())
+          .type(instruction.getType())
+          .build();
+    }
+    return io.camunda.gateway.protocol.model.ProcessInstanceCreationTerminateInstruction.Builder
+        .create()
+        .afterElementId(instruction.getAfterElementId())
+        .type(instruction.getType())
+        .build();
   }
 }

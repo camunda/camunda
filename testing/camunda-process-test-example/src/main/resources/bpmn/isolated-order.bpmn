@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_IsolatedOrder" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.27.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.11.0">
+  <bpmn:process id="isolated-order" name="Isolated order" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_OrderReceived" name="Order received">
+      <bpmn:outgoing>Flow_ToChargeCard</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToChargeCard" sourceRef="StartEvent_OrderReceived" targetRef="ServiceTask_ChargeCard" />
+    <bpmn:serviceTask id="ServiceTask_ChargeCard" name="Charge card">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="charge-card" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToChargeCard</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToShipOrder</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToShipOrder" sourceRef="ServiceTask_ChargeCard" targetRef="CallActivity_ShipOrder" />
+    <bpmn:callActivity id="CallActivity_ShipOrder" name="Ship order">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="shipping" propagateAllChildVariables="false" />
+        <zeebe:ioMapping>
+          <zeebe:output source="=trackingCode" target="trackingCode" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToShipOrder</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToSendInvoice</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:boundaryEvent id="BoundaryEvent_ShippingDeclined" name="Shipping declined" attachedToRef="CallActivity_ShipOrder">
+      <bpmn:outgoing>Flow_ToOrderDeclined</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_ShippingDeclined" errorRef="Error_ShippingDeclined" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_ToOrderDeclined" sourceRef="BoundaryEvent_ShippingDeclined" targetRef="EndEvent_OrderDeclined" />
+    <bpmn:endEvent id="EndEvent_OrderDeclined" name="Order declined">
+      <bpmn:incoming>Flow_ToOrderDeclined</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_ToSendInvoice" sourceRef="CallActivity_ShipOrder" targetRef="ServiceTask_SendInvoice" />
+    <bpmn:serviceTask id="ServiceTask_SendInvoice" name="Send invoice">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="send-invoice" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToSendInvoice</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToOrderShipped</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToOrderShipped" sourceRef="ServiceTask_SendInvoice" targetRef="EndEvent_OrderShipped" />
+    <bpmn:endEvent id="EndEvent_OrderShipped" name="Order shipped">
+      <bpmn:incoming>Flow_ToOrderShipped</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmn:error id="Error_ShippingDeclined" name="Shipping declined" errorCode="SHIPPING_DECLINED" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_IsolatedOrder">
+    <bpmndi:BPMNPlane id="BPMNPlane_IsolatedOrder" bpmnElement="isolated-order">
+      <bpmndi:BPMNShape id="StartEvent_OrderReceived_di" bpmnElement="StartEvent_OrderReceived">
+        <dc:Bounds x="172" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="151" y="145" width="79" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_ChargeCard_di" bpmnElement="ServiceTask_ChargeCard">
+        <dc:Bounds x="260" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="CallActivity_ShipOrder_di" bpmnElement="CallActivity_ShipOrder">
+        <dc:Bounds x="420" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_SendInvoice_di" bpmnElement="ServiceTask_SendInvoice">
+        <dc:Bounds x="580" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_OrderShipped_di" bpmnElement="EndEvent_OrderShipped">
+        <dc:Bounds x="742" y="102" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="722" y="145" width="77" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_ShippingDeclined_di" bpmnElement="BoundaryEvent_ShippingDeclined">
+        <dc:Bounds x="452" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="429" y="185" width="83" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_OrderDeclined_di" bpmnElement="EndEvent_OrderDeclined">
+        <dc:Bounds x="452" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="429" y="315" width="82" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToChargeCard_di" bpmnElement="Flow_ToChargeCard">
+        <di:waypoint x="208" y="120" />
+        <di:waypoint x="260" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToShipOrder_di" bpmnElement="Flow_ToShipOrder">
+        <di:waypoint x="360" y="120" />
+        <di:waypoint x="420" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToSendInvoice_di" bpmnElement="Flow_ToSendInvoice">
+        <di:waypoint x="520" y="120" />
+        <di:waypoint x="580" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToOrderShipped_di" bpmnElement="Flow_ToOrderShipped">
+        <di:waypoint x="680" y="120" />
+        <di:waypoint x="742" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToOrderDeclined_di" bpmnElement="Flow_ToOrderDeclined">
+        <di:waypoint x="470" y="178" />
+        <di:waypoint x="470" y="272" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

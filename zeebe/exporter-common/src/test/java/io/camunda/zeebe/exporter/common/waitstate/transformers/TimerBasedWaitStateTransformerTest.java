@@ -229,8 +229,8 @@ class TimerBasedWaitStateTransformerTest {
   }
 
   @Test
-  void shouldSkipBoundaryTimerEvents() {
-    // given — boundary events interrupt the host element, not a standalone wait state
+  void shouldIncludeBoundaryTimerEvents() {
+    // given — the timer search API reads boundary timers from the wait states
     final TimerRecordValue value =
         ImmutableTimerRecordValue.builder()
             .from(factory.generateObject(TimerRecordValue.class))
@@ -256,9 +256,9 @@ class TimerBasedWaitStateTransformerTest {
                     .withValue(value));
 
     // when / then
-    assertThat(transformer.triggersAdd(created)).isFalse();
+    assertThat(transformer.triggersAdd(created)).isTrue();
     assertThat(transformer.triggersUpdate(created)).isFalse();
     assertThat(transformer.triggersRemoval(created)).isFalse();
-    assertThat(transformer.triggersRemoval(triggered)).isFalse();
+    assertThat(transformer.triggersRemoval(triggered)).isTrue();
   }
 }

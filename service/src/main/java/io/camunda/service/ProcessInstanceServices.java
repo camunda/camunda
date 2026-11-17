@@ -339,6 +339,18 @@ public final class ProcessInstanceServices
       brokerRequest.setBusinessId(request.businessId());
     }
 
+    if (request.stubbedCallActivityProcessIds() != null) {
+      brokerRequest.setStubbedCallActivityProcessIds(request.stubbedCallActivityProcessIds());
+    }
+
+    if (request.reservedJobTypes() != null) {
+      brokerRequest.setReservedJobTypes(request.reservedJobTypes());
+    }
+
+    if (request.reservationToken() != null) {
+      brokerRequest.setReservationToken(request.reservationToken());
+    }
+
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
@@ -365,6 +377,18 @@ public final class ProcessInstanceServices
 
     if (request.businessId() != null) {
       brokerRequest.setBusinessId(request.businessId());
+    }
+
+    if (request.stubbedCallActivityProcessIds() != null) {
+      brokerRequest.setStubbedCallActivityProcessIds(request.stubbedCallActivityProcessIds());
+    }
+
+    if (request.reservedJobTypes() != null) {
+      brokerRequest.setReservedJobTypes(request.reservedJobTypes());
+    }
+
+    if (request.reservationToken() != null) {
+      brokerRequest.setReservationToken(request.reservationToken());
     }
 
     if (request.operationReference() != null) {
@@ -708,7 +732,10 @@ public final class ProcessInstanceServices
       List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions,
       List<String> fetchVariables,
       Set<String> tags,
-      String businessId) {
+      String businessId,
+      List<String> stubbedCallActivityProcessIds,
+      List<String> reservedJobTypes,
+      String reservationToken) {
 
     ProcessDefinitionIdentifier processDefinitionIdentifier() {
       if (processDefinitionKey > 0L) {

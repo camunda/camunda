@@ -68,8 +68,26 @@ public final class Protocol {
   /** Job typ used for user tasks handled by Camunda Cloud Tasklist */
   public static final String USER_TASK_JOB_TYPE = "io.camunda.zeebe:userTask";
 
+  /**
+   * Job type used for the job a stubbed call activity waits on instead of starting the process it
+   * calls. Such a job is served to no job worker.
+   */
+  public static final String CALL_ACTIVITY_STUB_JOB_TYPE = "io.camunda.zeebe:callActivityStub";
+
   /** Prefix for key of reserved task headers */
   public static final String RESERVED_HEADER_NAME_PREFIX = "io.camunda.zeebe:";
+
+  /** Task header key used for the BPMN process id a stubbed call activity resolved */
+  public static final String CALLED_PROCESS_ID_HEADER_NAME =
+      RESERVED_HEADER_NAME_PREFIX + "calledProcessId";
+
+  /** Task header key used for the binding type a stubbed call activity would resolve with */
+  public static final String CALLED_PROCESS_BINDING_TYPE_HEADER_NAME =
+      RESERVED_HEADER_NAME_PREFIX + "calledProcessBindingType";
+
+  /** Task header key used for the version tag a stubbed call activity would resolve with */
+  public static final String CALLED_PROCESS_VERSION_TAG_HEADER_NAME =
+      RESERVED_HEADER_NAME_PREFIX + "calledProcessVersionTag";
 
   /** Task header key used for the action associated with the user task */
   public static final String USER_TASK_ACTION_HEADER_NAME = RESERVED_HEADER_NAME_PREFIX + "action";

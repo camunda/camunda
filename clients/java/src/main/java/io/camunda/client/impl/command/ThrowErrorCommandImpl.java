@@ -48,6 +48,7 @@ public final class ThrowErrorCommandImpl extends CommandWithVariables<ThrowError
   private final RequestConfig.Builder httpRequestConfig;
   private final JobErrorRequest httpRequestObject;
   private boolean useRest;
+  private String restOnlyProperty;
   private final long jobKey;
 
   public ThrowErrorCommandImpl(
@@ -86,6 +87,16 @@ public final class ThrowErrorCommandImpl extends CommandWithVariables<ThrowError
   }
 
   @Override
+  public ThrowErrorCommandStep2 withReservationToken(final String reservationToken) {
+    if (reservationToken == null) {
+      return this;
+    }
+    restOnlyProperty = "withReservationToken";
+    httpRequestObject.setReservationToken(reservationToken);
+    return this;
+  }
+
+  @Override
   public ThrowErrorCommandStep2 withJobLeaseToken(final String jobLeaseToken) {
     if (jobLeaseToken == null) {
       return this;
@@ -113,6 +124,9 @@ public final class ThrowErrorCommandImpl extends CommandWithVariables<ThrowError
 
   @Override
   public CamundaFuture<ThrowErrorResponse> send() {
+    if (restOnlyProperty != null) {
+      ArgumentUtil.ensureRestTransport(restOnlyProperty, useRest);
+    }
     if (useRest) {
       return sendRestRequest();
     } else {

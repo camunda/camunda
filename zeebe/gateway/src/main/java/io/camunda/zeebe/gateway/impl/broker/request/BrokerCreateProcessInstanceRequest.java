@@ -113,6 +113,23 @@ public class BrokerCreateProcessInstanceRequest
     return this;
   }
 
+  public BrokerCreateProcessInstanceRequest setStubbedCallActivityProcessIds(
+      final List<String> stubbedCallActivityProcessIds) {
+    requestDto.setStubbedCallActivityProcessIds(stubbedCallActivityProcessIds);
+    return this;
+  }
+
+  public BrokerCreateProcessInstanceRequest setReservedJobTypes(
+      final List<String> reservedJobTypes) {
+    requestDto.setReservedJobTypes(reservedJobTypes);
+    return this;
+  }
+
+  public BrokerCreateProcessInstanceRequest setReservationToken(final String reservationToken) {
+    requestDto.setReservationToken(reservationToken);
+    return this;
+  }
+
   public BrokerCreateProcessInstanceRequest setBusinessId(final String businessId) {
     this.businessId = businessId;
     requestDto.setBusinessId(businessId != null ? businessId : "");

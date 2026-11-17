@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.AgentDefinitionBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslTenantCheck;
@@ -178,6 +179,7 @@ public final class JobCompleteProcessor
             "complete",
             List.of(State.ACTIVATABLE, State.ACTIVATED),
             List.of(
+                JobReservationFencingCheck.forCommand(),
                 JobLeaseFencingCheck.forLifecycleCommand(),
                 this::checkAdHocSubprocessActivationTargetsAreValid,
                 this::checkAdHocSubprocessInstanceIsActive,
@@ -352,6 +354,10 @@ public final class JobCompleteProcessor
       }
       case AD_HOC_SUB_PROCESS -> handleAdHocSubProcessJob(commandWriter, value, elementInstance);
       default -> {
+        if (value.isCallActivityStub()) {
+          completeStubbedCallActivity(value, elementInstance);
+          return;
+        }
         final long scopeKey = elementInstance.getValue().getFlowScopeKey();
         final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
 
@@ -364,6 +370,36 @@ public final class JobCompleteProcessor
         }
       }
     }
+  }
+
+  /**
+   * Completes the call activity the job stood in for, as if the process it calls had completed and
+   * returned the job's variables.
+   *
+   * <p>The event trigger is written under {@link
+   * ExecutableCallActivity#propagatesCalledProcessVariables()}, the same condition the engine
+   * applies when a real called process completes, so that a call activity which propagates nothing
+   * does not start propagating just because its child was stood in for.
+   */
+  private void completeStubbedCallActivity(
+      final JobRecord value, final ElementInstance elementInstance) {
+    final var callActivity =
+        processState
+            .getProcessState()
+            .getFlowElement(
+                elementInstance.getValue().getProcessDefinitionKey(),
+                elementInstance.getValue().getTenantId(),
+                elementInstance.getValue().getElementIdBuffer(),
+                ExecutableCallActivity.class);
+
+    if (callActivity.propagatesCalledProcessVariables()) {
+      eventHandle.triggeringProcessEvent(value);
+    }
+
+    commandWriter.appendFollowUpCommand(
+        elementInstance.getKey(),
+        ProcessInstanceIntent.COMPLETE_ELEMENT,
+        elementInstance.getValue());
   }
 
   private void handleAdHocSubProcessJob(

@@ -34,6 +34,12 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
   private final DbCompositeKey<DbLong, DbCompositeKey<DbForeignKey<DbLong>, DbLong>>
       dueDateCompositeKey;
 
+  // timerKey -> elementInstanceKey, populated for every timer so the public trigger command can
+  // address a timer by its key alone
+  private final ColumnFamily<DbLong, DbLong> elementInstanceByTimerKeyColumnFamily;
+  private final DbLong indexedTimerKey;
+  private final DbLong indexedElementInstanceKey;
+
   private long nextDueDate;
 
   public DbTimerInstanceState(
@@ -59,6 +65,15 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
             transactionContext,
             dueDateCompositeKey,
             DbNil.INSTANCE);
+
+    indexedTimerKey = new DbLong();
+    indexedElementInstanceKey = new DbLong();
+    elementInstanceByTimerKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.TIMER_ELEMENT_INSTANCE_BY_KEY,
+            transactionContext,
+            indexedTimerKey,
+            indexedElementInstanceKey);
   }
 
   @Override
@@ -67,6 +82,10 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
     elementInstanceKey.inner().wrapLong(timer.getElementInstanceKey());
 
     timerInstanceColumnFamily.insert(elementAndTimerKey, timer);
+
+    indexedTimerKey.wrapLong(timer.getKey());
+    indexedElementInstanceKey.wrapLong(timer.getElementInstanceKey());
+    elementInstanceByTimerKeyColumnFamily.upsert(indexedTimerKey, indexedElementInstanceKey);
 
     dueDate.wrapLong(timer.getDueDate());
     dueDateColumnFamily.insert(dueDateCompositeKey, DbNil.INSTANCE);
@@ -80,6 +99,9 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
 
     dueDate.wrapLong(timer.getDueDate());
     dueDateColumnFamily.deleteIfExists(dueDateCompositeKey);
+
+    indexedTimerKey.wrapLong(timer.getKey());
+    elementInstanceByTimerKeyColumnFamily.deleteIfExists(indexedTimerKey);
   }
 
   @Override
@@ -97,7 +119,8 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
 
   @Override
   public void resume(final long elementInstanceKey, final long timerKey, final long dueDate) {
-    if (get(elementInstanceKey, timerKey) != null) {
+    final var timer = get(elementInstanceKey, timerKey);
+    if (timer != null) {
       wrapDueDateKey(elementInstanceKey, timerKey, dueDate);
       dueDateColumnFamily.upsert(dueDateCompositeKey, DbNil.INSTANCE);
     }
@@ -160,5 +183,15 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
     this.timerKey.wrapLong(timerKey);
 
     return timerInstanceColumnFamily.get(elementAndTimerKey);
+  }
+
+  @Override
+  public TimerInstance getByKey(final long timerKey) {
+    indexedTimerKey.wrapLong(timerKey);
+    final var elementInstance = elementInstanceByTimerKeyColumnFamily.get(indexedTimerKey);
+    if (elementInstance == null) {
+      return null;
+    }
+    return get(elementInstance.getValue(), timerKey);
   }
 }

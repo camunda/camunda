@@ -118,6 +118,47 @@ class JobWorkerBuilderImplTest {
   }
 
   @Test
+  void shouldOpenCalledProcessIdWorkerWithoutJobType() {
+    // given / when / then — no jobType is required for a called-process worker
+    jobWorkerBuilder.calledProcessId("ship-order").handler(mock()).reservationToken("ts-1").open();
+  }
+
+  @Test
+  void shouldThrowErrorIfCalledProcessIdWorkerHasNoReservationToken() {
+    assertThatThrownBy(() -> jobWorkerBuilder.calledProcessId("ship-order").handler(mock()).open())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("reservationToken");
+  }
+
+  @Test
+  void shouldThrowErrorIfBothJobTypeAndCalledProcessIdAreSet() {
+    // the fluent API exposes jobType and calledProcessId as alternative first steps, so both are
+    // set
+    // here directly on the builder to exercise the open() guard
+    jobWorkerBuilder.jobType("some-type");
+    jobWorkerBuilder.calledProcessId("ship-order");
+    jobWorkerBuilder.handler(mock());
+    jobWorkerBuilder.reservationToken("ts-1");
+    assertThatThrownBy(jobWorkerBuilder::open)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("not both");
+  }
+
+  @Test
+  void shouldThrowErrorIfCalledProcessIdWorkerStreams() {
+    assertThatThrownBy(
+            () ->
+                jobWorkerBuilder
+                    .calledProcessId("ship-order")
+                    .handler(mock())
+                    .reservationToken("ts-1")
+                    .streamEnabled(true)
+                    .open())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("cannot stream");
+  }
+
+  @Test
   void shouldThrowErrorIfTimeoutIsNegative() {
     // given
     // when

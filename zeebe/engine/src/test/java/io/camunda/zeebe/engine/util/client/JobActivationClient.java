@@ -113,6 +113,16 @@ public final class JobActivationClient {
     return this;
   }
 
+  public JobActivationClient withReservationToken(final String reservationToken) {
+    jobBatchRecord.setReservationToken(reservationToken);
+    return this;
+  }
+
+  public JobActivationClient withCalledProcessId(final String calledProcessId) {
+    jobBatchRecord.setCalledProcessId(calledProcessId);
+    return this;
+  }
+
   public JobActivationClient withTenantFilter(final TenantFilter tenantFilter) {
     jobBatchRecord.setTenantFilter(tenantFilter);
     return this;

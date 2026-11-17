@@ -16,5 +16,7 @@
 package io.camunda.client.api.command.enums;
 
 public enum ProcessInstanceCreationInstruction {
-  TERMINATE_PROCESS_INSTANCE
+  TERMINATE_PROCESS_INSTANCE,
+  RESERVE_JOBS,
+  STUB_CALL_ACTIVITIES
 }

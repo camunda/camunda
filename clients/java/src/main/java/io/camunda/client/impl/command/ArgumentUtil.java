@@ -85,6 +85,17 @@ public final class ArgumentUtil {
     ensureNotEmpty(property, value);
   }
 
+  /**
+   * Fails a command that carries a property the gRPC protocol has no counterpart for. Dropping the
+   * property silently would send a command that means something else than the caller asked for.
+   */
+  public static void ensureRestTransport(final String property, final boolean useRest) {
+    if (!useRest) {
+      throw new UnsupportedOperationException(
+          property + " is only supported over REST, but this command is sent over gRPC");
+    }
+  }
+
   @SuppressWarnings("unchecked")
   public static Map<String, Object> ensureJsonObject(final String property, final Object value) {
     if (!(value instanceof Map<?, ?>)) {

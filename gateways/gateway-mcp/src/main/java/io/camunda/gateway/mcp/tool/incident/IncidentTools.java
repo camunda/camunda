@@ -145,7 +145,12 @@ public class IncidentTools {
               serviceRegistry
                   .<JobActivationResult>jobServices(physicalTenantId)
                   .updateJob(
-                      jobKey, null, new UpdateJobChangeset(1, null, null), null, authentication));
+                      jobKey,
+                      null,
+                      new UpdateJobChangeset(1, null, null),
+                      null,
+                      null,
+                      authentication));
       if (updateResult.isLeft()) {
         return CallToolResultMapper.mapErrorToResult(updateResult.getLeft());
       }

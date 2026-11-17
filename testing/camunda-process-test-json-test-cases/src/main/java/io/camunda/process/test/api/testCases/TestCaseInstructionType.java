@@ -47,5 +47,6 @@ public class TestCaseInstructionType {
   public static final String RESOLVE_INCIDENT = "RESOLVE_INCIDENT";
   public static final String SET_TIME = "SET_TIME";
   public static final String THROW_BPMN_ERROR_FROM_JOB = "THROW_BPMN_ERROR_FROM_JOB";
+  public static final String TRIGGER_TIMER = "TRIGGER_TIMER";
   public static final String UPDATE_VARIABLES = "UPDATE_VARIABLES";
 }

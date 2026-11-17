@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.StringUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -94,13 +95,24 @@ public final class CallActivityProcessor
   @Override
   public Either<Failure, ?> finalizeActivation(
       final ExecutableCallActivity element, final BpmnElementContext context) {
-    return evaluateProcessId(context, element)
-        .flatMap(
-            processId ->
-                getCalledProcess(
-                    processId, element.getBindingType(), element.getVersionTag(), context))
-        .flatMap(this::rejectIfDraining)
-        .flatMap(this::checkProcessHasNoneStartEvent)
+    final var stubbedProcessIds = stubbedCallActivityProcessIds(context);
+    if (stubbedProcessIds.isEmpty()) {
+      return finalizeRealActivation(element, context);
+    }
+    final Either<Failure, String> processId =
+        evaluateProcessId(context, element).map(BufferUtil::bufferAsString);
+    if (processId.isLeft()) {
+      return processId;
+    }
+    if (stubbedProcessIds.contains(processId.get())) {
+      return finalizeStubbedActivation(element, context, processId.get());
+    }
+    return finalizeRealActivation(element, context);
+  }
+
+  private Either<Failure, ?> finalizeRealActivation(
+      final ExecutableCallActivity element, final BpmnElementContext context) {
+    return resolveCalledProcess(element, context)
         .flatMap(p -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> p))
         .flatMap(
             process ->
@@ -108,41 +120,85 @@ public final class CallActivityProcessor
                     .map(businessId -> new CalledProcess(process, businessId)))
         .thenDo(
             calledProcess -> {
-              final var process = calledProcess.process();
               final var activated =
                   stateTransitionBehavior.transitionToActivated(context, element.getEventType());
-
-              final var childProcessInstanceKey =
-                  stateTransitionBehavior.createChildProcessInstance(
-                      process, context, calledProcess.businessId());
-
-              final var propagateAllParentVariablesEnabled =
-                  element.isPropagateAllParentVariablesEnabled();
-              final var inputMappings = element.getInputMappings();
-              final var callActivityInstanceKey = activated.getElementInstanceKey();
-              final var rootProcessInstanceKey = context.getRootProcessInstanceKey();
-              final var storageOrdinal = context.getStorageOrdinal();
-
-              if (propagateAllParentVariablesEnabled) {
-                stateBehavior.copyAllVariablesToProcessInstance(
-                    callActivityInstanceKey,
-                    childProcessInstanceKey,
-                    rootProcessInstanceKey,
-                    storageOrdinal,
-                    process);
-              } else if (inputMappings.isPresent()) {
-                // when activating the call activity, the input mappings will be applied.
-                // Resulting in local variables in the (local) call activity scope.
-                // These local variables can simply be propagated to the called child
-                // process instance.
-                stateBehavior.copyLocalVariablesToProcessInstance(
-                    callActivityInstanceKey,
-                    childProcessInstanceKey,
-                    rootProcessInstanceKey,
-                    storageOrdinal,
-                    process);
-              }
+              startChildProcessInstance(element, activated, calledProcess);
             });
+  }
+
+  /**
+   * Activates the call activity without starting the process it calls, and creates the job that
+   * stands in for that process. The process is not looked up at all, so it does not have to be
+   * deployed; the already-resolved {@code processId} only tells the job's completer which process
+   * is being stood in for.
+   */
+  private Either<Failure, ?> finalizeStubbedActivation(
+      final ExecutableCallActivity element,
+      final BpmnElementContext context,
+      final String processId) {
+    return eventSubscriptionBehavior
+        .subscribeToEvents(element, context)
+        .thenDo(
+            ok -> {
+              final var activated =
+                  stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+              jobBehavior.createStubCallActivityJob(activated, element, processId);
+            });
+  }
+
+  private List<String> stubbedCallActivityProcessIds(final BpmnElementContext context) {
+    final var rootProcessInstance =
+        stateBehavior.getElementInstance(context.getRootProcessInstanceKey());
+    return rootProcessInstance == null
+        ? List.of()
+        : rootProcessInstance.getValue().getStubbedCallActivityProcessIds();
+  }
+
+  private Either<Failure, DeployedProcess> resolveCalledProcess(
+      final ExecutableCallActivity element, final BpmnElementContext context) {
+    return evaluateProcessId(context, element)
+        .flatMap(
+            processId ->
+                getCalledProcess(
+                    processId, element.getBindingType(), element.getVersionTag(), context))
+        .flatMap(this::rejectIfDraining)
+        .flatMap(this::checkProcessHasNoneStartEvent);
+  }
+
+  private void startChildProcessInstance(
+      final ExecutableCallActivity element,
+      final BpmnElementContext context,
+      final CalledProcess calledProcess) {
+    final var process = calledProcess.process();
+    final var childProcessInstanceKey =
+        stateTransitionBehavior.createChildProcessInstance(
+            process, context, calledProcess.businessId());
+
+    final var propagateAllParentVariablesEnabled = element.isPropagateAllParentVariablesEnabled();
+    final var inputMappings = element.getInputMappings();
+    final var callActivityInstanceKey = context.getElementInstanceKey();
+    final var rootProcessInstanceKey = context.getRootProcessInstanceKey();
+    final var storageOrdinal = context.getStorageOrdinal();
+
+    if (propagateAllParentVariablesEnabled) {
+      stateBehavior.copyAllVariablesToProcessInstance(
+          callActivityInstanceKey,
+          childProcessInstanceKey,
+          rootProcessInstanceKey,
+          storageOrdinal,
+          process);
+    } else if (inputMappings.isPresent()) {
+      // when activating the call activity, the input mappings will be applied.
+      // Resulting in local variables in the (local) call activity scope.
+      // These local variables can simply be propagated to the called child
+      // process instance.
+      stateBehavior.copyLocalVariablesToProcessInstance(
+          callActivityInstanceKey,
+          childProcessInstanceKey,
+          rootProcessInstanceKey,
+          storageOrdinal,
+          process);
+    }
   }
 
   @Override
@@ -174,9 +230,7 @@ public final class CallActivityProcessor
   public TransitionOutcome onTerminate(
       final ExecutableCallActivity element, final BpmnElementContext context) {
 
-    if (element.hasExecutionListeners()) {
-      jobBehavior.cancelJob(context);
-    }
+    jobBehavior.cancelJob(context);
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
