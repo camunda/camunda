@@ -20,11 +20,13 @@ import io.camunda.zeebe.gateway.rest.config.WebappConfiguration;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -36,6 +38,12 @@ class WebappIndexControllerTest {
 
   @Mock private ServletContext servletContext;
   @Mock private HttpServletRequest request;
+  private final MockEnvironment environment = new MockEnvironment();
+
+  @BeforeEach
+  void setUp() {
+    environment.setActiveProfiles("tasklist");
+  }
 
   @Test
   void shouldReturnWebappIndexView() {
@@ -43,11 +51,11 @@ class WebappIndexControllerTest {
     when(servletContext.getContextPath()).thenReturn("/camunda");
     final WebappConfiguration config = new WebappConfiguration();
     final WebappIndexController controller =
-        new WebappIndexController(servletContext, config, null);
+        new WebappIndexController(servletContext, config, null, environment);
     final ExtendedModelMap model = new ExtendedModelMap();
 
     // when
-    final String viewName = controller.webapp(model);
+    final String viewName = controller.tasklist(model);
 
     // then
     assertThat(viewName).isEqualTo("webapp/index");
@@ -63,10 +71,10 @@ class WebappIndexControllerTest {
     // given
     final WebappConfiguration config = new WebappConfiguration();
     final WebappIndexController controller =
-        new WebappIndexController(servletContext, config, null);
+        new WebappIndexController(servletContext, config, null, environment);
 
     // when
-    final String result = controller.forwardToWebapp(request);
+    final String result = controller.forwardToTasklist(request);
 
     // then no auth check is performed; result is unconditional forward to /tasklist/
     assertThat(result).isEqualTo("forward:/tasklist/");
@@ -78,7 +86,7 @@ class WebappIndexControllerTest {
     final WebappConfiguration config = new WebappConfiguration();
     config.setLoginDelegated(true);
     final WebappIndexController controller =
-        new WebappIndexController(servletContext, config, null);
+        new WebappIndexController(servletContext, config, null, environment);
     final Authentication authentication = mock(Authentication.class);
     when(authentication.isAuthenticated()).thenReturn(true);
 
@@ -89,7 +97,7 @@ class WebappIndexControllerTest {
       mocked.when(SecurityContextHolder::getContext).thenReturn(securityContext);
 
       // when
-      final String result = controller.forwardToWebapp(request);
+      final String result = controller.forwardToTasklist(request);
 
       // then
       assertThat(result).isEqualTo("forward:/tasklist/");
@@ -102,7 +110,7 @@ class WebappIndexControllerTest {
     final WebappConfiguration config = new WebappConfiguration();
     config.setLoginDelegated(true);
     final WebappIndexController controller =
-        new WebappIndexController(servletContext, config, null);
+        new WebappIndexController(servletContext, config, null, environment);
     final HttpSession session = mock(HttpSession.class);
     final AnonymousAuthenticationToken anonymous = mock(AnonymousAuthenticationToken.class);
 
@@ -117,7 +125,7 @@ class WebappIndexControllerTest {
       mocked.when(SecurityContextHolder::getContext).thenReturn(securityContext);
 
       // when
-      final String result = controller.forwardToWebapp(request);
+      final String result = controller.forwardToTasklist(request);
 
       // then the URL is stashed in the session and the request is forwarded to /login
       assertThat(result).isEqualTo("forward:/login");
@@ -131,7 +139,7 @@ class WebappIndexControllerTest {
     final WebappConfiguration config = new WebappConfiguration();
     config.setLoginDelegated(true);
     final WebappIndexController controller =
-        new WebappIndexController(servletContext, config, null);
+        new WebappIndexController(servletContext, config, null, environment);
     final HttpSession session = mock(HttpSession.class);
 
     when(request.getRequestURI()).thenReturn("/tasklist/foo/bar");
@@ -145,7 +153,7 @@ class WebappIndexControllerTest {
       mocked.when(SecurityContextHolder::getContext).thenReturn(securityContext);
 
       // when
-      final String result = controller.forwardToWebapp(request);
+      final String result = controller.forwardToTasklist(request);
 
       // then
       assertThat(result).isEqualTo("forward:/login");
@@ -160,11 +168,11 @@ class WebappIndexControllerTest {
     final WebappConfiguration config = new WebappConfiguration();
     config.setEnterprise(true);
     final WebappIndexController controller =
-        new WebappIndexController(servletContext, config, null);
+        new WebappIndexController(servletContext, config, null, environment);
     final ExtendedModelMap model = new ExtendedModelMap();
 
     // when
-    controller.webapp(model);
+    controller.tasklist(model);
 
     // then
     assertThat(model.getAttribute("isEnterprise")).isEqualTo(true);
@@ -176,11 +184,12 @@ class WebappIndexControllerTest {
   void shouldUseDefaultConfigWhenWebappConfigurationIsNull() {
     // given
     when(servletContext.getContextPath()).thenReturn("");
-    final WebappIndexController controller = new WebappIndexController(servletContext, null, null);
+    final WebappIndexController controller =
+        new WebappIndexController(servletContext, null, null, environment);
     final ExtendedModelMap model = new ExtendedModelMap();
 
     // when
-    final String viewName = controller.webapp(model);
+    final String viewName = controller.tasklist(model);
 
     // then — falls back to default WebappConfiguration values
     assertThat(viewName).isEqualTo("webapp/index");
@@ -200,11 +209,11 @@ class WebappIndexControllerTest {
     saasConfig.setClusterId("cluster-456");
     securityProps.setSaas(saasConfig);
     final WebappIndexController controller =
-        new WebappIndexController(servletContext, config, securityProps);
+        new WebappIndexController(servletContext, config, securityProps, environment);
     final ExtendedModelMap model = new ExtendedModelMap();
 
     // when
-    controller.webapp(model);
+    controller.tasklist(model);
 
     // then
     assertThat(model.getAttribute("organizationId")).isEqualTo("org-123");

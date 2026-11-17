@@ -72,7 +72,7 @@ public class WebappsConfigurationInitializer
 
     if (activeProfiles.contains(OPERATE.getId())) {
       if (WebappsHelper.isOperateUiEnabled(environment)) {
-        locations.add(DEFAULT_RESOURCES_LOCATION + "operate/");
+        locations.add(DEFAULT_RESOURCES_LOCATION + "webapp/");
         defaultWebapp = OPERATE.getId();
       }
 

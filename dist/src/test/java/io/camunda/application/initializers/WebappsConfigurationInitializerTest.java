@@ -60,6 +60,43 @@ class WebappsConfigurationInitializerTest {
   }
 
   @Test
+  void shouldAddWebappStaticLocationWhenOperateProfileIsActive() {
+    // given
+    final GenericApplicationContext context = new GenericApplicationContext();
+    context.getEnvironment().setActiveProfiles(Profile.OPERATE.getId());
+
+    // when
+    new WebappsConfigurationInitializer().initialize(context);
+
+    // then
+    assertThat(context.getEnvironment().getProperty(STATIC_LOCATIONS, String.class))
+        .contains(WEBAPP_LOCATION)
+        .doesNotContain("classpath:/META-INF/resources/operate/");
+    assertThat(context.getEnvironment().getProperty(DEFAULT_APP))
+        .isEqualTo(Profile.OPERATE.getId());
+  }
+
+  @Test
+  void shouldNotAddWebappStaticLocationWhenOperateUiIsDisabled() {
+    // given
+    final GenericApplicationContext context = new GenericApplicationContext();
+    context.getEnvironment().setActiveProfiles(Profile.OPERATE.getId());
+    context
+        .getEnvironment()
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource("test", Map.of("camunda.webapps.operate.ui-enabled", false)));
+
+    // when
+    new WebappsConfigurationInitializer().initialize(context);
+
+    // then
+    assertThat(context.getEnvironment().getProperty(STATIC_LOCATIONS, String.class))
+        .doesNotContain(WEBAPP_LOCATION);
+    assertThat(context.getEnvironment().getProperty(DEFAULT_APP)).isNull();
+  }
+
+  @Test
   void shouldUseOperateAsDefaultAppWhenOperateAndTasklistProfilesAreActive() {
     // given
     final GenericApplicationContext context = new GenericApplicationContext();

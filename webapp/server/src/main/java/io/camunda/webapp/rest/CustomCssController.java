@@ -7,12 +7,13 @@
  */
 package io.camunda.webapp.rest;
 
-import io.camunda.spring.utils.ConditionalOnWebappUiEnabled;
+import io.camunda.webapp.OnAnyWebappUiEnabledCondition;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@ConditionalOnWebappUiEnabled("tasklist")
+@Conditional(OnAnyWebappUiEnabledCondition.class)
 public class CustomCssController {
 
   static final String PATH = "/custom.css";
