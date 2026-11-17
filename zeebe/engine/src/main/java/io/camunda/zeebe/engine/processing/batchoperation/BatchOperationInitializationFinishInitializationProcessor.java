@@ -40,10 +40,4 @@ public final class BatchOperationInitializationFinishInitializationProcessor
     stateWriter.appendFollowUpEvent(
         command.getKey(), BatchOperationIntent.INITIALIZED, initializationRecord);
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<BatchOperationInitializationRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

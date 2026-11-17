@@ -146,10 +146,4 @@ public final class ProcessInstanceCreationCreateWithAwaitingResultProcessor
     stateWriter.appendFollowUpEvent(entityKey, ProcessInstanceCreationIntent.CREATED, record);
     metrics.processInstanceCreated(record);
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<ProcessInstanceCreationRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

@@ -233,11 +233,4 @@ public final class BatchOperationLifecycleManagementResumeProcessor
         RejectionType.NOT_FOUND,
         String.format(BATCH_OPERATION_NOT_FOUND_MESSAGE, batchOperationKey));
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<BatchOperationLifecycleManagementRecord> command,
-      final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

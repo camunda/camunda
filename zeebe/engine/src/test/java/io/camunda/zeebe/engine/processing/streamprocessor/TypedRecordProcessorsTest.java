@@ -135,11 +135,5 @@ final class TypedRecordProcessorsTest {
 
     @Override
     public void processRecord(final TypedRecord<JobRecord> record) {}
-
-    @Override
-    public void restoreStorageOrdinal(
-        final TypedRecord<JobRecord> command, final int storageOrdinal) {
-      command.getValue().setStorageOrdinal(storageOrdinal);
-    }
   }
 }

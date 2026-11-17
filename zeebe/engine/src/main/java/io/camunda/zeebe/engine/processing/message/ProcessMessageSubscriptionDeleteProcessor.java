@@ -194,10 +194,4 @@ public final class ProcessMessageSubscriptionDeleteProcessor
 
     rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<ProcessMessageSubscriptionRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

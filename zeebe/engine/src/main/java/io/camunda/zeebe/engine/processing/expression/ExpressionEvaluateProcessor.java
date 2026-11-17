@@ -205,10 +205,4 @@ public final class ExpressionEvaluateProcessor
     responseWriter.writeAcceptedResponseOnCommand(
         key, ExpressionIntent.EVALUATED, resolvedValue, command);
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<ExpressionRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

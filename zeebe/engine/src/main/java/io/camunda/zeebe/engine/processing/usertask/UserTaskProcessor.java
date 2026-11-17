@@ -427,10 +427,4 @@ public class UserTaskProcessor
   public SuspensionAction onResuming(final TypedRecord<UserTaskRecord> record) {
     return SuspensionAction.REJECT;
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<UserTaskRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

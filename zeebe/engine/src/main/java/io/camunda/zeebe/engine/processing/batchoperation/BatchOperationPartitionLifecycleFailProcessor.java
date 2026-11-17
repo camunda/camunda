@@ -110,10 +110,4 @@ public final class BatchOperationPartitionLifecycleFailProcessor
               command.getAuthInfo());
     }
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<BatchOperationPartitionLifecycleRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

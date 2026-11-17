@@ -211,10 +211,4 @@ public class AdHocSubProcessInstructionActivateProcessor
             ERROR_MSG_AD_HOC_SUB_PROCESS_NOT_FOUND.formatted(
                 command.getValue().getAdHocSubProcessInstanceKey())));
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<AdHocSubProcessInstructionRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

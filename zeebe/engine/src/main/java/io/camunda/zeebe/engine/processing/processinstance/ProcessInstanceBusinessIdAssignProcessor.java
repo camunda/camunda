@@ -173,10 +173,4 @@ public class ProcessInstanceBusinessIdAssignProcessor
   public SuspensionAction onResuming(final TypedRecord<ProcessInstanceBusinessIdRecord> record) {
     return SuspensionAction.PROCESS;
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<ProcessInstanceBusinessIdRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

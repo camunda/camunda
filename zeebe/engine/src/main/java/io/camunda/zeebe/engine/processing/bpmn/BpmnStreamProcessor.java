@@ -194,12 +194,6 @@ public final class BpmnStreamProcessor
     };
   }
 
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<ProcessInstanceRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
-
   private void processEvent(
       final ProcessInstanceIntent intent,
       final BpmnElementProcessor<ExecutableFlowElement> processor,

@@ -223,10 +223,4 @@ public final class ProcessInstanceSuspendProcessor
   public SuspensionAction onResuming(final TypedRecord<ProcessInstanceRecord> record) {
     return SuspensionAction.REJECT;
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<ProcessInstanceRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

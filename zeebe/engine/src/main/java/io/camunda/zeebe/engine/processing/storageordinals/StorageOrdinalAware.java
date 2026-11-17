@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.storageordinals;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.MutableStorageOrdinal;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
@@ -28,17 +29,20 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  *
  * @param <T> the record value type processed by the implementing {@link TypedRecordProcessor}
  */
-public interface StorageOrdinalAware<T extends UnifiedRecordValue> {
+public interface StorageOrdinalAware<T extends UnifiedRecordValue & MutableStorageOrdinal> {
 
   /**
    * Sets the given ordinal on the command value. The engine calls this before the banned instance
    * check, the suspension gate and {@link TypedRecordProcessor#processRecord}, for a command that
    * arrives without the ordinal, so every rejection and every follow-up record written from the
-   * command value carries it.
+   * command value carries it. The type bound makes a processor for a record without {@link
+   * MutableStorageOrdinal} a compile error.
    *
    * @param command the command being handled
    * @param storageOrdinal the ordinal of the target process instance, which carries its root's
    *     ordinal
    */
-  void restoreStorageOrdinal(TypedRecord<T> command, int storageOrdinal);
+  default void restoreStorageOrdinal(final TypedRecord<T> command, final int storageOrdinal) {
+    command.getValue().setStorageOrdinal(storageOrdinal);
+  }
 }

@@ -318,10 +318,4 @@ public final class MessageCorrelationCorrelateProcessor
   public SuspensionAction onResuming(final TypedRecord<MessageCorrelationRecord> record) {
     return SuspensionAction.PROCESS;
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<MessageCorrelationRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

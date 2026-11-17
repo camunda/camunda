@@ -69,11 +69,4 @@ public final class MessageStartProcessInstanceRequestRejectExpiredProcessor
         .addKeyValue("outcome", ReplyOutcome.REJECTED_EXPIRED.getLabel())
         .log("Applied cross-partition message-start reply");
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<MessageStartProcessInstanceRequestRecord> command,
-      final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

@@ -181,11 +181,4 @@ public final class MessageStartProcessInstanceRequestStartProcessor
     // No-op for publishes and idempotent on a re-delivered reply.
     deferredCorrelationResponse.writeCorrelatedResponse(reply);
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<MessageStartProcessInstanceRequestRecord> command,
-      final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

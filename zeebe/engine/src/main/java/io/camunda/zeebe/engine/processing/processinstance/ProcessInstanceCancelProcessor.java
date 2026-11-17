@@ -108,12 +108,6 @@ public final class ProcessInstanceCancelProcessor
     return SuspensionAction.PROCESS;
   }
 
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<ProcessInstanceRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
-
   private boolean validateCommand(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
 

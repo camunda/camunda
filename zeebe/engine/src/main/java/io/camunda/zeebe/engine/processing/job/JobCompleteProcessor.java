@@ -654,10 +654,4 @@ public final class JobCompleteProcessor
     final var job = processState.getJobState().getJob(jobKey);
     return job != null && job.getJobKind() == JobKind.TASK_LISTENER;
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<JobRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

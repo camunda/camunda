@@ -164,10 +164,4 @@ public final class MessageSubscriptionCorrelateProcessor
           requestData.getRequestStreamId());
     }
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<MessageSubscriptionRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

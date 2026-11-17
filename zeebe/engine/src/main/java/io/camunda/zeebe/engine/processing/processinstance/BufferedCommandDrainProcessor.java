@@ -196,12 +196,6 @@ public final class BufferedCommandDrainProcessor
     return NOT_RESUMING_MESSAGE.formatted(processInstanceKey);
   }
 
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<BufferedCommandRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
-
   private void appendBufferedCommand(final BufferedCommand buffered) {
     final var value = buffered.command();
     commandWriter.appendFollowUpCommand(

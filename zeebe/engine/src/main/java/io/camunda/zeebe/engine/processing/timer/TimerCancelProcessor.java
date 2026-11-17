@@ -69,10 +69,4 @@ public final class TimerCancelProcessor
   public SuspensionAction onResuming(final TypedRecord<TimerRecord> record) {
     return SuspensionAction.PROCESS;
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<TimerRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

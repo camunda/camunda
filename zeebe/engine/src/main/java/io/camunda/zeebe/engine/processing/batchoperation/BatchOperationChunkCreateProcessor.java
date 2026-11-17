@@ -48,10 +48,4 @@ public final class BatchOperationChunkCreateProcessor
     stateWriter.appendFollowUpEvent(
         keyGenerator.nextKey(), BatchOperationChunkIntent.CREATED, recordValue);
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<BatchOperationChunkRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

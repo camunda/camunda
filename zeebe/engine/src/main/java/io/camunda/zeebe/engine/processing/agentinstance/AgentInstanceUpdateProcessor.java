@@ -395,10 +395,4 @@ public final class AgentInstanceUpdateProcessor
   public SuspensionAction onResuming(final TypedRecord<AgentInstanceRecord> record) {
     return SuspensionAware.processInternalOnly(record);
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<AgentInstanceRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

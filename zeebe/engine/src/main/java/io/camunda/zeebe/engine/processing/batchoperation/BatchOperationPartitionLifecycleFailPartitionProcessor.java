@@ -130,10 +130,4 @@ public final class BatchOperationPartitionLifecycleFailPartitionProcessor
       batchOperationMetrics.recordFailed(oBatchOperation.get().getBatchOperationType());
     }
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<BatchOperationPartitionLifecycleRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

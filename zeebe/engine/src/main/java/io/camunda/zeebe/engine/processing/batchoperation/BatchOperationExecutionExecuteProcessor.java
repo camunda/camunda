@@ -307,10 +307,4 @@ public final class BatchOperationExecutionExecuteProcessor
   private static boolean isLeadPartition(final TypedRecord<BatchOperationExecutionRecord> command) {
     return getLeadPartition(command.getValue()) == command.getPartitionId();
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<BatchOperationExecutionRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

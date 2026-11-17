@@ -123,10 +123,4 @@ public class ConditionalSubscriptionTriggerProcessor
   public SuspensionAction onResuming(final TypedRecord<ConditionalSubscriptionRecord> record) {
     return SuspensionAction.PROCESS;
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<ConditionalSubscriptionRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

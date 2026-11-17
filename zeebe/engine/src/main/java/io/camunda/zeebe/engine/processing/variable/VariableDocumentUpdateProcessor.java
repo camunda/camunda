@@ -55,12 +55,6 @@ public final class VariableDocumentUpdateProcessor
         SuspensionAware<VariableDocumentRecord>,
         StorageOrdinalAware<VariableDocumentRecord> {
 
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<VariableDocumentRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
-
   private static final String ERROR_MESSAGE_SCOPE_NOT_FOUND =
       "Expected to update variables for element with key '%d', but no such element was found";
 

@@ -28,9 +28,10 @@ import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
  * {@link MutableStorageOrdinal}.
  *
  * <p>Engine code sets the storage ordinal on a command value through {@link MutableStorageOrdinal}
- * without knowing the concrete record. A record that carries an ordinal but lacks the mixin is
- * skipped by that code and its records are routed to the main index. There is no whitelist, because
- * no such record can be exempt.
+ * without knowing the concrete record. A record that carries an ordinal but lacks the mixin cannot
+ * have a {@code StorageOrdinalAware} processor, because the processor's type bound requires the
+ * mixin, so its commands fail the registration guard at engine start. There is no whitelist,
+ * because no such record can be exempt.
  */
 @AnalyzeClasses(
     packages = "io.camunda.zeebe.protocol.impl.record.value..",

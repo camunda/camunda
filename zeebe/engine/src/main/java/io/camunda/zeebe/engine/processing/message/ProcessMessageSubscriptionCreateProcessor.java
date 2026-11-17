@@ -261,10 +261,4 @@ public final class ProcessMessageSubscriptionCreateProcessor
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
     }
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<ProcessMessageSubscriptionRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

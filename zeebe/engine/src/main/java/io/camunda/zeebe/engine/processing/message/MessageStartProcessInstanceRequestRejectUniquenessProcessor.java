@@ -98,11 +98,4 @@ public final class MessageStartProcessInstanceRequestRejectUniquenessProcessor
         BLOCKED_BY_ACTIVE_INSTANCE.formatted(
             reply.getMessageName(), reply.getBusinessId(), Set.of(reply.getBpmnProcessId())));
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<MessageStartProcessInstanceRequestRecord> command,
-      final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

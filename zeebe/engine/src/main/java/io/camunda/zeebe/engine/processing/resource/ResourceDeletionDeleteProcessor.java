@@ -687,10 +687,4 @@ public class ResourceDeletionDeleteProcessor
       super(String.format(ERROR_MESSAGE_DELETION_IN_PROGRESS, resourceKey));
     }
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<ResourceDeletionRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

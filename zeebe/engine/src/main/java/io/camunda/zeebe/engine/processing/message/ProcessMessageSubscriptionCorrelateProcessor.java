@@ -337,10 +337,4 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   public SuspensionAction onResuming(final TypedRecord<ProcessMessageSubscriptionRecord> record) {
     return SuspensionAction.PROCESS;
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<ProcessMessageSubscriptionRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

@@ -233,12 +233,6 @@ public final class TimerTriggerProcessor
     return SuspensionAction.PROCESS;
   }
 
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<TimerRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
-
   /** Variant for the suspension callbacks, which run without the NOT_FOUND check above. */
   private void restoreStorageOrdinalFromState(final TypedRecord<TimerRecord> record) {
     final var timer = record.getValue();

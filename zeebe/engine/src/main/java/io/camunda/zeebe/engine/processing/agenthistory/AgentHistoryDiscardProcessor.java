@@ -65,10 +65,4 @@ public final class AgentHistoryDiscardProcessor
   public SuspensionAction onResuming(final TypedRecord<AgentHistoryRecord> record) {
     return SuspensionAction.PROCESS;
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<AgentHistoryRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

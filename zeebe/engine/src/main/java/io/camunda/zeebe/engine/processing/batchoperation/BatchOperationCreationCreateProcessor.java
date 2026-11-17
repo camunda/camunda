@@ -269,10 +269,4 @@ public final class BatchOperationCreationCreateProcessor
     return plan == null
         || (plan.getRetries() == null && plan.getTimeout() == null && plan.getPriority() == null);
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<BatchOperationCreationRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

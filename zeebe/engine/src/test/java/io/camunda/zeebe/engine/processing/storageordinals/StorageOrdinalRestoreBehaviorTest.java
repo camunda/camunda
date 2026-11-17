@@ -232,23 +232,9 @@ final class StorageOrdinalRestoreBehaviorTest {
   }
 
   private static final class AwareJobProcessor
-      implements TypedRecordProcessor<JobRecord>, StorageOrdinalAware<JobRecord> {
-
-    @Override
-    public void restoreStorageOrdinal(
-        final TypedRecord<JobRecord> command, final int storageOrdinal) {
-      command.getValue().setStorageOrdinal(storageOrdinal);
-    }
-  }
+      implements TypedRecordProcessor<JobRecord>, StorageOrdinalAware<JobRecord> {}
 
   private static final class AwareProcessInstanceProcessor
       implements TypedRecordProcessor<ProcessInstanceRecord>,
-          StorageOrdinalAware<ProcessInstanceRecord> {
-
-    @Override
-    public void restoreStorageOrdinal(
-        final TypedRecord<ProcessInstanceRecord> command, final int storageOrdinal) {
-      command.getValue().setStorageOrdinal(storageOrdinal);
-    }
-  }
+          StorageOrdinalAware<ProcessInstanceRecord> {}
 }

@@ -131,10 +131,4 @@ public class AdHocSubProcessInstructionCompleteProcessor
 
     return Either.right(elementInstance);
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<AdHocSubProcessInstructionRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

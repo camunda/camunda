@@ -118,11 +118,4 @@ public final class MessageStartProcessInstanceRequestSweepExpiredDedupsProcessor
               .setStorageOrdinal(StorageOrdinalRelated.NOT_ORDINAL_CONTROLLED));
     }
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<MessageStartProcessInstanceRequestRecord> command,
-      final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

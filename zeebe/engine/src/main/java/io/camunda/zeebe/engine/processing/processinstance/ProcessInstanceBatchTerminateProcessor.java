@@ -77,12 +77,6 @@ public final class ProcessInstanceBatchTerminateProcessor
     return SuspensionAction.PROCESS;
   }
 
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<ProcessInstanceBatchRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
-
   private List<ElementInstance> getChildInstances(
       final ProcessInstanceBatchRecord recordValue, final int limit) {
     final CopyOnWriteArrayList<ElementInstance> elementInstances = new CopyOnWriteArrayList<>();

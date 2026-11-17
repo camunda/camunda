@@ -83,10 +83,4 @@ public class MessageSubscriptionMigrateProcessor
             .setInterrupting(value.isInterrupting())
             .setElementId(value.getElementIdBuffer()));
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<MessageSubscriptionRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

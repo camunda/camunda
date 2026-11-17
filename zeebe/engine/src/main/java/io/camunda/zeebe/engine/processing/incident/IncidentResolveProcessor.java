@@ -324,10 +324,4 @@ public final class IncidentResolveProcessor
   public SuspensionAction onResuming(final TypedRecord<IncidentRecord> record) {
     return SuspensionAware.processInternalOnly(record);
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<IncidentRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

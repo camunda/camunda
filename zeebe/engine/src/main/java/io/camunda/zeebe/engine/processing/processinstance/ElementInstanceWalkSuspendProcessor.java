@@ -147,12 +147,6 @@ public final class ElementInstanceWalkSuspendProcessor
     return SuspensionAction.PROCESS;
   }
 
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<ElementInstanceWalkRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
-
   private boolean validateProcessInstance(
       final TypedRecord<ElementInstanceWalkRecord> command, final long processInstanceKey) {
     final var processInstance = elementInstanceState.getInstance(processInstanceKey);

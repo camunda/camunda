@@ -165,11 +165,4 @@ public final class BatchOperationLifecycleManagementCancelProcessor
         FollowUpEventMetadata.of(
             b -> b.batchOperationReference(recordValue.getBatchOperationKey())));
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<BatchOperationLifecycleManagementRecord> command,
-      final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

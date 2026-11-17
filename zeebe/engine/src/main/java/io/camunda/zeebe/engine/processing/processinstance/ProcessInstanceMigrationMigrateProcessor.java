@@ -764,12 +764,6 @@ public class ProcessInstanceMigrationMigrateProcessor
     return SuspensionAction.REJECT;
   }
 
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<ProcessInstanceMigrationRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
-
   /**
    * Exception that can be thrown when a safety check has failed during migration. It's likely that
    * a bug is present when this is thrown.

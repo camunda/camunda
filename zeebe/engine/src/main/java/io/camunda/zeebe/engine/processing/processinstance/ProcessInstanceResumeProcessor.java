@@ -121,12 +121,6 @@ public final class ProcessInstanceResumeProcessor
     return SuspensionAction.PROCESS;
   }
 
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<ProcessInstanceRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
-
   private Either<Rejection, ElementInstance> validateNotFound(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
     if (elementInstance == null || elementInstance.getParentKey() > 0) {

@@ -74,10 +74,4 @@ public final class JobUpdateRetriesProcessor
   public SuspensionAction onResuming(final TypedRecord<JobRecord> record) {
     return SuspensionAction.PROCESS;
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<JobRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

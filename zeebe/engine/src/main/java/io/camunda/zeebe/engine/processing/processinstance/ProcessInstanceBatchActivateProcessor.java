@@ -145,10 +145,4 @@ public final class ProcessInstanceBatchActivateProcessor
   public SuspensionAction onResuming(final TypedRecord<ProcessInstanceBatchRecord> record) {
     return SuspensionAction.PROCESS;
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<ProcessInstanceBatchRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

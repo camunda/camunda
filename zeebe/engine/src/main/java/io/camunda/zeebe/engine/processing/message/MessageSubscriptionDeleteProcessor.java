@@ -117,10 +117,4 @@ public final class MessageSubscriptionDeleteProcessor
         subscriptionRecord.getTenantId(),
         subscriptionRecord.getStorageOrdinal());
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<MessageSubscriptionRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

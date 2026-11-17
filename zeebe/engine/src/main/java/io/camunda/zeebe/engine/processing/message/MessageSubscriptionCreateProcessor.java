@@ -118,10 +118,4 @@ public final class MessageSubscriptionCreateProcessor
         subscriptionKey,
         subscriptionRecord.getStorageOrdinal());
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<MessageSubscriptionRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

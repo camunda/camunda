@@ -871,31 +871,13 @@ public final class EngineErrorHandlingTest {
 
   private interface AwareProcessInstanceProcessor
       extends TypedRecordProcessor<ProcessInstanceRecord>,
-          StorageOrdinalAware<ProcessInstanceRecord> {
-    @Override
-    default void restoreStorageOrdinal(
-        final TypedRecord<ProcessInstanceRecord> command, final int storageOrdinal) {
-      command.getValue().setStorageOrdinal(storageOrdinal);
-    }
-  }
+          StorageOrdinalAware<ProcessInstanceRecord> {}
 
   private interface AwareJobProcessor
-      extends TypedRecordProcessor<JobRecord>, StorageOrdinalAware<JobRecord> {
-    @Override
-    default void restoreStorageOrdinal(
-        final TypedRecord<JobRecord> command, final int storageOrdinal) {
-      command.getValue().setStorageOrdinal(storageOrdinal);
-    }
-  }
+      extends TypedRecordProcessor<JobRecord>, StorageOrdinalAware<JobRecord> {}
 
   private interface AwareMultiInstanceProcessor
-      extends TypedRecordProcessor<MultiInstanceRecord>, StorageOrdinalAware<MultiInstanceRecord> {
-    @Override
-    default void restoreStorageOrdinal(
-        final TypedRecord<MultiInstanceRecord> command, final int storageOrdinal) {
-      command.getValue().setStorageOrdinal(storageOrdinal);
-    }
-  }
+      extends TypedRecordProcessor<MultiInstanceRecord>, StorageOrdinalAware<MultiInstanceRecord> {}
 
   protected static class ErrorProneProcessor implements AwareProcessInstanceProcessor {
 

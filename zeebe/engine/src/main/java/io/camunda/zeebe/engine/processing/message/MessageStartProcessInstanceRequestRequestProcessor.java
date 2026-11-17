@@ -366,11 +366,4 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
         request.getTenantId(),
         bannedInstanceState::isProcessInstanceBanned);
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<MessageStartProcessInstanceRequestRecord> command,
-      final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

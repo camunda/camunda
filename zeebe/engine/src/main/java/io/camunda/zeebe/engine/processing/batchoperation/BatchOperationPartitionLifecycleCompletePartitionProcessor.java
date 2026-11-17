@@ -152,10 +152,4 @@ public final class BatchOperationPartitionLifecycleCompletePartitionProcessor
     metrics.recordCompleted(bo.getBatchOperationType());
     metrics.stopTotalDurationMeasure(batchOperationKey);
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<BatchOperationPartitionLifecycleRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

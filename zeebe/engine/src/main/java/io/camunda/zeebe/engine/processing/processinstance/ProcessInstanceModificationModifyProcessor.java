@@ -1592,12 +1592,6 @@ public final class ProcessInstanceModificationModifyProcessor
     return SuspensionAware.processInternalOnly(record);
   }
 
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<ProcessInstanceModificationRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
-
   /**
    * Exception that can be thrown when child instance is being modified. If all active element
    * instances of this process are being terminated this exception is thrown. The reason for this is

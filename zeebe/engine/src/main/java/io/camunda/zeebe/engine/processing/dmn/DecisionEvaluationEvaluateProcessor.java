@@ -162,10 +162,4 @@ public class DecisionEvaluationEvaluateProcessor
           new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
     }
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<DecisionEvaluationRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

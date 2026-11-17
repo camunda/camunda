@@ -97,11 +97,4 @@ public final class MessageStartProcessInstanceRequestRejectNoSubscriptionProcess
         RejectionType.NOT_FOUND,
         SUBSCRIPTION_NOT_FOUND.formatted(reply.getMessageName(), reply.getCorrelationKey()));
   }
-
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<MessageStartProcessInstanceRequestRecord> command,
-      final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
 }

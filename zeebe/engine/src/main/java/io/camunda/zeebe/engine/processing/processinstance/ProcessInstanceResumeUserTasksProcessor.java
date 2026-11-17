@@ -167,12 +167,6 @@ public final class ProcessInstanceResumeUserTasksProcessor
     return SuspensionAction.PROCESS;
   }
 
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<ProcessInstanceRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
-
   private void reject(final TypedRecord<ProcessInstanceRecord> command, final String reason) {
     rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
   }

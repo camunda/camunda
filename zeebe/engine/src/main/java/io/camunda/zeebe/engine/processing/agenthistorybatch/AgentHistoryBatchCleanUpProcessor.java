@@ -39,12 +39,6 @@ public final class AgentHistoryBatchCleanUpProcessor
         SuspensionAware<AgentHistoryBatchRecord>,
         StorageOrdinalAware<AgentHistoryBatchRecord> {
 
-  @Override
-  public void restoreStorageOrdinal(
-      final TypedRecord<AgentHistoryBatchRecord> command, final int storageOrdinal) {
-    command.getValue().setStorageOrdinal(storageOrdinal);
-  }
-
   /**
    * Number of history-item ids deleted, combined across the committed and metrics-accumulated
    * indexes, per {@code AGENT_HISTORY_BATCH:CLEANED} cycle. Each history-item id is capped at 256
