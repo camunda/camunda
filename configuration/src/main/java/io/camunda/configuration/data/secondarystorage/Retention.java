@@ -12,6 +12,7 @@ import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompa
 
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Retention {
 
@@ -37,6 +38,9 @@ public class Retention {
 
   /** defines how old the usage-metrics data must be, before the data is deleted as a duration */
   private String usageMetricsMinimumAge = "730d";
+
+  /** configures the job that deletes data once it is older than the retention minimum age */
+  @NestedConfigurationProperty private RetentionDeleter deleter = new RetentionDeleter();
 
   public boolean isEnabled() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
@@ -81,5 +85,13 @@ public class Retention {
 
   public void setUsageMetricsMinimumAge(final String usageMetricsMinimumAge) {
     this.usageMetricsMinimumAge = usageMetricsMinimumAge;
+  }
+
+  public RetentionDeleter getDeleter() {
+    return deleter;
+  }
+
+  public void setDeleter(final RetentionDeleter deleter) {
+    this.deleter = deleter;
   }
 }

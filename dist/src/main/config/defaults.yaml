@@ -1347,6 +1347,17 @@ camunda: # Type: io.camunda.configuration.Camunda
         username: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_USERNAME
       
       retention: # Type: io.camunda.configuration.data.secondarystorage.Retention  
+        deleter: # Type: io.camunda.configuration.data.secondarystorage.RetentionDeleter  
+          # how many documents are deleted in a single bulk delete request
+          document-batch-size: 2500 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RETENTION_DELETER_DOCUMENTBATCHSIZE
+          # how many entities (e.g. process instances or decision instances) are read at once when finding data
+          # whose retention period has expired
+          entity-batch-size: 500 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RETENTION_DELETER_ENTITYBATCHSIZE
+          # how many times a failed delete is retried before giving up
+          max-retry-attempts: 3 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RETENTION_DELETER_MAXRETRYATTEMPTS
+          # how long to wait before retrying a failed delete
+          retry-delay: "1s" # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RETENTION_DELETER_RETRYDELAY
+        
         # if true, the ILM Policy is created and applied to the index templates
         enabled: false # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RETENTION_ENABLED
         # defines how old the data must be, before the data is deleted as a duration
@@ -1386,6 +1397,7 @@ camunda: # Type: io.camunda.configuration.Camunda
     proxy: null # Type: io.camunda.search.connect.configuration.ProxyConfiguration, Env: CAMUNDA_DATABASE_PROXY
     retention: # Type: io.camunda.configuration.beans.LegacySearchEngineRetentionProperties  
       apply-policy-job-interval: null # Type: Duration, Env: CAMUNDA_DATABASE_RETENTION_APPLYPOLICYJOBINTERVAL
+      deleter: null # Type: io.camunda.search.schema.config.DeleterConfiguration, Env: CAMUNDA_DATABASE_RETENTION_DELETER
       enabled: null # Type: Boolean, Env: CAMUNDA_DATABASE_RETENTION_ENABLED
       minimum-age: null # Type: String, Env: CAMUNDA_DATABASE_RETENTION_MINIMUMAGE
       policy-name: null # Type: String, Env: CAMUNDA_DATABASE_RETENTION_POLICYNAME

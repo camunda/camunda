@@ -12,6 +12,7 @@ import io.camunda.configuration.data.ExtensionProperties;
 import io.camunda.configuration.data.SecondaryStorage;
 import io.camunda.configuration.data.secondarystorage.Opensearch;
 import io.camunda.configuration.data.secondarystorage.Retention;
+import io.camunda.configuration.data.secondarystorage.RetentionDeleter;
 import io.camunda.configuration.data.secondarystorage.documentbased.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.data.secondarystorage.documentbased.InterceptorPlugin;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -20,6 +21,7 @@ import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.PostExportConfiguration;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.schema.config.DeleterConfiguration;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
@@ -43,6 +45,13 @@ public final class CamundaExporterConfigurationApplier {
     target.setEnabled(source.isEnabled());
     target.setMinimumAge(source.getMinimumAge());
     target.setUsageMetricsMinimumAge(source.getUsageMetricsMinimumAge());
+
+    final DeleterConfiguration targetDeleter = target.getDeleter();
+    final RetentionDeleter sourceDeleter = source.getDeleter();
+    targetDeleter.setDocumentBatchSize(sourceDeleter.getDocumentBatchSize());
+    targetDeleter.setEntityBatchSize(sourceDeleter.getEntityBatchSize());
+    targetDeleter.setMaxRetryAttempts(sourceDeleter.getMaxRetryAttempts());
+    targetDeleter.setRetryDelayMs(Math.toIntExact(sourceDeleter.getRetryDelay().toMillis()));
   }
 
   public static void applyConnect(

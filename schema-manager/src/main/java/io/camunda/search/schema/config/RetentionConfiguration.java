@@ -23,6 +23,7 @@ public class RetentionConfiguration {
   private String usageMetricsMinimumAge = DEFAULT_USAGE_METRICS_MINIMUM_AGE;
   private String usageMetricsPolicyName = DEFAULT_USAGE_METRICS_POLICY_NAME;
   private Duration applyPolicyJobInterval = DEFAULT_APPLY_POLICY_JOB_INTERVAL;
+  private DeleterConfiguration deleter = new DeleterConfiguration();
 
   public boolean isEnabled() {
     return enabled;
@@ -72,6 +73,14 @@ public class RetentionConfiguration {
     this.applyPolicyJobInterval = applyPolicyJobInterval;
   }
 
+  public DeleterConfiguration getDeleter() {
+    return deleter;
+  }
+
+  public void setDeleter(final DeleterConfiguration deleter) {
+    this.deleter = deleter;
+  }
+
   @Override
   public String toString() {
     return "RetentionConfiguration{"
@@ -91,6 +100,8 @@ public class RetentionConfiguration {
         + '\''
         + ", applyPolicyJobInterval="
         + applyPolicyJobInterval
+        + ", deleter="
+        + deleter
         + '}';
   }
 }
