@@ -77,6 +77,40 @@ final class AuthInfoTest {
     assertThat(original.getClaims()).isEqualTo(originalClaims);
   }
 
+  @Test
+  void shouldKeepJwtAuthInfoUnchanged() {
+    // given
+    final var original =
+        new AuthInfo()
+            .setFormat(AuthInfo.AuthDataFormat.JWT)
+            .setAuthData("token")
+            .setClaims(Map.of("user_token_claims", Map.of("sub", "user")));
+
+    // when
+    final var actorOnly = original.withActorClaimsOnly();
+
+    // then
+    assertThat(actorOnly.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.JWT);
+    assertThat(actorOnly.getAuthData()).isEqualTo("token");
+    assertThat(actorOnly.getClaims()).isEqualTo(Map.of("user_token_claims", Map.of("sub", "user")));
+  }
+
+  @Test
+  void shouldKeepFormatWithEmptyClaimsWhenNoActorClaims() {
+    // given
+    final var original =
+        new AuthInfo()
+            .setFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED)
+            .setClaims(Map.of("authorized_tenants", List.of("tenant")));
+
+    // when
+    final var actorOnly = original.withActorClaimsOnly();
+
+    // then
+    assertThat(actorOnly.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
+    assertThat(actorOnly.getClaims()).isEmpty();
+  }
+
   @Nested
   class EncodeDecodeTests {
     @Test
