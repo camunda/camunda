@@ -19,17 +19,21 @@ usage, published metadata, packaged artifacts.
 ## CI Gradle validation (why Maven stays the gate)
 
 Unified CI does not select an application-test implementation with a `build-tool` output. Maven
-remains the application-test path for every event. The `gradle-changes` output independently
-triggers the experimental Gradle `testClasses` and distribution-parity jobs when Gradle, Maven,
-Java, or relevant CI inputs change.
+remains the application-test path for every event. The Gradle job combines the existing
+`java-code-changes` and `gradle-changes` outputs to trigger focused `testClasses` and
+distribution-parity checks when Java, Maven, Gradle, or relevant CI build inputs change, as
+specified in ADR D4. These checks supplement rather than replace the existing Maven CI path.
 
-Temporary soft integration: the Gradle jobs still run, but are not part of `check-results`, so
-they do not block pull requests or merge groups. A failure on `main` sends a Slack notification
-(see the ADR).
+The focused compile and distribution-parity check in Unified CI is part of `check-results` and
+blocks pull requests and merge groups. It runs on GCP and downloads the Maven SNAPSHOT archive;
+fork PRs without GCS credentials use the GitHub artifact fallback. The Gradle check extracts the
+attached Maven distribution ZIP and compares it with Gradle's `distZip` output. The separate
+experimental isolated-project check in `gradle-ci.yml` remains non-blocking; failures on `main`
+send a Slack notification (see the ADR).
 
-This keeps the experimental Gradle signal honest: it validates compilation and packaged artifact
-names, but it is not a Gradle application-test suite. Maven remains the landing-gate authority,
-including pull requests, merge groups, protected-branch pushes, schedules, and manual runs.
+This keeps the Gradle signal scoped: it validates compilation and packaged artifact names, but it
+is not a Gradle application-test suite. Maven remains the application-test path for pull requests,
+merge groups, protected-branch pushes, schedules, and manual runs.
 
 ## Fix Workflow
 
@@ -42,8 +46,8 @@ including pull requests, merge groups, protected-branch pushes, schedules, and m
    finished until it completes successfully. This catches failures in other Gradle modules that
    are not exercised by the affected module's compile task.
 5. For every Gradle change, build the Gradle distribution and compare its archive with the Maven
-   archive using `compare-dist.py`. The CI gate builds `testClasses` and `distZip` together, then
-   runs distribution parity separately.
+   archive using `compare-dist.py`. The CI gate compiles `testClasses`, packages `distZip`, and
+   compares the archives in separate steps of the same job.
 6. Preserve already-fixed conventions; avoid regressions.
 
 ### Rebase onto main before Gradle parity work
@@ -102,12 +106,10 @@ The rebase audit identifies what changed. It does not replace the porting proced
 
 ### Gradle CI gates
 
-On an eligible Gradle CI path, `gradle-compile-check` runs the root `testClasses` lifecycle task
-and builds `:camunda-zeebe:distZip` in the same invocation. The
-`gradle-dist-parity` job then compares the Gradle distribution archive with the Maven
-distribution archive using `compare-dist.py` (the current CI artifacts are ZIPs; the tool also
-supports tar.gz/exploded distribution comparisons). These are the Gradle build gates; do not
-describe this path as a full Gradle test-suite run.
+On an eligible Gradle CI path, `gradle-compile-check` runs the root `testClasses` lifecycle task,
+builds `:camunda-zeebe:distZip`, writes the distribution dependency report, and compares it with
+the attached Maven distribution ZIP from the SNAPSHOT archive using `compare-dist.py`. These steps
+form the Gradle build gate; do not describe this path as a full Gradle test-suite run.
 
 **Before investigating CI failures: always rebase onto main first.** CI runs on the merge
 commit, so Gradle build files apply against main's Java sources, which may differ from the

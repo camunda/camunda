@@ -77,6 +77,7 @@ jobs:
       scripts-changes: ${{ steps.filter.outputs.scripts-changes }}
       load-test-scripts-changes: ${{ steps.filter.outputs.load-test-scripts-changes }}
       load-test-k6-changes: ${{ steps.filter.outputs.load-test-k6-changes }}
+      gradle-changes: ${{ steps.filter.outputs.gradle-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -589,13 +590,126 @@ jobs:
     # Gated on the union of all consumers' conditions so the artifact exists whenever one runs;
     # frontend-changes is included because the webapp back-end UTs run on it; rdbms-integration-tests
     # is included because its filter is a superset of java-code-changes (adds rdbms-change). See #52693.
-    if: needs.detect-changes.outputs.camunda-docker-tests == 'true' || needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' || needs.detect-changes.outputs.rdbms-integration-tests == 'true'
+    # Gradle parity also consumes the Maven SNAPSHOT archive produced here.
+    if: >-
+      needs.detect-changes.outputs.camunda-docker-tests == 'true' ||
+      needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.frontend-changes == 'true' ||
+      needs.detect-changes.outputs.rdbms-integration-tests == 'true' ||
+      needs.detect-changes.outputs.gradle-changes == 'true'
     needs: [ detect-changes ]
     permissions:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     uses: ./.github/workflows/ci-build-distball-reusable.yml
     secrets: inherit
+
+  gradle-compile-check:
+    name: "Gradle / Compile Check"
+    if: >-
+      needs.detect-changes.outputs.java-code-changes == 'true' ||
+      needs.detect-changes.outputs.gradle-changes == 'true'
+    needs: [ detect-changes, build-distball ]
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
+    env:
+      TEST_PRODUCT: Gradle
+      TEST_TYPE: CI
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@08f6922ee1aeb45b5270ff62ce582fa7d85428a1 # main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: ${{ fromJSON(env.SHALLOW_CHECKOUT_TIMEOUT_MIN) }}
+        with:
+          persist-credentials: false
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+      - uses: ./.github/actions/setup-build
+        with:
+          skip-maven-cache: true
+          locale: C.UTF-8
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          # Only main and stable pushes warm the shared cache; all other runs only read it.
+          cache-read-only: >-
+            ${{
+              !(
+                github.event_name == 'push' &&
+                (
+                  github.ref == 'refs/heads/main' ||
+                  startsWith(github.ref, 'refs/heads/stable/')
+                )
+              )
+            }}
+      - name: Authenticate to GCS build-cache
+        timeout-minutes: 3
+        uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Download Maven SNAPSHOT archive
+        uses: ./.github/actions/download-shared-build-artifact
+        with:
+          artifact: m2-installed
+          path: ${{ runner.temp }}/maven-snapshots
+      - name: Extract Maven distribution ZIP
+        run: |
+          set -euo pipefail
+          maven_archive="$RUNNER_TEMP/maven-snapshots/m2-installed.tar"
+          mapfile -t maven_zip_entries < <(
+            tar -tf "$maven_archive" | grep -E '(^|/)camunda-zeebe-[^/]+\.zip$' || true
+          )
+          if [[ ${#maven_zip_entries[@]} -ne 1 ]]; then
+            echo "::error::Expected one Maven distribution ZIP; found ${#maven_zip_entries[@]}"
+            exit 1
+          fi
+          tar -xOf "$maven_archive" "${maven_zip_entries[0]}" > "$RUNNER_TEMP/maven-distribution.zip"
+      - name: Compile
+        run: |
+          ./gradlew --profile --console=plain --parallel -Pskip.fe.build \
+            testClasses
+      - name: Package distribution
+        run: |
+          ./gradlew --profile --console=plain --parallel -Pskip.fe.build \
+            :camunda-zeebe:distZip
+      - name: Write distribution dependency report
+        run: |
+          ./gradlew --no-configuration-cache --console=plain -Pskip.fe.build \
+            :camunda-zeebe:writeDistDependencyReport
+      - name: Compare Gradle and Maven distributions
+        run: |
+          set -euo pipefail
+          mapfile -t gradle_zips < <(find dist/build/distributions -maxdepth 1 -type f -name 'camunda-zeebe-*.zip' -print)
+          if [[ ${#gradle_zips[@]} -ne 1 ]]; then
+            echo "::error::Expected one Gradle distribution ZIP; found ${#gradle_zips[@]}"
+            exit 1
+          fi
+          python3 .github/scripts/gradle/compare-dist.py \
+            "${gradle_zips[0]}" "$RUNNER_TEMP/maven-distribution.zip" \
+            --gradle-manifest dist/build/reports/dist-dependencies.json
+      - name: Upload Gradle build reports
+        if: always()
+        uses: ./.github/actions/upload-artifact-with-retry
+        with:
+          name: gradle-build-reports
+          path: build/reports/profile/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   build-platform-frontend:
     # Runs when the frontend changed, OR on any non-PR event targeting main/stable
@@ -3115,6 +3229,7 @@ jobs:
       - docker-checks
       - general-unit-tests
       - generate-db-versions
+      - gradle-compile-check
       - history-tests
       - identity-frontend-tests
       - identity-tests
