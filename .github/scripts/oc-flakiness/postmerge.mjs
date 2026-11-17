@@ -88,15 +88,30 @@ function runsOf(reportsDir, version) {
 }
 
 // The verdict, and the sentence the Slack board and the PR comment both read.
+//
+// `confirmed` is sticky: once a night has shown the fix failing, that stays
+// true however far the report window later rolls past it. Only `flaked` --
+// the nights still inside the window -- is recomputed each run. Without that,
+// a fix known to have failed would read as holding a week later, which is the
+// one thing this measurement exists to prevent.
+//
 // `clean-in-window` is the honest answer when the fix merged further back than
 // the report window reaches: the nights we can see were clean, but the ones
 // between the merge and the start of the window were never looked at, so
 // calling it clean outright would overstate what was measured.
-export function verdictOf({nightlies, flaked, windowCoversMerge}) {
+export function verdictOf({nightlies, flaked, confirmed = flaked, windowCoversMerge}) {
   if (flaked > 0) {
     return {
       verdict: 're-flaked',
       summary: `re-flaked in ${flaked} of ${nightlies} night(s) since the merge`,
+    };
+  }
+  if (confirmed > 0) {
+    return {
+      verdict: 're-flaked',
+      summary:
+        `re-flaked in ${confirmed} night(s) since the merge; those nights ` +
+        'have since left the report window',
     };
   }
   if (nightlies === 0) {
@@ -146,15 +161,30 @@ export function postMerge({reportsDir, ledger = {}, merged = {}, now}) {
 
     const after = informative.filter((r) => Date.parse(r.createdAt) > mergedMs);
     const hits = after.filter((r) => r.flaked.has(fp));
+    // Evidence from earlier runs, but only for this same merge: a new PR
+    // resets the measurement, and `decide` drops `post_merge` when it records
+    // one.
+    const prior =
+      entry.post_merge &&
+      (entry.post_merge.merged_at ?? mergedAt) === mergedAt
+        ? entry.post_merge
+        : undefined;
+    const priorConfirmed =
+      prior?.confirmed ?? (prior?.verdict === 're-flaked' ? 1 : 0);
+    // A lower bound, not a sum: nights still inside the window were already
+    // counted by the run that recorded `confirmed`.
+    const confirmed = Math.max(priorConfirmed, hits.length);
+
     const {verdict, summary} = verdictOf({
       nightlies: after.length,
       flaked: hits.length,
+      confirmed,
       windowCoversMerge,
     });
 
     // Flag the PR once. A fix that keeps re-flaking must not re-comment on it
     // every night.
-    const flaggedAt = entry.post_merge?.pr_flagged_at ?? '';
+    const flaggedAt = prior?.pr_flagged_at ?? '';
     out.push({
       fp,
       version,
@@ -167,13 +197,17 @@ export function postMerge({reportsDir, ledger = {}, merged = {}, now}) {
         merged_at: mergedAt,
         nightlies: after.length,
         flaked: hits.length,
+        confirmed,
         verdict,
         summary,
         window_covers_merge: windowCoversMerge,
         window_start: windowStart ?? '',
-        last_flake_run_id: hits.sort((a, b) =>
-          a.createdAt.localeCompare(b.createdAt),
-        )[hits.length - 1]?.runId ?? '',
+        last_flake_run_id:
+          hits.sort((a, b) => a.createdAt.localeCompare(b.createdAt))[
+            hits.length - 1
+          ]?.runId ??
+          prior?.last_flake_run_id ??
+          '',
         checked_at: checkedAt,
         ...(flaggedAt ? {pr_flagged_at: flaggedAt} : {}),
       },

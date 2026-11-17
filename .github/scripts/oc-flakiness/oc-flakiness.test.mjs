@@ -813,6 +813,65 @@ test('should not claim clean when the fix merged before the report window starts
   assert.match(result.post_merge.summary, /^clean 2 night\(s\) — /);
 });
 
+test('should keep a re-flake after the night that showed it leaves the window', () => {
+  // given — the nights we still hold are all clean, but an earlier run of this
+  // same merge already recorded a re-flake.
+  const dir = nightlyDir([
+    night('7', '2026-11-16T02:00:00Z', [passed]),
+    night('8', '2026-11-17T02:00:00Z', [passed]),
+  ]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger({
+      post_merge: {
+        merged_at: '2026-11-05T09:00:00Z',
+        verdict: 're-flaked',
+        confirmed: 2,
+        last_flake_run_id: '3',
+        pr_flagged_at: '2026-11-08T06:00:00Z',
+      },
+    }),
+    merged: {[MERGED_FP]: '2026-11-05T09:00:00Z'},
+    now: '2026-11-18T06:00:00Z',
+  });
+
+  // then
+  assert.equal(result.verdict, 're-flaked');
+  assert.equal(result.post_merge.confirmed, 2);
+  assert.equal(result.post_merge.flaked, 0);
+  assert.equal(result.post_merge.last_flake_run_id, '3');
+  assert.match(result.post_merge.summary, /left the report window/);
+  assert.equal(result.needs_flag, false);
+});
+
+test('should not inherit a re-flake recorded for a different merge', () => {
+  // given — `decide` drops `post_merge` when it records a new PR, but a stale
+  // record from the previous fix must not condemn this one either way.
+  const dir = nightlyDir([night('9', '2026-11-17T02:00:00Z', [passed])]);
+
+  // when
+  const [result] = postMerge({
+    reportsDir: dir,
+    ledger: mergedLedger({
+      post_merge: {
+        merged_at: '2026-10-01T09:00:00Z',
+        verdict: 're-flaked',
+        confirmed: 3,
+        pr_flagged_at: '2026-10-02T06:00:00Z',
+      },
+    }),
+    merged: {[MERGED_FP]: '2026-11-16T09:00:00Z'},
+    now: '2026-11-18T06:00:00Z',
+  });
+
+  // then
+  assert.equal(result.verdict, 'clean-in-window');
+  assert.equal(result.post_merge.confirmed, 0);
+  assert.equal(result.post_merge.pr_flagged_at, undefined);
+});
+
 test('should stay pending until a nightly has run the test since the merge', () => {
   // given
   const dir = nightlyDir([night('1', '2026-11-01T02:00:00Z', [flaky])]);

@@ -316,11 +316,23 @@ jobs:
             pr=$(jq -r '.pr // ""' <<< "$r")
             [[ -n "$pr" ]] || continue
             run_id=$(jq -r '.post_merge.last_flake_run_id // ""' <<< "$r")
-            body=":rotating_light: **This fix did not hold.** \`$(jq -r .file <<< "$r")\` › $(jq -r .title <<< "$r") ($(jq -r .version <<< "$r")) $(jq -r '.post_merge.summary' <<< "$r")."
+            fp=$(jq -r .fp <<< "$r")
+            # The ledger marker is written after the comment, so a push that
+            # fails here would have the next pick comment again. The marker in
+            # the body is the independent record: if the PR already carries
+            # one, the comment stands and only the ledger needs repairing.
+            marker="<!-- oc-flakiness-post-merge ${fp} -->"
+            posted=$(GH_TOKEN="$TOKEN" gh pr view "$pr" --repo "$REPO" \
+              --json comments --jq "[.comments[] | select(.body | contains(\"$marker\"))] | length" 2>/dev/null || echo "")
+            if [[ "$posted" =~ ^[0-9]+$ ]] && (( posted > 0 )); then
+              flagged=$(jq -c --arg fp "$fp" '. + [$fp]' <<< "$flagged")
+              continue
+            fi
+            body="${marker}"$'\n'":rotating_light: **This fix did not hold.** \`$(jq -r .file <<< "$r")\` › $(jq -r .title <<< "$r") ($(jq -r .version <<< "$r")) $(jq -r '.post_merge.summary' <<< "$r")."
             [[ -n "$run_id" ]] && body="${body}"$'\n\n'"Most recent nightly it flaked in: ${GITHUB_SERVER_URL}/${REPO}/actions/runs/${run_id}"
             body="${body}"$'\n\n'"Measured by the OC flakiness fix agent (${RUN_URL}). The test is out of cooldown and can be picked again."
             if GH_TOKEN="$TOKEN" gh pr comment "$pr" --repo "$REPO" --body "$body"; then
-              flagged=$(jq -c --arg fp "$(jq -r .fp <<< "$r")" '. + [$fp]' <<< "$flagged")
+              flagged=$(jq -c --arg fp "$fp" '. + [$fp]' <<< "$flagged")
             else
               echo "::warning::could not flag ${pr}"
             fi
