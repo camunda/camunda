@@ -94,6 +94,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   private CompletableFuture<Void> commitInitialEntriesFuture;
   private ApplicationEntry lastZbEntry = null;
   private CompletableFuture<ReconfigureResponse> ongoingReconfigurationRequestFuture;
+  // The fence list of the configuration that ends the ongoing change, see onReconfigure
+  private @Nullable List<FenceEntry> ongoingTargetFenced;
 
   private final LeadershipTransferPauseGuard pauseGuard;
 
@@ -150,9 +152,15 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               // steps down on its own when the commit fails, so there is nothing more to do here.
               return;
             }
-            final var currentMembers = raft.getCluster().getConfiguration().newMembers();
+            final var currentConfiguration = raft.getCluster().getConfiguration();
             ongoingReconfigurationRequestFuture = new CompletableFuture<>();
-            leaveJointConsensus(currentMembers, raft.getCluster().getConfiguration());
+            ongoingTargetFenced = List.copyOf(currentConfiguration.fenced());
+            // The fence entries that the interrupted change would add are not known here; the
+            // requester sees no OK answer and sends them again.
+            leaveJointConsensus(
+                currentConfiguration.newMembers(),
+                currentConfiguration,
+                List.copyOf(currentConfiguration.fenced()));
           },
           raft.getThreadContext());
     }
@@ -433,11 +441,15 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     }
 
     ongoingReconfigurationRequestFuture = new CompletableFuture<>();
-    configure(updatedMembers, currentMembers, targetFenced, targetVoterPolicy)
+    ongoingTargetFenced = targetFenced;
+    // New fence entries take effect only in the configuration that ends the joint phase: in the
+    // joint configuration, a leaving voter still counts for the quorum of the old members, so it
+    // must still get entries and its answers must count.
+    configure(updatedMembers, currentMembers, configuration.fenced(), targetVoterPolicy)
         .whenComplete(
             (jointConsensusIndex, jointConsensusError) -> {
               if (jointConsensusError == null) {
-                leaveJointConsensus(updatedMembers, configuration);
+                leaveJointConsensus(updatedMembers, configuration, targetFenced);
               } else {
                 ongoingReconfigurationRequestFuture.complete(
                     logResponse(
@@ -705,7 +717,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   private void leaveJointConsensus(
-      final Collection<RaftMember> updatedMembers, final Configuration configuration) {
+      final Collection<RaftMember> updatedMembers,
+      final Configuration configuration,
+      final List<FenceEntry> targetFenced) {
     if (!isRunning() || !raft.isRunning()) {
       // This runs deferred - from the completion of the joint configuration's commit or from a
       // task scheduled in start() - so the role may have stopped or the server may have shut down
@@ -720,13 +734,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .build()));
       return;
     }
-    // The joint configuration already has the target fence list and voter policy.
+    // The joint configuration already has the target voter policy.
     final var jointConfiguration = raft.getCluster().getConfiguration();
-    configure(
-            updatedMembers,
-            List.of(),
-            jointConfiguration.fenced(),
-            jointConfiguration.voterPolicy())
+    configure(updatedMembers, List.of(), targetFenced, jointConfiguration.voterPolicy())
         .whenComplete(
             (leftJointConsensusIndex, leftJointConsensusError) -> {
               if (leftJointConsensusError == null) {
@@ -738,7 +748,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                             .withTerm(configuration.term())
                             .withTime(configuration.time())
                             .withMembers(updatedMembers)
-                            .withFenced(jointConfiguration.fenced())
+                            .withFenced(targetFenced)
                             .withVoterPolicy(jointConfiguration.voterPolicy())
                             .build()));
               } else {
@@ -755,8 +765,10 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   private boolean isDuplicateReconfigureRequest(final ReconfigureRequest request) {
     final var requestedUpdate = request.members();
     final var configuration = raft.getCluster().getConfiguration();
+    final var ongoingFenced =
+        ongoingTargetFenced != null ? ongoingTargetFenced : configuration.fenced();
     return equalMembership(requestedUpdate, configuration.newMembers())
-        && configuration.fenced().equals(targetFenced(configuration, request))
+        && ongoingFenced.equals(targetFenced(configuration, request))
         && Objects.equals(configuration.voterPolicy(), targetVoterPolicy(configuration, request));
   }
 

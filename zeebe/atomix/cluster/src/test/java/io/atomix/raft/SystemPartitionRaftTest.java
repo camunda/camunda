@@ -791,6 +791,120 @@ final class SystemPartitionRaftTest {
   }
 
   @Nested
+  final class FenceOfLeavingVoter {
+
+    private RaftServer awaitLeaderIs(final RaftServer expected, final RaftServer... servers) {
+      Awaitility.await("%s is the leader".formatted(expected.name()))
+          .until(
+              () -> {
+                final var leader = awaitLeader(servers);
+                if (leader != expected) {
+                  leader.stepDown().join();
+                  return false;
+                }
+                return true;
+              });
+      return expected;
+    }
+
+    @Test
+    void shouldCompleteLeaveOfVoterWhileAnotherVoterIsDown() {
+      // given - voters 1, 2 and 3, passive member 4 has caught up, member 1 leads
+      final var members =
+          Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE, id4, Type.PASSIVE);
+      final var m1 = createServer(id1, id2, id3, id4);
+      final var m2 = createServer(id2, id1, id3, id4);
+      final var m3 = createServer(id3, id1, id2, id4);
+      final var m4 = createServer(id4, id1, id2, id3);
+      CompletableFuture.allOf(
+              m1.bootstrap(members),
+              m2.bootstrap(members),
+              m3.bootstrap(members),
+              m4.bootstrap(members))
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+      final var leader = awaitLeaderIs(m1, m1, m2, m3);
+      final var index = appendEntry(leader);
+      Awaitility.await("passive member caught up")
+          .untilAsserted(() -> assertThat(commitIndex(m4)).isGreaterThanOrEqualTo(index));
+      m2.shutdown().join();
+
+      // when - member 3 leaves, member 4 replaces it, and member 3 is fenced; the old voters
+      // need member 3 for their quorum
+      final var target = Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id4, Type.ACTIVE);
+      final var response =
+          Awaitility.await("the leave of member 3 completes")
+              .atMost(Duration.ofSeconds(30))
+              .until(
+                  () -> {
+                    final var current = configurationId(leader);
+                    try {
+                      return m3.reconfigure(
+                              target,
+                              List.of(new FenceEntry(id3, 0)),
+                              null,
+                              current.index(),
+                              current.term())
+                          .get(5, TimeUnit.SECONDS);
+                    } catch (final Exception e) {
+                      return null;
+                    }
+                  },
+                  r -> r != null && r.status() == Status.OK);
+
+      // then
+      assertThat(response.fenced()).containsExactly(new FenceEntry(id3, 0));
+      final var configuration = leader.getConfiguration().orTimeout(5, TimeUnit.SECONDS).join();
+      assertThat(configuration.requiresJointConsensus()).isFalse();
+      assertThat(configuration.newMembers())
+          .extracting(RaftMember::memberId, RaftMember::getType)
+          .containsExactlyInAnyOrder(
+              tuple(id1, Type.ACTIVE), tuple(id2, Type.ACTIVE), tuple(id4, Type.ACTIVE));
+      assertThat(configuration.fenced()).containsExactly(new FenceEntry(id3, 0));
+      appendEntry(leader);
+    }
+
+    @Test
+    void shouldCompleteLeaveOfLeaderWithoutElection() {
+      // given - voters 1, 2 and 3, member 3 leads
+      final var members = Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE);
+      final var m1 = createServer(id1, id2, id3);
+      final var m2 = createServer(id2, id1, id3);
+      final var m3 = createServer(id3, id1, id2);
+      CompletableFuture.allOf(m1.bootstrap(members), m2.bootstrap(members), m3.bootstrap(members))
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+      final var leader = awaitLeaderIs(m3, m1, m2, m3);
+      appendEntry(leader);
+      final var termBefore = leader.getTerm();
+      final var current = configurationId(leader);
+
+      // when - the leader removes and fences itself
+      leader
+          .reconfigure(
+              Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE),
+              List.of(new FenceEntry(id3, 0)),
+              null,
+              current.index(),
+              current.term())
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+
+      // then - the leader itself appended the configuration that ends the joint phase, in its
+      // own term; it steps down only once that configuration is committed
+      final var newLeader = awaitLeader(m1, m2);
+      appendEntry(newLeader);
+      final var configuration = newLeader.getConfiguration().orTimeout(5, TimeUnit.SECONDS).join();
+      assertThat(configuration.requiresJointConsensus()).isFalse();
+      assertThat(configuration.newMembers())
+          .extracting(RaftMember::memberId)
+          .containsOnly(id1, id2);
+      assertThat(configuration.fenced()).containsExactly(new FenceEntry(id3, 0));
+      assertThat(configuration.term()).isEqualTo(termBefore);
+    }
+  }
+
+  @Nested
   final class JoinAdmissionHook {
 
     private List<RaftServer> bootstrapTwoVoters(final JoinAdmission admission) {
