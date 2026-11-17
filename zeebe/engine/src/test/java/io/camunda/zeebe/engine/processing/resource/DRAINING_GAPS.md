@@ -116,11 +116,6 @@ instances that are accepted but not yet activated.
 
 Engine:
 
-- **Unexpected errors in the delete are not acknowledged.** `tryHandleError` only handles
-  forbidden, not found and already draining. Any other exception (e.g. an `EvaluationException`
-  while resubscribing the previous version's timer start event) leaves a distributed delete
-  unacknowledged, which blocks the deployment queue. The in-memory process cache is not cleared on
-  rollback either, so the leader keeps seeing `DRAINING`.
 - **Correlation key lock.** If a delete lands between a message start correlation and the
   activation (4b), `MessageStartEventSubscriptionCorrelatedApplier` keeps (process id,
   correlation key) locked, and nothing releases it.
