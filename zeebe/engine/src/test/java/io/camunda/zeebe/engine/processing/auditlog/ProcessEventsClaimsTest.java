@@ -13,7 +13,9 @@ import io.camunda.security.api.model.config.initialization.ConfiguredUser;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -23,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -79,6 +82,47 @@ public class ProcessEventsClaimsTest {
             .findFirst();
     assertAuthorizationClaims(record);
     assertThat(record.get().getValue().getRootProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
+  public void shouldKeepOnlyActorClaimsOnFollowUpEvents() {
+    // given
+    deployProcess();
+    final var authInfo =
+        AuthInfo.ofClaims(
+            Map.of(
+                Authorization.AUTHORIZED_USERNAME,
+                DEFAULT_USER.getUsername(),
+                Authorization.USER_GROUPS_CLAIMS,
+                List.of("group"),
+                Authorization.USER_TOKEN_CLAIMS,
+                Map.of("sub", DEFAULT_USER.getUsername())));
+
+    // when
+    final var processInstanceKey =
+        engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(authInfo);
+
+    // then
+    final var records =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(
+                r ->
+                    r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED
+                        && r.getValue().getBpmnElementType() == BpmnElementType.SERVICE_TASK)
+            .toList();
+    assertThat(records)
+        .filteredOn(r -> r.getRecordType() == RecordType.EVENT)
+        .isNotEmpty()
+        .allSatisfy(
+            r ->
+                assertThat(r.getAuthorizations())
+                    .isEqualTo(
+                        Map.of(Authorization.AUTHORIZED_USERNAME, DEFAULT_USER.getUsername())));
+    assertThat(records)
+        .filteredOn(r -> r.getRecordType() == RecordType.COMMAND)
+        .isNotEmpty()
+        .allSatisfy(r -> assertThat(r.getAuthorizations()).isEqualTo(authInfo.toClaimsMap()));
   }
 
   @Test

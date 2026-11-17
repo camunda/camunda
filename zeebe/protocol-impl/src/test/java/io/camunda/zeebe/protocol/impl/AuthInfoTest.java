@@ -241,6 +241,29 @@ final class AuthInfoTest {
           .isEqualTo(AuthDataFormat.PRE_AUTHORIZED);
       assertThat(original.getFormat()).isEqualTo(AuthDataFormat.UNKNOWN);
     }
+
+    @Test
+    void shouldKeepOnlyActorClaimsAndFormat() {
+      // given
+      final var original = AuthInfo.ofClaims(ALL_CLAIMS).withFormat(AuthDataFormat.PRE_AUTHORIZED);
+
+      // when
+      final var actorOnly = original.withActorClaimsOnly();
+
+      // then
+      final var expectedClaims =
+          Map.of(
+              AUTHORIZED_ANONYMOUS_USER,
+              false,
+              AUTHORIZED_USERNAME,
+              "user",
+              AUTHORIZED_CLIENT_ID,
+              "client");
+      assertThat(actorOnly.toClaimsMap()).isEqualTo(expectedClaims);
+      assertThat(actorOnly.getFormat()).isEqualTo(AuthDataFormat.PRE_AUTHORIZED);
+      assertThat(decode(encode(actorOnly))).isEqualTo(actorOnly);
+      assertThat(original.toClaimsMap()).isEqualTo(ALL_CLAIMS);
+    }
   }
 
   @Nested
