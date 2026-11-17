@@ -28,7 +28,7 @@ type Props = {
 	search: DecisionsSearch;
 };
 
-const ProcessInstanceLink = createLink<React.FC<React.ComponentProps<'a'>>>(InstanceLink);
+const RouterInstanceLink = createLink<React.FC<React.ComponentProps<'a'>>>(InstanceLink);
 
 const InstancesTable: React.FC<Props> = ({search}) => {
 	const {t} = useTranslation();
@@ -80,8 +80,9 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 			sortKey: 'decisionEvaluationInstanceKey',
 			label: t('operate.decisions.instancesTable.decisionInstanceKey'),
 			render: (row: DecisionInstance) => (
-				<InstanceLink
-					href={`/operate/decisions/${row.decisionEvaluationInstanceKey}`}
+				<RouterInstanceLink
+					to="/operate/decisions/$decisionInstanceId"
+					params={{decisionInstanceId: row.decisionEvaluationInstanceKey}}
 					title={t('operate.decisions.instancesTable.viewDecisionInstance', {
 						key: row.decisionEvaluationInstanceKey,
 					})}
@@ -90,7 +91,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 					})}
 				>
 					{row.decisionEvaluationInstanceKey}
-				</InstanceLink>
+				</RouterInstanceLink>
 			),
 		},
 		{
@@ -133,14 +134,14 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 			label: t('operate.decisions.instancesTable.processInstanceKey'),
 			render: (row: DecisionInstance) =>
 				row.processInstanceKey ? (
-					<ProcessInstanceLink
+					<RouterInstanceLink
 						to="/operate/processes/$processInstanceId"
 						params={{processInstanceId: row.processInstanceKey}}
 						title={t('operate.decisions.instancesTable.viewProcessInstance', {key: row.processInstanceKey})}
 						aria-label={t('operate.decisions.instancesTable.viewProcessInstance', {key: row.processInstanceKey})}
 					>
 						{row.processInstanceKey}
-					</ProcessInstanceLink>
+					</RouterInstanceLink>
 				) : (
 					t('operate.decisions.instancesTable.none')
 				),

@@ -8,6 +8,7 @@
 
 import {describe, expect} from 'vitest';
 import {render} from 'vitest-browser-react';
+import type {BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.11';
 import {it} from '#/vitest-modules/test-extend';
 import {BatchStateIndicator} from './index';
 
@@ -22,5 +23,13 @@ describe('<BatchStateIndicator />', () => {
 		const screen = await render(<BatchStateIndicator state="FAILED" ariaLabelPrefix="Item status" />);
 
 		await expect.element(screen.getByRole('status', {name: 'Item status: Failed'})).toBeVisible();
+	});
+
+	it('should show the raw status of a state the client does not know', async () => {
+		const screen = await render(<BatchStateIndicator state={'UNKNOWN_STATE' as BatchOperationState} />);
+
+		await expect
+			.element(screen.getByRole('status', {name: 'Batch operation status: UNKNOWN_STATE'}))
+			.toHaveTextContent('UNKNOWN_STATE');
 	});
 });

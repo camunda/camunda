@@ -292,6 +292,30 @@ describe('<InstancesTable />', () => {
 		},
 	);
 
+	it.for([
+		{basepath: '', expectedPathPrefix: ''},
+		{basepath: '/camunda', expectedPathPrefix: '/camunda'},
+	])(
+		'should render decision instance links with the correct basepath "$basepath"',
+		async ({basepath, expectedPathPrefix}, {worker}) => {
+			worker.use(
+				mockQueryDecisionInstancesEndpoint({
+					successResponse: HttpResponse.json(
+						createQueryDecisionInstancesResponse({
+							items: [createDecisionInstance({decisionEvaluationInstanceKey: '2251799813702856-1'})],
+						}),
+					),
+				}),
+			);
+
+			const screen = await renderInstancesTable({basepath});
+
+			await expect
+				.element(screen.getByRole('link', {name: 'View decision instance 2251799813702856-1'}))
+				.toHaveAttribute('href', `${expectedPathPrefix}/operate/decisions/2251799813702856-1`);
+		},
+	);
+
 	it('should render "None" instead of a process instance link when the process instance key is missing', async ({
 		worker,
 	}) => {

@@ -12,9 +12,14 @@ import {z} from 'zod';
 import {test, expect} from '#/pw-modules/test-extend';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createVariable} from '#/shared-test-modules/api-mocks/variables';
+import {createElementInstance} from '#/shared-test-modules/api-mocks/element-instances';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
-import {mockModifyProcessInstanceEndpoint, mockQueryVariablesEndpoint} from '#/shared-test-modules/mock-handlers';
+import {
+	mockModifyProcessInstanceEndpoint,
+	mockQueryElementInstancesEndpoint,
+	mockQueryVariablesEndpoint,
+} from '#/shared-test-modules/mock-handlers';
 
 const PLANNED_TASK_LABEL = 'Review invoice, this element instance is planned to be added';
 
@@ -73,6 +78,61 @@ test('should stage, undo, review and discard modifications with the default acti
 	await expect(helper).not.toBeVisible();
 	await expect(review).toBeDisabled();
 	await expect(operateProcessInstancePage.historyItem(PLANNED_TASK_LABEL)).not.toBeVisible();
+});
+
+test('should not update the instance history in modification mode and resume after leaving it', async ({
+	network,
+	page,
+	operateProcessInstancePage,
+}) => {
+	await page.clock.install();
+	const instance = createProcessInstance({
+		processInstanceKey: '2251799813866403',
+		processDefinitionId: 'my_simple_process',
+	});
+	const historyResponse = (elementId: string, elementName: string, elementInstanceKey: string) =>
+		HttpResponse.json(
+			createPaginatedResponse({
+				items: [
+					createElementInstance({
+						processInstanceKey: instance.processInstanceKey,
+						elementInstanceKey,
+						elementInstanceScopeKey: instance.processInstanceKey,
+						elementId,
+						elementName,
+					}),
+				],
+			}),
+		);
+	network.use(...processInstanceHeaderHandlers(instance));
+	await operateProcessInstancePage.goto(instance.processInstanceKey, '/variables');
+	await expect(operateProcessInstancePage.historyTree).toBeVisible();
+	await operateProcessInstancePage.action('Modify', instance.processInstanceKey).click();
+	const helper = operateProcessInstancePage.dialog('Process Instance Modification Mode');
+	await helper.getByRole('button', {name: 'Continue'}).click();
+	await expect(page.getByRole('button', {name: 'Discard All'})).toBeVisible();
+
+	network.use(
+		mockQueryElementInstancesEndpoint({
+			successResponse: historyResponse('task-1', 'Review invoice', '2251799813866404'),
+		}),
+	);
+	await page.clock.fastForward(10000);
+
+	await expect(operateProcessInstancePage.historyItem('Review invoice')).not.toBeVisible();
+
+	await page.getByRole('button', {name: 'Discard All'}).click();
+	await operateProcessInstancePage.dialog('Discard Modifications').getByRole('button', {name: 'Discard'}).click();
+	await expect(operateProcessInstancePage.action('Modify', instance.processInstanceKey)).toBeVisible();
+
+	network.use(
+		mockQueryElementInstancesEndpoint({
+			successResponse: historyResponse('task-2', 'Approve payment', '2251799813866405'),
+		}),
+	);
+	await page.clock.fastForward(5000);
+
+	await expect(operateProcessInstancePage.historyItem('Approve payment')).toBeVisible();
 });
 
 test('should apply staged token and local/root variable changes from the collapsed default Modify menu', async ({
