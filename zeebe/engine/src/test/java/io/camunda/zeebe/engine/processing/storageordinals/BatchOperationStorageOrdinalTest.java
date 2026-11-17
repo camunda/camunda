@@ -102,14 +102,14 @@ public final class BatchOperationStorageOrdinalTest {
               config ->
                   config
                       .setArchiverlessEnabled(true)
-                      .setFixedStorageOrdinal(FIXED_ORDINAL)
+                      .setFixedStorageOrdinals(List.of(FIXED_ORDINAL))
                       .setBatchOperationQueryRetryMax(10)
                       .setBatchOperationQueryRetryInitialDelay(Duration.ofMinutes(5))
                       .setBatchOperationQueryRetryMaxDelay(Duration.ofMinutes(5)))
           .withPartitionEngineConfig(
               (partitionId, config) -> {
                 if (partitionId != 1) {
-                  config.setFixedStorageOrdinal(FOLLOWER_PARTITION_ORDINAL);
+                  config.setFixedStorageOrdinals(List.of(FOLLOWER_PARTITION_ORDINAL));
                 }
               })
           .withSearchClientsProxy(SEARCH_CLIENTS_PROXY)

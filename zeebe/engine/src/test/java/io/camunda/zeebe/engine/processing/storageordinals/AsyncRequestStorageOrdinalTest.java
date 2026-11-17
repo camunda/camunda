@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
 import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,7 +39,7 @@ public final class AsyncRequestStorageOrdinalTest {
       EngineRule.singlePartition()
           .maxCommandsInBatch(1)
           .withEngineConfig(
-              c -> c.setArchiverlessEnabled(true).setFixedStorageOrdinal(FIXED_ORDINAL));
+              c -> c.setArchiverlessEnabled(true).setFixedStorageOrdinals(List.of(FIXED_ORDINAL)));
 
   @Test
   public void shouldAssignInstanceOrdinalToCancelRequestRecords() {
@@ -154,7 +155,8 @@ public final class AsyncRequestStorageOrdinalTest {
   public void shouldKeepPersistedScopeOrdinalOnUserTaskCompleteRequestRecords() {
     // given: a user task persisted with ordinal 0, as an instance created before ordinal support
     engine.stop();
-    engine.withEngineConfig(c -> c.setFixedStorageOrdinal(StorageOrdinalRelated.MAIN_INDEX));
+    engine.withEngineConfig(
+        c -> c.setFixedStorageOrdinals(List.of(StorageOrdinalRelated.MAIN_INDEX)));
     engine.start();
     engine
         .deployment()
@@ -184,7 +186,7 @@ public final class AsyncRequestStorageOrdinalTest {
 
     // and: the engine now assigns a different ordinal to new instances
     engine.stop();
-    engine.withEngineConfig(c -> c.setFixedStorageOrdinal(FIXED_ORDINAL));
+    engine.withEngineConfig(c -> c.setFixedStorageOrdinals(List.of(FIXED_ORDINAL)));
     engine.start();
 
     // when

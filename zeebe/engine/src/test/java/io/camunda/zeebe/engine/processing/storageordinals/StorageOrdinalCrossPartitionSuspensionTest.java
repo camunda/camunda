@@ -49,7 +49,7 @@ public final class StorageOrdinalCrossPartitionSuspensionTest {
   public final EngineRule engine =
       EngineRule.multiplePartition(PARTITION_COUNT)
           .withEngineConfig(
-              c -> c.setArchiverlessEnabled(true).setFixedStorageOrdinal(FIXED_ORDINAL));
+              c -> c.setArchiverlessEnabled(true).setFixedStorageOrdinals(List.of(FIXED_ORDINAL)));
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 

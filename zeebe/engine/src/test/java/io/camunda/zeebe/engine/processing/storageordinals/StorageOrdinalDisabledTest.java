@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -31,7 +32,7 @@ public final class StorageOrdinalDisabledTest {
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withEngineConfig(
-              c -> c.setArchiverlessEnabled(false).setFixedStorageOrdinal(FIXED_ORDINAL));
+              c -> c.setArchiverlessEnabled(false).setFixedStorageOrdinals(List.of(FIXED_ORDINAL)));
 
   @Test
   public void shouldAssignMainIndexOrdinalWhenArchiverlessIsDisabled() {

@@ -31,6 +31,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -70,7 +71,7 @@ public final class BatchOperationStorageOrdinalRestartTest {
               config ->
                   config
                       .setArchiverlessEnabled(true)
-                      .setFixedStorageOrdinal(FIXED_ORDINAL)
+                      .setFixedStorageOrdinals(List.of(FIXED_ORDINAL))
                       .setBatchOperationQueryRetryMax(10)
                       .setBatchOperationQueryRetryInitialDelay(Duration.ofMinutes(5))
                       .setBatchOperationQueryRetryMaxDelay(Duration.ofMinutes(5)))
@@ -117,7 +118,7 @@ public final class BatchOperationStorageOrdinalRestartTest {
     // page. The restarted engine must take the ordinal from the batch operation rebuilt by replay,
     // not from the provider, so the provider is switched to tell the two apart.
     engine.stop();
-    engine.withEngineConfig(config -> config.setFixedStorageOrdinal(OTHER_ORDINAL));
+    engine.withEngineConfig(config -> config.setFixedStorageOrdinals(List.of(OTHER_ORDINAL)));
     Mockito.reset(SEARCH_CLIENTS_PROXY);
     when(SEARCH_CLIENTS_PROXY.withSecurityContext(any())).thenReturn(SEARCH_CLIENTS_PROXY);
     when(SEARCH_CLIENTS_PROXY.searchProcessInstances(any(ProcessInstanceQuery.class)))

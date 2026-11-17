@@ -436,7 +436,7 @@ processing.engine.secrets.wake-delay
 processing.engine.startup.process-definition-restore-enabled
 processing.engine.startup.rpa-reexport-migration-enabled
 processing.engine.storage-ordinals.enable-archiverless
-processing.engine.storage-ordinals.fixed-storage-ordinal
+processing.engine.storage-ordinals.fixed-storage-ordinals
 processing.engine.validators.results-output-max-size
 processing.evaluate-boundary-event-correlation-key-in-activity-scope
 processing.flow-control.request.aimd.backoff-ratio

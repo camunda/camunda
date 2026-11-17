@@ -45,7 +45,7 @@ public final class HistoryDeletionAuthorizationStorageOrdinalTest {
           .withIdentitySetup()
           .withAuthorizationsEnabled(true)
           .withEngineConfig(
-              c -> c.setArchiverlessEnabled(true).setFixedStorageOrdinal(FIXED_ORDINAL))
+              c -> c.setArchiverlessEnabled(true).setFixedStorageOrdinals(List.of(FIXED_ORDINAL)))
           .withSecurityConfig(
               cfg -> {
                 cfg.getInitialization().setUsers(List.of(DEFAULT_USER));

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine;
 
 import java.time.Duration;
+import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 public final class EngineConfiguration {
@@ -115,18 +116,8 @@ public final class EngineConfiguration {
   public static final boolean DEFAULT_ENABLE_PROCESS_DEFINITION_RESTORE = true;
 
   public static final boolean DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS = false;
-  public static final int DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL = -1;
-
-  public enum InputMappingMode {
-    ORDERED,
-    COMBINED
-  }
-
-  public enum OutputMappingMode {
-    ORDERED,
-    COMBINED
-  }
-
+  public static final List<Integer> DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINALS =
+      List.of(-1);
   private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
   private int maxWorkerTypeLength = DEFAULT_MAX_WORKER_TYPE_LENGTH;
@@ -217,10 +208,12 @@ public final class EngineConfiguration {
   private boolean archiverlessEnabled = DEFAULT_ENGINE_STORAGE_ORDINALS_ENABLE_ARCHIVERLESS;
 
   /**
-   * Override default storage ordinal with fixed value, mainly used during initial testing. The
-   * default value of -1 means no override is applied.
+   * Override default storage ordinal with a fixed set of values, mainly used during initial
+   * testing. When more than one value is given, one is chosen in a round-robin fashion for each new
+   * process instance. The default value of -1 means no override is applied.
    */
-  private int fixedStorageOrdinal = DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINAL;
+  private List<Integer> fixedStorageOrdinals =
+      DEFAULT_ENGINE_STORAGE_ORDINALS_FIXED_STORAGE_ORDINALS;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -821,17 +814,31 @@ public final class EngineConfiguration {
     return this;
   }
 
-  public int getFixedStorageOrdinal() {
-    return fixedStorageOrdinal;
+  public List<Integer> getFixedStorageOrdinals() {
+    return fixedStorageOrdinals;
   }
 
-  public EngineConfiguration setFixedStorageOrdinal(final int fixedStorageOrdinal) {
-    if (fixedStorageOrdinal < -1) {
-      throw new IllegalArgumentException(
-          "fixedStorageOrdinal must be -1 (no override) or >= 0 but was %d"
-              .formatted(fixedStorageOrdinal));
+  public EngineConfiguration setFixedStorageOrdinals(final List<Integer> fixedStorageOrdinals) {
+    if (fixedStorageOrdinals == null || fixedStorageOrdinals.isEmpty()) {
+      throw new IllegalArgumentException("fixedStorageOrdinals must not be empty");
     }
-    this.fixedStorageOrdinal = fixedStorageOrdinal;
+    if (fixedStorageOrdinals.size() == 1) {
+      final var fixedStorageOrdinal = fixedStorageOrdinals.getFirst();
+      if (fixedStorageOrdinal == null || fixedStorageOrdinal < -1) {
+        throw new IllegalArgumentException(
+            "fixedStorageOrdinals must be -1 (no override) or >= 0 but was %s"
+                .formatted(fixedStorageOrdinals));
+      }
+    } else {
+      for (final Integer fixedStorageOrdinal : fixedStorageOrdinals) {
+        if (fixedStorageOrdinal == null || fixedStorageOrdinal <= 0) {
+          throw new IllegalArgumentException(
+              "multiple fixedStorageOrdinals must not be combined with -1 (no override) and must "
+                  + "be > 0 but was %s".formatted(fixedStorageOrdinals));
+        }
+      }
+    }
+    this.fixedStorageOrdinals = List.copyOf(fixedStorageOrdinals);
     return this;
   }
 
@@ -871,5 +878,15 @@ public final class EngineConfiguration {
       final @Nullable OutputMappingMode outputComparisonMode) {
     this.outputComparisonMode = outputComparisonMode;
     return this;
+  }
+
+  public enum InputMappingMode {
+    ORDERED,
+    COMBINED
+  }
+
+  public enum OutputMappingMode {
+    ORDERED,
+    COMBINED
   }
 }
