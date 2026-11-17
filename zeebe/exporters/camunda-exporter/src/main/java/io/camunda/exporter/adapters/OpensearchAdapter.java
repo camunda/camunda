@@ -27,6 +27,7 @@ import io.camunda.zeebe.exporter.common.cache.decisionRequirements.CachedDecisio
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import java.io.IOException;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 
 class OpensearchAdapter implements ClientAdapter {
@@ -34,13 +35,39 @@ class OpensearchAdapter implements ClientAdapter {
   private final OpensearchEngineClient searchEngineClient;
   private final OpensearchExporterEntityCacheProvider entityCacheLoader;
   private final ObjectMapper objectMapper;
+  private final boolean ownsClient;
 
   OpensearchAdapter(final ConnectConfiguration configuration) {
-    final var connector = new OpensearchConnector(configuration);
-    client = connector.createClient();
-    objectMapper = connector.objectMapper();
+    this(new OpensearchConnector(configuration));
+  }
+
+  private OpensearchAdapter(final OpensearchConnector connector) {
+    this(connector.createClient(), connector.objectMapper(), true);
+  }
+
+  /** Wraps a client owned by someone else; {@link #close()} leaves it open. */
+  OpensearchAdapter(final OpenSearchClient client) {
+    this(client, objectMapperOf(client), false);
+  }
+
+  private OpensearchAdapter(
+      final OpenSearchClient client, final ObjectMapper objectMapper, final boolean ownsClient) {
+    this.client = client;
+    this.objectMapper = objectMapper;
+    this.ownsClient = ownsClient;
     searchEngineClient = new OpensearchEngineClient(client, objectMapper);
     entityCacheLoader = new OpensearchExporterEntityCacheProvider(client);
+  }
+
+  // the transport belongs to the caller's client; we only read the mapper from it
+  @SuppressWarnings("resource")
+  private static ObjectMapper objectMapperOf(final OpenSearchClient client) {
+    final var jsonpMapper = client._transport().jsonpMapper();
+    if (jsonpMapper instanceof final JacksonJsonpMapper jackson) {
+      return jackson.objectMapper();
+    }
+    throw new IllegalArgumentException(
+        "Expected a client using JacksonJsonpMapper, but got " + jsonpMapper);
   }
 
   @Override
@@ -65,7 +92,9 @@ class OpensearchAdapter implements ClientAdapter {
 
   @Override
   public void close() throws IOException {
-    client._transport().close();
+    if (ownsClient) {
+      client._transport().close();
+    }
   }
 
   record OpensearchExporterEntityCacheProvider(OpenSearchClient client)

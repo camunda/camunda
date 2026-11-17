@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.adapters;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.store.BatchRequest;
@@ -14,6 +15,7 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.schema.SearchEngineClient;
 import java.io.IOException;
+import org.opensearch.client.opensearch.OpenSearchClient;
 
 public interface ClientAdapter extends AutoCloseable {
 
@@ -24,6 +26,22 @@ public interface ClientAdapter extends AutoCloseable {
       case DatabaseType.OPENSEARCH -> new OpensearchAdapter(configuration);
       default -> throw new IllegalArgumentException("Unsupported databaseType: " + databaseType);
     };
+  }
+
+  /**
+   * Wraps an already-created client, e.g. a shared Spring bean. The adapter does not own the client
+   * and does not close it.
+   */
+  static ClientAdapter of(final ElasticsearchClient client) {
+    return new ElasticsearchAdapter(client);
+  }
+
+  /**
+   * Wraps an already-created client, e.g. a shared Spring bean. The adapter does not own the client
+   * and does not close it.
+   */
+  static ClientAdapter of(final OpenSearchClient client) {
+    return new OpensearchAdapter(client);
   }
 
   ObjectMapper objectMapper();
