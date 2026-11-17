@@ -442,7 +442,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "409":
           description: |
-            A matching process definition is not in a state that can be suspended (`INVALID_STATE`).
+            The selected process definition version has the state `DRAINING`: it was deleted and is
+            only kept until its running process instances finish, so it cannot be suspended. This only
+            applies when a single version is selected, either with `processDefinitionKey` or with
+            `processDefinitionId` and `processDefinitionVersion`.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -501,7 +504,10 @@ paths:
                 $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "409":
           description: |
-            A matching process definition is not in a state that can be resumed (`INVALID_STATE`).
+            The selected process definition version has the state `DRAINING`: it was deleted and is
+            only kept until its running process instances finish, so it cannot be resumed. This only
+            applies when a single version is selected, either with `processDefinitionKey` or with
+            `processDefinitionId` and `processDefinitionVersion`.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -611,7 +617,9 @@ components:
           description: |
             `SUSPENDED` if the version was suspended by this request,
             `ALREADY_SUSPENDED` if it already was in the requested state,
-            `DRAINING` if it is being deleted and is left unchanged.
+            `DRAINING` if it is being deleted and is left unchanged. This only occurs when the
+            request selects by ID without a version; selecting a single draining version is rejected
+            with 409.
           type: string
           enum:
             - SUSPENDED
@@ -711,7 +719,9 @@ components:
           description: |
             `RESUMED` if the version was resumed by this request,
             `ALREADY_RESUMED` if it already was in the requested state,
-            `DRAINING` if it is being deleted and is left unchanged.
+            `DRAINING` if it is being deleted and is left unchanged. This only occurs when the
+            request selects by ID without a version; selecting a single draining version is rejected
+            with 409.
           type: string
           enum:
             - RESUMED
