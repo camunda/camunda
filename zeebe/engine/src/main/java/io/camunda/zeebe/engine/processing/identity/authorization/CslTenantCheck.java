@@ -45,10 +45,11 @@ public final class CslTenantCheck {
   }
 
   /**
-   * Resolves the {@link TenantAccess} for a command from its authorization claims, reusing this
-   * component's claims converter and security configuration. Centralizes the converter here so
-   * command processors depend only on {@code CslTenantCheck} instead of threading the converter
-   * through their construction chains.
+   * Resolves the {@link TenantAccess} for the given authorization claims, reusing this component's
+   * claims converter and security configuration. Centralizes the converter here so command
+   * processors depend only on {@code CslTenantCheck} instead of threading the converter through
+   * their construction chains. For a command, use {@link #resolveAuthorizedTenants(TypedRecord)};
+   * this variant is for claims without a command, e.g. from a job stream.
    *
    * <p>Anonymous access is a wildcard grant; a multi-tenancy-disabled command resolves to the
    * default tenant; a claims-free command resolves to an empty allowed grant (authorized for no
@@ -72,8 +73,10 @@ public final class CslTenantCheck {
   }
 
   /**
-   * Like {@link #resolveAuthorizedTenants(AuthInfo)} for the claims of the command, but authorizes
-   * an internal command for every tenant, unless it is distributed.
+   * Resolves the {@link TenantAccess} for a command. Use this variant for every command. When
+   * multi-tenancy checks are enabled, an internal command that is not distributed is authorized for
+   * every tenant. Otherwise the result is that of {@link #resolveAuthorizedTenants(AuthInfo)} for
+   * the claims of the command.
    */
   public TenantAccess resolveAuthorizedTenants(final TypedRecord<?> command) {
     if (securityConfig.isMultiTenancyChecksEnabled() && isInternalNotDistributed(command)) {
@@ -153,10 +156,12 @@ public final class CslTenantCheck {
   /**
    * Unlike {@link #checkTenant}, this method has no no-principal skip: a claims-free caller is
    * rejected for every tenant it names, rather than vacuously authorized. (The
-   * multi-tenancy-disabled and anonymous-caller skips still apply, same as {@link #checkTenant}.)
-   * Use it only for command sites that call the tenant check directly, with no preceding {@link
-   * CslAuthorizationCheck#check}, and that verify membership across a list of tenant IDs at once,
-   * using {@link TenantAccess#isAuthorizedForTenantIds}.
+   * multi-tenancy-disabled and anonymous-caller skips still apply, same as {@link #checkTenant}. An
+   * internal command that is not distributed also passes, if its {@code authorizedTenants} come
+   * from {@link #resolveAuthorizedTenants(TypedRecord)}.) Use it only for command sites that call
+   * the tenant check directly, with no preceding {@link CslAuthorizationCheck#check}, and that
+   * verify membership across a list of tenant IDs at once, using {@link
+   * TenantAccess#isAuthorizedForTenantIds}.
    *
    * <p>Without a preceding {@link CslAuthorizationCheck#check} to reject a claims-free command
    * first, sharing {@link #checkTenant}'s no-principal skip here would silently authorize a
