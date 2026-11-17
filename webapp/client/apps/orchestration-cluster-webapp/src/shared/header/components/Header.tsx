@@ -63,7 +63,7 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
 
 type Props = {
 	currentUser: AuthenticatedCurrentUser;
-	license: License;
+	license: License | null;
 };
 
 const Header: React.FC<Props> = observer(({currentUser, license}) => {
@@ -99,10 +99,10 @@ const Header: React.FC<Props> = observer(({currentUser, license}) => {
 			navbar={{
 				elements,
 				licenseTag: {
-					show: license.licenseType !== 'saas',
-					isProductionLicense: license.validLicense,
-					isCommercial: license.isCommercial,
-					expiresAt: license.expiresAt ?? undefined,
+					show: license !== null && license.licenseType !== 'saas',
+					isProductionLicense: license?.validLicense ?? false,
+					isCommercial: license?.isCommercial ?? false,
+					expiresAt: license?.expiresAt ?? undefined,
 				},
 			}}
 			actionButtons={[

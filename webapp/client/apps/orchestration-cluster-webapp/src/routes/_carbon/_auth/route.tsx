@@ -7,7 +7,7 @@
  */
 
 import {createFileRoute, Outlet, redirect, useRouterState, type RegisteredRouter} from '@tanstack/react-router';
-import {useSuspenseQuery} from '@tanstack/react-query';
+import {useQuery, useSuspenseQuery} from '@tanstack/react-query';
 import {useSessionHeartbeat} from '@camunda/session-heartbeat/react';
 import {SessionWatcher} from '#/shared/auth/components/SessionWatcher';
 import {authenticationStore} from '#/shared/auth/authentication.store';
@@ -29,7 +29,6 @@ const Route = createFileRoute('/_carbon/_auth')({
 			const [, systemConfig] = await Promise.all([
 				queryClient.ensureQueryData(queries.getCurrentUser()),
 				queryClient.ensureQueryData(queries.getSystemConfiguration()),
-				queryClient.ensureQueryData(queries.getLicense()),
 			]);
 
 			storeSessionState('clientConfig', systemConfig);
@@ -47,6 +46,9 @@ const Route = createFileRoute('/_carbon/_auth')({
 
 			throw redirect({to: '/operate/login', state: {operateLoginReferrer: location.href}});
 		}
+
+		// The license is optional for the UI: a failed request must not log the user out, the header hides the tag.
+		await queryClient.prefetchQuery(queries.getLicense());
 	},
 	loader: async () => {
 		const {organizationId} = getBootConfig();
@@ -60,7 +62,7 @@ const Route = createFileRoute('/_carbon/_auth')({
 	component: function RouteComponent() {
 		const {initialSaasToken} = Route.useLoaderData();
 		const {data: currentUser} = useSuspenseQuery(queries.getCurrentUser());
-		const {data: license} = useSuspenseQuery(queries.getLicense());
+		const {data: license = null} = useQuery(queries.getLicense());
 		const pathname = useRouterState({select: ({location}) => location.pathname});
 		const currentApp = resolveCurrentApp(pathname);
 
