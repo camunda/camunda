@@ -21,6 +21,7 @@ import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import java.io.IOException;
 import java.time.Duration;
@@ -105,6 +106,13 @@ abstract class HistoryDeletionRepositoryIT {
   protected abstract void index(final HistoryDeletionEntity entity) throws IOException;
 
   protected abstract long countAuditLogCleanupEntries() throws IOException;
+
+  /** Indexes a minimal scheduled operation document into the given index. */
+  protected abstract void indexOperation(final String indexName, final String id)
+      throws IOException;
+
+  protected abstract String getOperationState(final String indexName, final String id)
+      throws IOException;
 
   @Test
   void shouldGetEmptyListWhenNoEntitiesToDelete() {
@@ -235,5 +243,43 @@ abstract class HistoryDeletionRepositoryIT {
     // then - should complete successfully
     assertThat(result).succeedsWithin(REQUEST_TIMEOUT);
     assertThat(result.join()).containsExactlyElementsOf(nonExistentIds);
+  }
+
+  @Test
+  void shouldCompleteOperationInMainIndexWhenResourceHasNoOrdinal() throws IOException {
+    // given
+    final var operationId = UUID.randomUUID().toString();
+    final var mainIndex = operationTemplate.getFullQualifiedName();
+    indexOperation(mainIndex, operationId);
+    final var entity = new HistoryDeletionEntity();
+
+    // when
+    final var result =
+        repository.completeOperations(List.of(new OperationToComplete(entity, operationId)));
+
+    // then
+    assertThat(result).succeedsWithin(REQUEST_TIMEOUT);
+    assertThat(getOperationState(mainIndex, operationId))
+        .isEqualTo(OperationState.COMPLETED.name());
+  }
+
+  @Test
+  void shouldCompleteOperationInOrdinalIndexWhenResourceHasOrdinal() throws IOException {
+    // given
+    final var operationId = UUID.randomUUID().toString();
+    final var ordinal = 5;
+    final var mainIndex = operationTemplate.getFullQualifiedName();
+    final var ordinalIndex = mainIndex + "ord0000" + ordinal;
+    indexOperation(ordinalIndex, operationId);
+    final var entity = new HistoryDeletionEntity().setResourceStorageOrdinal(ordinal);
+
+    // when
+    final var result =
+        repository.completeOperations(List.of(new OperationToComplete(entity, operationId)));
+
+    // then
+    assertThat(result).succeedsWithin(REQUEST_TIMEOUT);
+    assertThat(getOperationState(ordinalIndex, operationId))
+        .isEqualTo(OperationState.COMPLETED.name());
   }
 }

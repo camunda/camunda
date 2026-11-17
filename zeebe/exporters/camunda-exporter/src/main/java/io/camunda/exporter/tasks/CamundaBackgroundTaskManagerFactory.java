@@ -16,6 +16,7 @@ import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.archiver.ApplyRolloverPeriodJob;
@@ -303,7 +304,8 @@ public final class CamundaBackgroundTaskManagerFactory {
         logger,
         partitionId,
         config.getHistoryDeletion(),
-        clock);
+        clock,
+        new TargetIndexLocator());
   }
 
   private ElasticsearchHistoryDeletionRepository createHistoryDeletionRepository(
@@ -315,7 +317,8 @@ public final class CamundaBackgroundTaskManagerFactory {
         logger,
         partitionId,
         config.getHistoryDeletion(),
-        clock);
+        clock,
+        new TargetIndexLocator());
   }
 
   private OpensearchAuditLogArchiverRepository createAuditLogArchiverRepository(
