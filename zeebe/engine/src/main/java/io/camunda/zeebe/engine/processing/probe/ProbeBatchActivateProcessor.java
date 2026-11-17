@@ -252,11 +252,11 @@ public final class ProbeBatchActivateProcessor implements TypedRecordProcessor<P
                 injectedInput == null
                     ? 0
                     : injectedInput.length - probe.getInputBuffer().capacity();
+            // values shorter than their placeholders shrink the response, not the event
             final int expectedResponseLength =
                 command.getLength()
                     + probe.getLength()
-                    + responseGrowth
-                    + growth
+                    + Math.max(0, responseGrowth + growth)
                     + EngineConfiguration.BATCH_SIZE_CALCULATION_BUFFER;
             if (!stateWriter.canWriteEventOfLength(expectedResponseLength)) {
               value.setTruncated(true);
