@@ -52,7 +52,7 @@ final class OptimizeReportEvaluatorTest {
 
   @AfterEach
   void tearDown() {
-    evaluator.close();
+    evaluator.stop();
   }
 
   @Test
@@ -168,7 +168,7 @@ final class OptimizeReportEvaluatorTest {
     evaluator.start();
 
     // when
-    evaluator.close();
+    evaluator.stop();
 
     // then
     await()

@@ -14,7 +14,7 @@ import io.camunda.zeebe.metrics.ErrorType;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.metrics.StarterLatencyMetricsDoc.StarterLatencyMetricKeyNames;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
-import io.camunda.zeebe.starter.ProcessDeployer;
+import io.camunda.zeebe.starter.ProcessDeployed;
 import io.camunda.zeebe.starter.ProcessInstanceCreator;
 import io.camunda.zeebe.starter.StarterFinished;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -48,7 +48,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Profile("starter")
 @ConditionalOnProperty(name = "load-tester.perform-read-benchmarks", havingValue = "true")
-public class DataReadMeter implements AutoCloseable {
+public class DataReadMeter implements SmartLifecycle {
 
   private static final Logger LOG = LoggerFactory.getLogger(DataReadMeter.class);
   private static final String OUTCOME_SUCCESS = "success";
@@ -63,6 +63,7 @@ public class DataReadMeter implements AutoCloseable {
   private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
       new AtomicReference<>(Instant.now());
   private volatile boolean closed;
+  private volatile boolean running;
   private final AtomicReference<ReadQueryContext> queryContext =
       new AtomicReference<>(new ReadQueryContext(0L, "", 0L, () -> Pair.of("foo", 0L)));
 
@@ -71,8 +72,7 @@ public class DataReadMeter implements AutoCloseable {
       final MeterRegistry meterRegistry,
       @Qualifier("queryCamundaClient") final CamundaClient client,
       final LoadTesterProperties properties,
-      final ProcessInstanceCreator processInstanceCreator,
-      final ProcessDeployer processDeployer) {
+      final ProcessInstanceCreator processInstanceCreator) {
     this(
         meterRegistry,
         Executors.newScheduledThreadPool(2),
@@ -80,7 +80,6 @@ public class DataReadMeter implements AutoCloseable {
         DataReadMeterQueryProvider.getDefaultQueries(properties.getDisabledQueriesList()));
     final var starterCfg = properties.getStarter();
     setContextProcessDefinitionId(starterCfg.getProcessId());
-    setContextProcessDefinitionKey(processDeployer.processDefinitionKey());
     setContextBusinessKeySupplier(
         () ->
             Pair.of(
@@ -108,8 +107,15 @@ public class DataReadMeter implements AutoCloseable {
    * scheduled once the previous one completed, so there is at most one in-flight execution per
    * query and slow queries neither pile up nor block the scheduler threads.
    */
-  @EventListener(ApplicationReadyEvent.class)
+  @EventListener(ProcessDeployed.class)
+  void onProcessDeployed(final ProcessDeployed event) {
+    setContextProcessDefinitionKey(event.processDefinitionKey());
+    start();
+  }
+
+  @Override
   public void start() {
+    running = true;
     for (final ReadQuery query : queries) {
       timer(query, OUTCOME_SUCCESS, NO_ERROR);
       scheduleNext(query);
@@ -183,9 +189,20 @@ public class DataReadMeter implements AutoCloseable {
 
   @Override
   @EventListener(StarterFinished.class)
-  public void close() {
+  public void stop() {
+    running = false;
     closed = true;
     executorService.shutdownNow();
+  }
+
+  @Override
+  public boolean isAutoStartup() {
+    return false;
+  }
+
+  @Override
+  public boolean isRunning() {
+    return running;
   }
 
   private void recordProcessInstanceStart(final long processInstanceKey) {

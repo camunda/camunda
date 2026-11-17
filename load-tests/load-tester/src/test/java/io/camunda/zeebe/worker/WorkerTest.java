@@ -24,9 +24,10 @@ import io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCo
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.PublishMessageResponse;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.EnabledChangeSet;
+import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
-import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.util.PayloadReader;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
@@ -84,6 +85,20 @@ class WorkerTest {
     verify(completeStep).send();
   }
 
+  @Test
+  void shouldEnableAnnotatedJobWorkersOnConnected() {
+    // given
+    final var jobWorkerManager = mock(JobWorkerManager.class);
+    final var worker =
+        newWorker(mock(CamundaClient.class), new WorkerProperties(), jobWorkerManager);
+
+    // when
+    worker.onConnected();
+
+    // then
+    verify(jobWorkerManager).updateJobWorkers(new EnabledChangeSet(true));
+  }
+
   private static long timeHandleJob(
       final Worker worker, final JobClient jobClient, final ActivatedJob job) {
     final long start = System.currentTimeMillis();
@@ -108,12 +123,18 @@ class WorkerTest {
   }
 
   private static Worker newWorker(final CamundaClient client, final WorkerProperties workerProps) {
+    return newWorker(client, workerProps, mock(JobWorkerManager.class));
+  }
+
+  private static Worker newWorker(
+      final CamundaClient client,
+      final WorkerProperties workerProps,
+      final JobWorkerManager jobWorkerManager) {
     final var properties = new LoadTesterProperties();
     properties.setWorker(workerProps);
     final var payloadReader = mock(PayloadReader.class);
     when(payloadReader.readPayload(anyString())).thenReturn("{}");
-    final var connectionMonitor = mock(ConnectionMonitor.class);
-    return new Worker(client, properties, payloadReader, connectionMonitor);
+    return new Worker(client, properties, payloadReader, jobWorkerManager);
   }
 
   @SuppressWarnings("unchecked")

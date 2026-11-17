@@ -11,13 +11,13 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.JobWorker;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.EnabledChangeSet;
+import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.WorkerProperties;
-import io.camunda.zeebe.metrics.ConnectionMonitor;
+import io.camunda.zeebe.metrics.Connected;
 import io.camunda.zeebe.util.PayloadReader;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -25,12 +25,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 @Component
 @Profile("worker")
-public class Worker {
+public class Worker implements SmartLifecycle {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Worker.class);
   private static final Logger THROTTLED_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(5));
@@ -42,24 +44,23 @@ public class Worker {
   private final BlockingQueue<Future<?>> requestFutures =
       new ArrayBlockingQueue<>(REQUEST_FUTURES_CAPACITY);
   private final ResponseChecker responseChecker;
-  private final ConnectionMonitor connectionMonitor;
+  private final JobWorkerManager jobWorkerManager;
 
   public Worker(
       final CamundaClient client,
       final LoadTesterProperties properties,
       final PayloadReader payloadReader,
-      final ConnectionMonitor connectionMonitor) {
+      final JobWorkerManager jobWorkerManager) {
     this.client = client;
     workerCfg = properties.getWorker();
     variables = payloadReader.readPayload(workerCfg.getPayloadPath());
     responseChecker = new ResponseChecker(requestFutures);
-    this.connectionMonitor = connectionMonitor;
+    this.jobWorkerManager = jobWorkerManager;
   }
 
-  @PostConstruct
-  void awaitTopologyAndLogConfig() {
+  @Override
+  public void start() {
     responseChecker.start();
-    connectionMonitor.awaitAndPrintTopology();
     LOGGER.info(
         "Worker config: completionDelay={}, sendMessage={}, messageName={}, "
             + "correlationKeyVariable={}, payloadPath={}",
@@ -70,8 +71,13 @@ public class Worker {
         workerCfg.getPayloadPath());
   }
 
-  @PreDestroy
-  void shutdown() {
+  @EventListener(Connected.class)
+  void onConnected() {
+    jobWorkerManager.updateJobWorkers(new EnabledChangeSet(true));
+  }
+
+  @Override
+  public void stop() {
     // ResponseChecker extends Thread with a default (non-daemon) factory, so without
     // an explicit close() it keeps the JVM alive after the Spring context stops —
     // tests appear to pass but the forked process never exits on IDE runners.
@@ -81,6 +87,11 @@ public class Worker {
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
     }
+  }
+
+  @Override
+  public boolean isRunning() {
+    return responseChecker.isAlive();
   }
 
   @JobWorker(autoComplete = false)

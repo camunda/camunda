@@ -12,6 +12,7 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.starter.ProcessDeployed;
 import io.camunda.zeebe.starter.ProcessInstanceCreator;
 import io.camunda.zeebe.starter.StarterFinished;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
@@ -31,7 +32,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -42,7 +43,7 @@ import org.springframework.stereotype.Component;
     name = "load-tester.monitor-data-availability",
     havingValue = "true",
     matchIfMissing = true)
-public class ProcessInstanceStartMeter implements AutoCloseable {
+public class ProcessInstanceStartMeter implements SmartLifecycle {
   private static final long MAX_DURATION = Duration.ofSeconds(90).toNanos();
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceStartMeter.class);
   private final ConcurrentHashMap<Integer, Timer> partitionToTimerMap;
@@ -53,6 +54,7 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   private final Duration availabilityCheckInterval;
   private final Clock clock;
   private final Timer dataAvailabilityQueryDurationTimer;
+  private volatile boolean running;
 
   @Autowired
   public ProcessInstanceStartMeter(
@@ -93,8 +95,10 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   }
 
   /** Starts the periodic checking for process instance availability. */
-  @EventListener(ApplicationReadyEvent.class)
+  @Override
+  @EventListener(ProcessDeployed.class)
   public void start() {
+    running = true;
     scheduleCheck(availabilityCheckInterval.toMillis());
   }
 
@@ -148,14 +152,21 @@ public class ProcessInstanceStartMeter implements AutoCloseable {
   }
 
   /** Stops the periodic checking for process instance availability. */
+  @Override
+  @EventListener(StarterFinished.class)
   public void stop() {
-    close();
+    running = false;
+    piCheckExecutorService.shutdownNow();
   }
 
   @Override
-  @EventListener(StarterFinished.class)
-  public void close() {
-    piCheckExecutorService.shutdownNow();
+  public boolean isAutoStartup() {
+    return false;
+  }
+
+  @Override
+  public boolean isRunning() {
+    return running;
   }
 
   private void checkForProcessInstances() {

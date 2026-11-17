@@ -12,24 +12,26 @@ import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCo
 import io.camunda.client.api.response.Process;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
-import io.camunda.zeebe.metrics.ConnectionMonitor;
+import io.camunda.zeebe.metrics.Connected;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
-import jakarta.annotation.PostConstruct;
 import java.time.Duration;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 /**
- * Waits for the cluster topology and deploys the benchmark process in a {@code @PostConstruct}
- * method. The context therefore finishes starting only after the deployment succeeded, and
- * components that start on {@code ApplicationReadyEvent} can rely on the process existing. The web
- * server and its health endpoints are not available until the deployment succeeded.
+ * Deploys the benchmark process on a separate thread once the cluster is {@link Connected}, retries
+ * until it succeeds, then publishes {@link ProcessDeployed}.
  */
 @Component
 @Profile("starter")
-public class ProcessDeployer {
+public class ProcessDeployer implements SmartLifecycle {
 
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(LoggerFactory.getLogger(ProcessDeployer.class), Duration.ofSeconds(5));
@@ -37,36 +39,53 @@ public class ProcessDeployer {
 
   private final CamundaClient loaderClient;
   private final StarterProperties starterCfg;
-  private final ConnectionMonitor connectionMonitor;
   private final StarterLivenessIndicator livenessIndicator;
-  private long processDefinitionKey;
+  private final ApplicationEventPublisher eventPublisher;
+  private final ExecutorService executor = Executors.newSingleThreadExecutor();
+  private volatile boolean stopped;
 
   public ProcessDeployer(
       final CamundaClient loaderClient,
       final LoadTesterProperties properties,
-      final ConnectionMonitor connectionMonitor,
-      final StarterLivenessIndicator livenessIndicator) {
+      final StarterLivenessIndicator livenessIndicator,
+      final ApplicationEventPublisher eventPublisher) {
     this.loaderClient = loaderClient;
     starterCfg = properties.getStarter();
-    this.connectionMonitor = connectionMonitor;
     this.livenessIndicator = livenessIndicator;
+    this.eventPublisher = eventPublisher;
   }
 
-  @PostConstruct
-  void deployProcess() {
-    connectionMonitor.awaitAndPrintTopology();
+  @EventListener(Connected.class)
+  void onConnected() {
     livenessIndicator.recordStarted();
-    processDefinitionKey = deploy();
+    executor.execute(this::deployProcess);
   }
 
-  public long processDefinitionKey() {
-    return processDefinitionKey;
+  void deployProcess() {
+    final long processDefinitionKey = deploy();
+    if (!stopped) {
+      eventPublisher.publishEvent(new ProcessDeployed(processDefinitionKey));
+    }
+  }
+
+  @Override
+  public void start() {}
+
+  @Override
+  public void stop() {
+    stopped = true;
+    executor.shutdownNow();
+  }
+
+  @Override
+  public boolean isRunning() {
+    return !stopped;
   }
 
   private long deploy() {
     final var deployCmd = constructDeploymentCommand();
 
-    while (true) {
+    while (!stopped) {
       try {
         final var result = deployCmd.send().join();
         return result.getProcesses().stream()
@@ -79,10 +98,12 @@ public class ProcessDeployer {
         try {
           Thread.sleep(200);
         } catch (final InterruptedException ex) {
-          // ignore
+          Thread.currentThread().interrupt();
+          return 0L;
         }
       }
     }
+    return 0L;
   }
 
   private DeployResourceCommandStep2 constructDeploymentCommand() {

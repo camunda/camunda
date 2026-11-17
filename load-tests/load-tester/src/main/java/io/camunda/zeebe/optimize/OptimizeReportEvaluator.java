@@ -15,6 +15,7 @@ import io.camunda.zeebe.metrics.OptimizeMetricsDoc;
 import io.camunda.zeebe.metrics.OptimizeMetricsDoc.OptimizeMetricKeyNames;
 import io.camunda.zeebe.optimize.OptimizeApiClient.PageEvaluationResult;
 import io.camunda.zeebe.optimize.OptimizeApiClient.ReportEvaluationResult;
+import io.camunda.zeebe.starter.ProcessDeployed;
 import io.camunda.zeebe.starter.StarterFinished;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
@@ -33,7 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -50,7 +51,7 @@ import org.springframework.web.reactive.function.client.WebClient;
     name = "load-tester.optimize.report-evaluation-enabled",
     havingValue = "true",
     matchIfMissing = true)
-public class OptimizeReportEvaluator implements AutoCloseable {
+public class OptimizeReportEvaluator implements SmartLifecycle {
 
   static final String PAGE_HOMEPAGE = "homepage";
   static final String PAGE_DETAILED = "detailed";
@@ -79,6 +80,7 @@ public class OptimizeReportEvaluator implements AutoCloseable {
   private final ConcurrentHashMap<String, Timer> latencyTimers = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<String, Counter> requestCounters = new ConcurrentHashMap<>();
   private ScheduledFuture<?> scheduledTask;
+  private volatile boolean running;
 
   @Autowired
   public OptimizeReportEvaluator(
@@ -124,8 +126,10 @@ public class OptimizeReportEvaluator implements AutoCloseable {
     return new OptimizeApiClient(props, webClientBuilder, objectMapper, credentials);
   }
 
-  @EventListener(ApplicationReadyEvent.class)
+  @Override
+  @EventListener(ProcessDeployed.class)
   public void start() {
+    running = true;
     LOG.info(
         "Scheduling Optimize dashboard and report evaluations every {} (initial delay {})",
         props.getEvaluationInterval(),
@@ -268,6 +272,16 @@ public class OptimizeReportEvaluator implements AutoCloseable {
                 .register(registry));
   }
 
+  @Override
+  public boolean isAutoStartup() {
+    return false;
+  }
+
+  @Override
+  public boolean isRunning() {
+    return running;
+  }
+
   private Counter requestCounter(final String page, final String phase, final int statusCode) {
     final String status = Integer.toString(statusCode);
     return requestCounters.computeIfAbsent(
@@ -283,7 +297,8 @@ public class OptimizeReportEvaluator implements AutoCloseable {
 
   @Override
   @EventListener(StarterFinished.class)
-  public void close() {
+  public void stop() {
+    running = false;
     if (scheduledTask != null) {
       scheduledTask.cancel(true);
     }

@@ -56,7 +56,7 @@ final class DataReadMeterTest {
   @AfterEach
   void tearDown() {
     if (meter != null) {
-      meter.close();
+      meter.stop();
     }
     meterRegistry.close();
   }
@@ -96,7 +96,7 @@ final class DataReadMeterTest {
     assertThat(executor.pending()).isEqualTo(2);
 
     // when
-    meter.close();
+    meter.stop();
 
     // then
     assertThat(executor.isShutdown()).isTrue();
@@ -116,7 +116,7 @@ final class DataReadMeterTest {
     executor.runTasks(1);
 
     // when
-    meter.close();
+    meter.stop();
     future.complete(null);
 
     // then

@@ -15,7 +15,6 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
@@ -61,7 +60,7 @@ public class Starter {
         .register(registry);
   }
 
-  @EventListener(ApplicationReadyEvent.class)
+  @EventListener(ProcessDeployed.class)
   void scheduleFinish() {
     final int durationLimit = starterCfg.getDurationLimit();
     if (durationLimit > 0) {

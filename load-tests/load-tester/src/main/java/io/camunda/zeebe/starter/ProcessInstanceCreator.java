@@ -40,14 +40,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 @Component
 @Profile("starter")
-public class ProcessInstanceCreator implements AutoCloseable {
+public class ProcessInstanceCreator implements SmartLifecycle {
 
   private static final Logger THROTTLED_LOGGER =
       new ThrottledLogger(
@@ -66,6 +66,7 @@ public class ProcessInstanceCreator implements AutoCloseable {
   private final StarterLivenessIndicator livenessIndicator;
   private final List<StartListener> startListeners = new CopyOnWriteArrayList<>();
   private final AtomicLong businessKey = new AtomicLong(0);
+  private volatile boolean running;
 
   private final Timer responseLatencyTimer;
   private final Counter processInstancesSubmittedCounter;
@@ -236,9 +237,10 @@ public class ProcessInstanceCreator implements AutoCloseable {
 
   @Override
   @EventListener(StarterFinished.class)
-  public void close() {
-    // Called on StarterFinished and again when Spring destroys the context: it can be called
+  public void stop() {
+    // Called on StarterFinished and again when Spring stops the context: it can be called
     // multiple times.
+    running = false;
     if (executor.isShutdown()) {
       return;
     }
@@ -248,9 +250,21 @@ public class ProcessInstanceCreator implements AutoCloseable {
         (long) processInstancesSubmittedCounter.count());
   }
 
-  @EventListener(ApplicationReadyEvent.class)
-  void start() {
+  @Override
+  @EventListener(ProcessDeployed.class)
+  public void start() {
+    running = true;
     schedule();
+  }
+
+  @Override
+  public boolean isAutoStartup() {
+    return false;
+  }
+
+  @Override
+  public boolean isRunning() {
+    return running;
   }
 
   private void fail(final Throwable cause) {

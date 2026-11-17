@@ -23,7 +23,6 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.config.LoadTesterProperties;
 import io.camunda.zeebe.config.StarterProperties;
-import io.camunda.zeebe.metrics.ConnectionMonitor;
 import io.camunda.zeebe.metrics.ProcessInstanceStartMeter;
 import io.camunda.zeebe.metrics.StarterMetricsDoc;
 import io.camunda.zeebe.metrics.StarterMetricsDoc.StarterMetricKeyNames;
@@ -102,11 +101,6 @@ class StarterTest {
     scheduler.initialize();
     final var registry = new SimpleMeterRegistry();
     final var livenessIndicator = mock(StarterLivenessIndicator.class);
-    final var deployer =
-        new ProcessDeployer(
-            loaderClient, properties, mock(ConnectionMonitor.class), livenessIndicator);
-    // Spring calls this @PostConstruct method, but there is no Spring context in this test.
-    deployer.deployProcess();
     final var creator =
         new ProcessInstanceCreator(
             loaderClient, properties, registry, payloadReader, livenessIndicator);
@@ -119,8 +113,8 @@ class StarterTest {
             livenessIndicator,
             scheduler,
             event -> {
-              creator.close();
-              availabilityMeter.close();
+              creator.stop();
+              availabilityMeter.stop();
             });
 
     // when

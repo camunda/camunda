@@ -5,6 +5,11 @@
 
 server:
   port: 9600
+  shutdown: graceful
+
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
 
 # Logging configuration
 logging:
@@ -38,7 +43,7 @@ management:
         enabled: true
       group:
         readiness:
-          include: connectionReady
+          include: readinessState,connectionReady
 
 # Camunda client configuration (auto-configured by camunda-spring-boot-starter)
 camunda:
@@ -161,3 +166,6 @@ spring.config.activate.on-profile: worker
 camunda:
   client:
     execution-threads: ${LOAD_TESTER_WORKER_THREADS:10}
+    worker:
+      defaults:
+        enabled: false
