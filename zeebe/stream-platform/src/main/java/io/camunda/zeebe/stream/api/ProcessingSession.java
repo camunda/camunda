@@ -45,6 +45,7 @@ public interface ProcessingSession {
   default void appendAuthInfoToFollowUps(final @Nullable AuthInfo authInfo) {
     if (authInfo != null && authInfo.hasAnyClaims()) {
       // On events, only the actor has a reader. Commands need the full claims for authorization.
+      // Create it once, so that all events of this command share one encoding.
       final var actorAuthInfo = authInfo.withActorClaimsOnly();
       appendMetadataToFollowUps(
           metadata ->
