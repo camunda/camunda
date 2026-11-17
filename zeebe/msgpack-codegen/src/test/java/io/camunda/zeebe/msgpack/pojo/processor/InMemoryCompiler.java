@@ -188,20 +188,29 @@ final class InMemoryCompiler {
     task.setProcessors(List.of(new MsgpackPojoProcessor()));
     task.call();
     final var errors = new ArrayList<String>();
+    final var warnings = new ArrayList<String>();
     for (final var d : diagnostics.getDiagnostics()) {
       if (d.getKind() == Diagnostic.Kind.ERROR) {
         errors.add(d.getMessage(null));
+      } else if (d.getKind() == Diagnostic.Kind.WARNING) {
+        warnings.add(d.getMessage(null));
       }
     }
-    return new Result(errors, output);
+    return new Result(errors, warnings, output);
   }
 
   record Source(String name, String code) {}
 
   record Result(
-      List<String> errors, Map<String, ByteArrayOutputStream> output, ClassLoader loader) {
-    Result(final List<String> errors, final Map<String, ByteArrayOutputStream> output) {
-      this(errors, output, loader(output));
+      List<String> errors,
+      List<String> warnings,
+      Map<String, ByteArrayOutputStream> output,
+      ClassLoader loader) {
+    Result(
+        final List<String> errors,
+        final List<String> warnings,
+        final Map<String, ByteArrayOutputStream> output) {
+      this(errors, warnings, output, loader(output));
     }
 
     /**

@@ -24,6 +24,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.tools.Diagnostic.Kind;
 import org.jspecify.annotations.Nullable;
 
 /** Validates a {@link MsgpackPojo} class and describes its stored properties as a {@link Model}. */
@@ -33,6 +34,8 @@ final class ModelBuilder {
   private static final String UNSAFE_BUFFER = "org.agrona.concurrent.UnsafeBuffer";
   private static final String BUFFER_VALUE = "io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue";
   private static final String LIST = "java.util.List";
+  private static final String INT_ARRAY_LIST = "org.agrona.collections.IntArrayList";
+  private static final String LONG_ARRAY_LIST = "org.agrona.collections.LongArrayList";
   private static final String UNKNOWN_PROPERTIES =
       "io.camunda.zeebe.msgpack.pojo.UnknownProperties";
 
@@ -163,6 +166,13 @@ final class ModelBuilder {
       }
       final var keyLiteral = processingEnv.getElementUtils().getConstantExpression(key);
       final var element = kind == Type.LIST ? elementOf(mirror) : null;
+      if (element != null && !element.unboxed()) {
+        switch (element.kind()) {
+          case INT -> warning(field, boxedListWarning(fieldName, "IntArrayList"));
+          case LONG -> warning(field, boxedListWarning(fieldName, "LongArrayList"));
+          default -> {}
+        }
+      }
       properties.add(
           new Property(keyLiteral, kind, fieldName, javaType(mirror, kind), inPlace, element));
     }
@@ -194,7 +204,9 @@ final class ModelBuilder {
         if (name.equals(DIRECT_BUFFER) || name.equals(UNSAFE_BUFFER)) {
           return raw ? Type.RAW : binary ? Type.BINARY : Type.STRING;
         }
-        if (name.equals(LIST) && elementOf(mirror) != null) {
+        if (name.equals(INT_ARRAY_LIST)
+            || name.equals(LONG_ARRAY_LIST)
+            || name.equals(LIST) && elementOf(mirror) != null) {
           return Type.LIST;
         }
         if (element.getKind() == ElementKind.ENUM) {
@@ -234,10 +246,17 @@ final class ModelBuilder {
   }
 
   /**
-   * The element of a {@code List<E>}, with {@code E} a {@code DirectBuffer}, a {@code Long}, an
-   * {@code Integer} or such a list again; null for any other type.
+   * The element of an agrona {@code IntArrayList} or {@code LongArrayList}, or of a {@code List<E>}
+   * with {@code E} a {@code DirectBuffer}, a {@code Long}, an {@code Integer} or such a list again;
+   * null for any other type.
    */
   private @Nullable ListElement elementOf(final TypeMirror list) {
+    if (isType(list, INT_ARRAY_LIST)) {
+      return new ListElement(ListElement.Kind.INT, "int", true, null);
+    }
+    if (isType(list, LONG_ARRAY_LIST)) {
+      return new ListElement(ListElement.Kind.LONG, "long", true, null);
+    }
     final var arguments = ((DeclaredType) list).getTypeArguments();
     if (arguments.size() != 1) {
       return null;
@@ -245,19 +264,20 @@ final class ModelBuilder {
     // compares the erased element, so type annotations like @Nullable do not matter
     final var argument = arguments.get(0);
     if (isType(argument, DIRECT_BUFFER)) {
-      return new ListElement(ListElement.Kind.STRING, DIRECT_BUFFER, null);
+      return new ListElement(ListElement.Kind.STRING, DIRECT_BUFFER, false, null);
     }
     if (isType(argument, "java.lang.Long")) {
-      return new ListElement(ListElement.Kind.LONG, "java.lang.Long", null);
+      return new ListElement(ListElement.Kind.LONG, "java.lang.Long", false, null);
     }
     if (isType(argument, "java.lang.Integer")) {
-      return new ListElement(ListElement.Kind.INT, "java.lang.Integer", null);
+      return new ListElement(ListElement.Kind.INT, "java.lang.Integer", false, null);
     }
     if (argument.getKind() == TypeKind.DECLARED && isType(argument, LIST)) {
       final var inner = elementOf(argument);
       return inner == null
           ? null
-          : new ListElement(ListElement.Kind.LIST, LIST + "<" + inner.javaType() + ">", inner);
+          : new ListElement(
+              ListElement.Kind.LIST, LIST + "<" + inner.javaType() + ">", false, inner);
     }
     return null;
   }
@@ -291,5 +311,14 @@ final class ModelBuilder {
     return kind == Type.ENUM || kind == Type.NESTED
         ? ((TypeElement) ((DeclaredType) mirror).asElement()).getQualifiedName().toString()
         : mirror.toString();
+  }
+
+  private static String boxedListWarning(final String field, final String agronaList) {
+    return "Field %s boxes every element, so reading it allocates: use %s instead"
+        .formatted(field, agronaList);
+  }
+
+  private void warning(final Element element, final String message) {
+    processingEnv.getMessager().printMessage(Kind.WARNING, message, element);
   }
 }

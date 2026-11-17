@@ -32,6 +32,8 @@ import java.util.Arrays;
 import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.collections.IntArrayList;
+import org.agrona.collections.LongArrayList;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.Test;
@@ -391,6 +393,88 @@ final class MsgpackPojoProcessorTest {
     assertThat(result.errors()).isEmpty();
   }
 
+  @Test
+  void shouldRoundTripAgronaPrimitiveLists() throws Exception {
+    // given
+    final var codec =
+        codecOf(
+            """
+            final IntArrayList counts = new IntArrayList();
+            final LongArrayList keys = new LongArrayList();
+            """);
+    final var source = codec.newInstance();
+    ((IntArrayList) get(source, "counts")).addInt(Integer.MIN_VALUE);
+    ((IntArrayList) get(source, "counts")).addInt(7);
+    ((LongArrayList) get(source, "keys")).addLong(Long.MAX_VALUE);
+    final var bytes = codec.write(source);
+    final var read = codec.newInstance();
+    ((LongArrayList) get(read, "keys")).addLong(-1L);
+
+    // when
+    codec.read(read, bytes);
+
+    // then
+    assertThat(bytes.length).isEqualTo(codec.codec().getLength(source));
+    assertThat(((IntArrayList) get(read, "counts")).toIntArray())
+        .containsExactly(Integer.MIN_VALUE, 7);
+    assertThat(((LongArrayList) get(read, "keys")).toLongArray()).containsExactly(Long.MAX_VALUE);
+  }
+
+  @Test
+  void shouldWarnToUseAnAgronaListForBoxedIntegers() {
+    // given
+    final var source =
+        pojo(
+            "Sample",
+            """
+            final List<Integer> counts = new ArrayList<>();
+            final List<Long> keys = new ArrayList<>();
+            final IntArrayList unboxedCounts = new IntArrayList();
+            final LongArrayList unboxedKeys = new LongArrayList();
+            final List<List<Long>> nested = new ArrayList<>();
+            """);
+
+    // when
+    final var result = compile(source);
+
+    // then
+    assertThat(result.errors()).isEmpty();
+    assertThat(result.warnings())
+        .containsExactlyInAnyOrder(
+            "Field counts boxes every element, so reading it allocates: use IntArrayList instead",
+            "Field keys boxes every element, so reading it allocates: use LongArrayList instead");
+  }
+
+  @Test
+  void shouldStoreAnIntArrayListLikeAnArrayPropertyOfIntegers() throws Exception {
+    // given the generated class and the ArrayProperty it replaces
+    final var codec = codecOf("final IntArrayList ids = new IntArrayList();");
+    final var generated = codec.newInstance();
+    final var ids = (IntArrayList) get(generated, "ids");
+    final int[] values = {Integer.MIN_VALUE, -1, 0, 127, 128, 70_000, Integer.MAX_VALUE};
+    final var twin = new IdsTwin();
+    for (final int value : values) {
+      ids.addInt(value);
+      twin.ids.add().setValue(value);
+    }
+
+    // when
+    final var bytes = codec.write(generated);
+    final var twinBytes = new byte[twin.getLength()];
+    twin.write(new UnsafeBuffer(twinBytes), 0);
+
+    // then both write the same bytes and each reads the other's
+    assertThat(bytes).isEqualTo(twinBytes);
+    final var read = codec.newInstance();
+    codec.read(read, twinBytes);
+    assertThat(((IntArrayList) get(read, "ids")).toIntArray()).containsExactly(values);
+    final var twinRead = new IdsTwin();
+    twinRead.wrap(new UnsafeBuffer(bytes), 0, bytes.length);
+    final var readValues = new ArrayList<Integer>();
+    twinRead.ids.forEach(v -> readValues.add(v.getValue()));
+    assertThat(readValues).containsExactly(Arrays.stream(values).boxed().toArray(Integer[]::new));
+  }
+
   // ---------------------------------------------------------------- helpers
 
   private static SampleCodec codecOf(final String fields, final Source... others) {
@@ -428,6 +512,20 @@ final class MsgpackPojoProcessorTest {
 
   private static Source enumKind() {
     return new Source("sample.Kind", "package sample; public enum Kind { ONE, TWO }");
+  }
+
+  /** The implementation a field of integers had before: an ArrayProperty of IntegerValue. */
+  private static final class IdsTwin extends io.camunda.zeebe.msgpack.UnpackedObject {
+    private final io.camunda.zeebe.msgpack.property.ArrayProperty<
+            io.camunda.zeebe.msgpack.value.IntegerValue>
+        ids =
+            new io.camunda.zeebe.msgpack.property.ArrayProperty<>(
+                "ids", io.camunda.zeebe.msgpack.value.IntegerValue::new);
+
+    IdsTwin() {
+      super(1);
+      declareProperty(ids);
+    }
   }
 
   /** A compiled sample class with its codec, for tests that read and write bytes. */

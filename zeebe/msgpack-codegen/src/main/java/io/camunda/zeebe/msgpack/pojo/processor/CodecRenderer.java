@@ -307,8 +307,8 @@ final class CodecRenderer {
     final var element =
         switch (e.kind()) {
           case STRING -> fill("$list.add(Decoding.readString(r));\n", "$list", list);
-          case LONG -> fill("$list.add(r.readInteger());\n", "$list", list);
-          case INT -> fill("$list.add(Decoding.readInt(r));\n", "$list", list);
+          case LONG -> fill("$list.$add(r.readInteger());\n", "$list", list, "$add", e.add());
+          case INT -> fill("$list.$add(Decoding.readInt(r));\n", "$list", list, "$add", e.add());
           case LIST ->
               fill(
                   """

@@ -34,10 +34,11 @@ import java.lang.annotation.Target;
  *
  * <p>Supported field types: {@code long}, {@code int}, {@code boolean}, {@code DirectBuffer}
  * (msgpack string, or an already encoded msgpack value with {@link Raw}), enums (stored by {@code
- * toString()}), {@code List<DirectBuffer>} (array of strings), {@code List<Long>} and {@code
- * List<Integer>} (array of integers), lists of these lists to any depth (array of arrays), other
- * {@link MsgpackPojo} types and {@code io.camunda.zeebe.msgpack.value.BaseValue}s (e.g. an {@code
- * UnpackedObject}, embedded as a nested map that references the source buffer).
+ * toString()}), {@code List<DirectBuffer>} (array of strings), {@code List<Long>}, {@code
+ * List<Integer>}, {@code org.agrona.collections.IntArrayList} and {@code LongArrayList} (arrays of
+ * integers, the agrona ones without boxing), lists of these {@code List}s to any depth (arrays of
+ * arrays), other {@link MsgpackPojo} types and {@code io.camunda.zeebe.msgpack.value.BaseValue}s
+ * (e.g. an {@code UnpackedObject}, embedded as a nested map that references the source buffer).
  *
  * <p>String, binary and raw fields need an initializer, which is the default of every instance: the
  * default buffer is shared, so it must never be modified.

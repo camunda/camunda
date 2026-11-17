@@ -17,17 +17,27 @@ import org.jspecify.annotations.Nullable;
  *
  * @param javaType the type of the element in generated code, such as {@code java.lang.Long} or
  *     {@code java.util.List<java.lang.Long>}
+ * @param unboxed a primitive in an agrona {@code IntArrayList} or {@code LongArrayList}, which has
+ *     methods that do not box it
  * @param element the element of an element that is a list, null for the other kinds
  */
-record ListElement(Kind kind, String javaType, @Nullable ListElement element) {
+record ListElement(Kind kind, String javaType, boolean unboxed, @Nullable ListElement element) {
 
   ListElement inner() {
     return Objects.requireNonNull(element);
   }
 
+  String get() {
+    return !unboxed ? "get" : kind == Kind.INT ? "getInt" : "getLong";
+  }
+
+  String add() {
+    return !unboxed ? "add" : kind == Kind.INT ? "addInt" : "addLong";
+  }
+
   /** The expression of the element {@code i<depth>} of the list {@code list}. */
   String at(final String list, final int depth) {
-    return list + ".get(i" + depth + ")";
+    return list + "." + get() + "(i" + depth + ")";
   }
 
   enum Kind {

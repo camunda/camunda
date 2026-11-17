@@ -15,7 +15,10 @@ enum Type {
   RAW(false),
   BINARY(false),
   ENUM(false),
-  /** A {@code java.util.List}, whose elements are described by a {@link ListElement}. */
+  /**
+   * A {@code java.util.List}, or an agrona {@code IntArrayList} or {@code LongArrayList}, whose
+   * elements are described by a {@link ListElement}.
+   */
   LIST(true),
   NESTED(true);
 
