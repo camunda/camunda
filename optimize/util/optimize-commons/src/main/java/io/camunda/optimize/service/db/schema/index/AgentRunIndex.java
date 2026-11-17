@@ -23,7 +23,6 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
   public static final int VERSION = 1;
 
   public static final String AGENT_INSTANCE_ID = AgentRunDto.Fields.agentInstanceId;
-  public static final String AGENT_DEFINITION_ID = AgentRunDto.Fields.agentDefinitionId;
   public static final String AGENT_ID = AgentRunDto.Fields.agentId;
   public static final String AGENT_TYPE = AgentRunDto.Fields.agentType;
   public static final String FLOW_NODE_ID = AgentRunDto.Fields.flowNodeId;
@@ -96,7 +95,6 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
   public TypeMapping.Builder addProperties(final TypeMapping.Builder builder) {
     return builder
         .properties(AGENT_INSTANCE_ID, p -> p.keyword(k -> k))
-        .properties(AGENT_DEFINITION_ID, p -> p.keyword(k -> k))
         .properties(AGENT_ID, p -> p.keyword(k -> k))
         .properties(AGENT_TYPE, p -> p.keyword(k -> k))
         .properties(FLOW_NODE_ID, p -> p.keyword(k -> k))

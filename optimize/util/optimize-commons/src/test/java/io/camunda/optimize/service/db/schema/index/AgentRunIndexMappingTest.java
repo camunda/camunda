@@ -38,7 +38,6 @@ class AgentRunIndexMappingTest {
         .containsExactlyInAnyOrderEntriesOf(
             Map.ofEntries(
                 entry("agentInstanceId", Property.Kind.Keyword),
-                entry("agentDefinitionId", Property.Kind.Keyword),
                 entry("agentId", Property.Kind.Keyword),
                 entry("agentType", Property.Kind.Keyword),
                 entry("flowNodeId", Property.Kind.Keyword),
