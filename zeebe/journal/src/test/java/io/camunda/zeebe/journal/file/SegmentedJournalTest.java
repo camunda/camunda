@@ -555,6 +555,34 @@ class SegmentedJournalTest {
   }
 
   @Test
+  void shouldKeepSegmentFilesWhenDeletionFailsOnClose() throws IOException {
+    // given
+    final Queue<Runnable> deletions = new ConcurrentLinkedQueue<>();
+    closeables.add(() -> deletions.forEach(Runnable::run));
+    journal = openJournal(2, deletions::add);
+    for (int i = 0; i < 6; i++) {
+      journal.append(journalFactory.entry());
+    }
+    final Path logDirectory = directory.resolve("data");
+    final Path firstSegment = logDirectory.resolve("journal-1.log");
+    final Path movedFirstSegment = directory.resolve("journal-1.log.moved");
+    Files.move(firstSegment, movedFirstSegment);
+    journal.deleteUntil(5);
+    deletions.poll().run();
+
+    // when
+    journal.close();
+
+    // then
+    assertThat(logDirectory)
+        .isDirectoryContaining(p -> p.getFileName().toString().equals("journal-2.log"));
+    Files.move(movedFirstSegment, firstSegment);
+    journal = openJournal(2);
+    assertThat(journal.getFirstIndex()).isEqualTo(1);
+    assertThat(journal.getLastIndex()).isEqualTo(6);
+  }
+
+  @Test
   void shouldDeleteSegmentsAfterRejectedDeletion() {
     // given
     final Queue<Runnable> deletions = new ConcurrentLinkedQueue<>();
