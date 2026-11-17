@@ -8,6 +8,7 @@
 package io.camunda.zeebe.restore;
 
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreParameters;
+import io.camunda.zeebe.restore.RestoreFailure.InvalidArgument;
 import java.time.Instant;
 import java.util.List;
 import org.jspecify.annotations.NullMarked;
@@ -31,7 +32,7 @@ public record RestoreSelection(List<Long> backupIds, @Nullable Instant from, @Nu
   public RestoreSelection {
     backupIds = List.copyOf(backupIds);
     if (!backupIds.isEmpty() && (from != null || to != null)) {
-      throw new IllegalArgumentException(
+      throw new InvalidArgument(
           "Expected either backup ids or a time range, but got both: backupIds=%s, from=%s, to=%s"
               .formatted(backupIds, from, to));
     }

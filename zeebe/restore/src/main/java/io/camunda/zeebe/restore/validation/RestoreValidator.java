@@ -19,10 +19,14 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
+import io.camunda.zeebe.restore.RestoreFailure.BackupNotFound;
+import io.camunda.zeebe.restore.RestoreFailure.BackupStoreUnavailable;
+import io.camunda.zeebe.restore.RestoreFailure.InvalidArgument;
+import io.camunda.zeebe.restore.RestoreFailure.InvalidState;
+import io.camunda.zeebe.restore.RestoreFailure.Reason;
 import io.camunda.zeebe.restore.RestorePointResolver;
 import io.camunda.zeebe.restore.RestorePointResolver.RestorableBackups;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.Preconditions;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.io.IOException;
@@ -82,7 +86,8 @@ public final class RestoreValidator
   public Either<Exception, RestoreResolvedRequest> validate(final RestoreRequest request) {
     if (backupStore == null) {
       return Either.left(
-          new IllegalStateException(
+          new InvalidState(
+              Reason.INVALID_REQUEST,
               "Cannot restore: no backup store is configured on this broker."));
     }
     final RestoreResolvedRequest resolvedRequest;
@@ -103,43 +108,44 @@ public final class RestoreValidator
     final var instantTo = parseTimestamp(parameters.to(), "to");
     final var hasTimeRange = hasTimeRange(instantFrom, instantTo);
     final var hasBackupIds = !parameters.backupIds().isEmpty();
-    Preconditions.test(
+    rejectIf(
         hasBackupIds && hasTimeRange,
         "Cannot specify both backupId and from/to parameters. Choose one approach.");
 
     final var databaseType = request.arguments().databaseType().toLowerCase();
     switch (databaseType) {
       case "rdbms", "none" -> {
-        Preconditions.test(
+        rejectIf(
             hasTimeRange && !request.arguments().continuousBackups(),
             "Time range restore (from/to) is only supported for continuous backups.");
 
-        Preconditions.test(
+        rejectIf(
             instantFrom != null && instantTo != null && instantFrom.isAfter(instantTo),
             "Invalid time range: from (%s) must be before to (%s)"
                 .formatted(instantFrom, instantTo));
-        Preconditions.test(
+        rejectIf(
             !hasBackupIds && !hasTimeRange && exportedPositionSupplier == null,
             "Cannot resolve a restore point: no backupId was specified and no exported-position "
                 + "data is available. Specify a backupId, or a time range with from.");
         // Without exported positions, only `from` tells which range of backups to restore from.
-        Preconditions.test(
+        rejectIf(
             hasTimeRange && instantFrom == null && exportedPositionSupplier == null,
             "Cannot resolve a restore point: from is required for a time range restore when no "
                 + "exported-position data is available.");
       }
       case "elasticsearch", "opensearch" -> {
-        Preconditions.test(
+        rejectIf(
             hasTimeRange,
             "Time range restore (from/to) is not supported for %s.".formatted(databaseType));
-        Preconditions.test(!hasBackupIds, "No backupId specified");
-        Preconditions.test(
+        rejectIf(!hasBackupIds, "No backupId specified");
+        rejectIf(
             parameters.backupIds().size() > 1,
             "Cannot restore from multiple backups against database type %s"
                 .formatted(databaseType));
       }
       default ->
-          throw new IllegalStateException(
+          throw new InvalidState(
+              Reason.INVALID_REQUEST,
               "Invalid database type: " + request.arguments().databaseType());
     }
   }
@@ -191,15 +197,14 @@ public final class RestoreValidator
     return store
         .list(searchPattern)
         .thenAccept(
-            statuses ->
-                statuses.stream()
-                    .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
-                    .findAny()
-                    .orElseThrow(
-                        () ->
-                            new NoSuchElementException(
-                                "No completed backup found for partition %d with backup id %d"
-                                    .formatted(partitionId, backupId))));
+            statuses -> {
+              if (statuses.stream()
+                  .noneMatch(status -> status.statusCode() == BackupStatusCode.COMPLETED)) {
+                throw new BackupNotFound(
+                    "No completed backup found for partition %d with backup id %d"
+                        .formatted(partitionId, backupId));
+              }
+            });
   }
 
   /**
@@ -216,7 +221,7 @@ public final class RestoreValidator
       // No secondary storage to keep consistent with: restore the partitions of the backup the
       // time range resolves to.
       if (instantFrom == null) {
-        throw new IllegalArgumentException(
+        throw new InvalidArgument(
             "from is required to restore a time range without exported positions");
       }
       final var restoredPartitionCount = timeRangePartitionCount(instantFrom, instantTo);
@@ -280,7 +285,8 @@ public final class RestoreValidator
   private static void verifyPartitionCountsAgree(
       final long backupId, final int backupPartitionCount, final int expectedPartitionCount) {
     if (backupPartitionCount != expectedPartitionCount) {
-      throw new IllegalStateException(
+      throw new InvalidState(
+          Reason.BACKUPS_INCONSISTENT,
           "Cannot restore: backup %d was taken with %d partitions, but %d partitions are expected"
               .formatted(backupId, backupPartitionCount, expectedPartitionCount));
     }
@@ -302,11 +308,11 @@ public final class RestoreValidator
             .flatMap(BackupStatus::descriptor)
             .orElseThrow(
                 () ->
-                    new NoSuchElementException(
+                    new BackupNotFound(
                         "No completed backup found with backup id %d".formatted(backupId)))
             .numberOfPartitions();
     if (backupPartitionCount > partitionCount) {
-      throw new IllegalArgumentException(
+      throw new InvalidArgument(
           "Cannot restore backup %d: it has %d partitions, but the partition group only has %d"
               .formatted(backupId, backupPartitionCount, partitionCount));
     }
@@ -330,7 +336,8 @@ public final class RestoreValidator
           firstMissing = partition;
         }
       } else if (firstMissing != 0) {
-        throw new IllegalStateException(
+        throw new InvalidState(
+            Reason.INVALID_REQUEST,
             "The RDBMS holds an exported position for partition %d but none for partition %d"
                 .formatted(partition, firstMissing));
       } else {
@@ -359,7 +366,8 @@ public final class RestoreValidator
 
   private static Map<Integer, Long> requireExportedPositions(final Map<Integer, Long> positions) {
     if (positions.isEmpty()) {
-      throw new IllegalStateException("No exported position found for partition 1 in RDBMS");
+      throw new InvalidState(
+          Reason.INVALID_REQUEST, "No exported position found for partition 1 in RDBMS");
     }
     return positions;
   }
@@ -384,7 +392,8 @@ public final class RestoreValidator
             .map(Entry::getKey)
             .toList();
     if (!missingPartitions.isEmpty()) {
-      throw new IllegalStateException(
+      throw new InvalidState(
+          Reason.BACKUPS_INCONSISTENT,
           "No backup metadata found for partition(s): " + missingPartitions);
     }
     return metadataByPartition.stream().map(entry -> entry.getValue().orElseThrow()).toList();
@@ -408,17 +417,44 @@ public final class RestoreValidator
     try {
       return future.get(BACKUP_RESOLUTION_TIMEOUT.toSeconds(), TimeUnit.SECONDS);
     } catch (final ExecutionException e) {
-      if (e.getCause() instanceof final RuntimeException cause) {
-        throw cause;
-      }
-      throw new IllegalStateException("Failed to resolve backups", e.getCause());
+      throw resolutionFailure(e.getCause());
     } catch (final TimeoutException e) {
-      throw new IllegalStateException(
-          "Timed out after %s waiting to resolve backups".formatted(BACKUP_RESOLUTION_TIMEOUT), e);
+      throw new InvalidState(
+          Reason.BACKUP_STORE_UNAVAILABLE,
+          "Timed out after %s waiting to resolve backups".formatted(BACKUP_RESOLUTION_TIMEOUT),
+          e);
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new IllegalStateException("Interrupted while resolving backups", e);
     }
+  }
+
+  /** Rejects the request as invalid if the condition holds. */
+  private static void rejectIf(final boolean condition, final String message) {
+    if (condition) {
+      throw new InvalidArgument(message);
+    }
+  }
+
+  /**
+   * What resolving backups failed with. The cluster restore API maps the types this validator
+   * raises to its responses, so these, and the same types from the store, are passed on as they
+   * are; anything else the store failed with is wrapped as the store being unavailable, which the
+   * API still maps as before.
+   */
+  private static RuntimeException resolutionFailure(final @Nullable Throwable cause) {
+    if (cause instanceof IllegalArgumentException
+        || cause instanceof IllegalStateException
+        || cause instanceof NoSuchElementException) {
+      return (RuntimeException) cause;
+    }
+    if (cause instanceof RuntimeException) {
+      return new BackupStoreUnavailable(cause);
+    }
+    if (cause instanceof Exception) {
+      return new InvalidState(Reason.BACKUP_STORE_UNAVAILABLE, "Failed to resolve backups", cause);
+    }
+    return new IllegalStateException("Failed to resolve backups", cause);
   }
 
   private static boolean hasTimeRange(@Nullable final Instant from, @Nullable final Instant to) {
@@ -433,7 +469,7 @@ public final class RestoreValidator
     try {
       return OffsetDateTime.parse(value).toInstant();
     } catch (final DateTimeParseException e) {
-      throw new IllegalArgumentException(
+      throw new InvalidArgument(
           "Invalid %s timestamp '%s': must be an ISO 8601 date-time.".formatted(field, value));
     }
   }
