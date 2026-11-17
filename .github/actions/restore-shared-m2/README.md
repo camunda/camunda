@@ -7,10 +7,11 @@ locally and archived to the GCS build-cache as `m2-installed.tar`, so downstream
 `mvn verify` runs see them without re-running the reactor (saves ~2–15 min per job; see
 issue camunda/camunda#52693).
 
-It downloads the run-scoped `m2-installed.tar` and extracts it into
+It uses [`download-shared-build-artifact`](../download-shared-build-artifact) to
+download the run-scoped `m2-installed.tar`, then extracts it into
 `~/.m2/repository/installed`. The distball tarball itself (`camunda-zeebe-*.tar.gz`) is
-**not** restored here — callers that need it download it separately, since not every
-consumer does.
+**not** restored here — callers that need it download it separately with the same
+shared downloader, since not every consumer does.
 
 ## Prerequisites
 

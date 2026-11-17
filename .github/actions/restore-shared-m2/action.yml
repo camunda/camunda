@@ -13,16 +13,11 @@ runs:
       shell: bash
       run: mkdir -p "${HOME}/.m2/repository/installed"
 
-    - name: Download m2-installed.tar from GCS
-      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+    - name: Download m2-installed.tar
+      uses: ./.github/actions/download-shared-build-artifact
       with:
-        max_attempts: 5
-        retry_wait_seconds: 10
-        timeout_minutes: 1
-        shell: bash
-        command: |
-          set -euo pipefail
-          gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar" "${RUNNER_TEMP}/m2-installed.tar"
+        artifact: m2-installed
+        path: ${{ runner.temp }}
 
     - name: Extract io.camunda SNAPSHOTs
       shell: bash
