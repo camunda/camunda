@@ -18,6 +18,9 @@ import {ForbiddenError} from '#/shared/errors';
 import {historySort, instanceRequest} from './processInstance.queries';
 import {getHistorySortOrder, setHistorySortOrder} from './historySortOrder';
 
+const HISTORY_WINDOW_SIZE = 100;
+const HISTORY_PAGE_STEP = 50;
+
 type Scope = {key: string; parent?: string; from: number; version: number};
 type HistoryState = {
 	instanceKey: string;
@@ -28,6 +31,12 @@ type HistoryState = {
 	pageError: unknown;
 	scopeErrors: Record<string, unknown>;
 };
+
+function hasNextHistoryPage(data: QueryElementInstancesResponseBody, from: number) {
+	return data.page.hasMoreTotalItems
+		? data.items.length === HISTORY_WINDOW_SIZE
+		: from + HISTORY_WINDOW_SIZE < data.page.totalItems;
+}
 
 function createHistoryState(instanceKey: string): HistoryState {
 	return {
@@ -54,7 +63,7 @@ function historyWindowQuery(
 				return await instanceRequest<QueryElementInstancesResponseBody>(
 					endpoints.queryElementInstances({
 						filter: {elementInstanceScopeKey: scope.key},
-						page: {from: scope.from, limit: 100},
+						page: {from: scope.from, limit: HISTORY_WINDOW_SIZE},
 						sort: historySort(sortOrder),
 					}),
 					signal,
@@ -242,21 +251,18 @@ function useHistoryController(instance: ProcessInstance) {
 	async function page(key: string, direction: 'next' | 'previous') {
 		const window = windows.get(key);
 		if (!window?.query.data || pending.current.has(key) || window.query.isFetching || forbidden) {
-			return 0;
+			return -1;
 		}
 		const {
 			scope,
 			query: {data},
 		} = window;
-		const hasNextPage = data.page.hasMoreTotalItems
-			? data.items.length === 100
-			: scope.from + 100 < data.page.totalItems;
-		if (direction === 'next' ? !hasNextPage : scope.from === 0) {
-			return 0;
+		if (direction === 'next' ? !hasNextHistoryPage(data, scope.from) : scope.from === 0) {
+			return -1;
 		}
 		const next = {
 			...scope,
-			from: Math.max(0, scope.from + (direction === 'next' ? 50 : -50)),
+			from: Math.max(0, scope.from + (direction === 'next' ? HISTORY_PAGE_STEP : -HISTORY_PAGE_STEP)),
 			version: ++version.current,
 		};
 		const generation = lifecycle.current.version;
@@ -269,7 +275,9 @@ function useHistoryController(instance: ProcessInstance) {
 			setScopes((current) => current.map((entry) => (entry === scope ? next : entry)));
 			setPageError(null);
 			clearScopeErrors([scope.version]);
-			return direction === 'next' ? Math.max(0, result.items.length - 50) : Math.min(50, result.items.length);
+			return direction === 'next'
+				? Math.max(0, result.items.length - HISTORY_PAGE_STEP)
+				: Math.min(HISTORY_PAGE_STEP, result.items.length);
 		} catch (error) {
 			if (generation === lifecycle.current.version && pending.current.get(key) === next.version) {
 				if (key === instanceKey || error instanceof ForbiddenError) {
@@ -317,4 +325,4 @@ function useInstanceHistory() {
 	}
 	return context;
 }
-export {useHistoryController, InstanceHistoryContext, useInstanceHistory};
+export {useHistoryController, InstanceHistoryContext, useInstanceHistory, hasNextHistoryPage, HISTORY_PAGE_STEP};

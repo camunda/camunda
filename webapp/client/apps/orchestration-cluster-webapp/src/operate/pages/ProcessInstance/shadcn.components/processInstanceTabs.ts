@@ -7,6 +7,7 @@
  */
 
 const PROCESS_INSTANCE_TABS = [
+	'history',
 	'incidents',
 	'details',
 	'variables',
@@ -19,6 +20,7 @@ const PROCESS_INSTANCE_TABS = [
 type ProcessInstanceTab = (typeof PROCESS_INSTANCE_TABS)[number];
 
 const TAB_LABEL_KEYS = {
+	history: 'operate.processInstance.history.title',
 	variables: 'operate.processInstance.history.variables',
 	'input-mappings': 'operate.processInstance.history.inputMappings',
 	'output-mappings': 'operate.processInstance.history.outputMappings',
@@ -38,15 +40,19 @@ type VisibleTabsInput = {
 	hasIncidentsTab: boolean;
 	hasSelection: boolean;
 	isProcessLevelWaiting: boolean;
+	isMobile?: boolean;
 };
 
 function getVisibleProcessInstanceTabs({
 	hasIncidentsTab,
 	hasSelection,
 	isProcessLevelWaiting,
+	isMobile = false,
 }: VisibleTabsInput): readonly ProcessInstanceTab[] {
 	return PROCESS_INSTANCE_TABS.filter((tab) => {
 		switch (tab) {
+			case 'history':
+				return isMobile;
 			case 'incidents':
 				return hasIncidentsTab;
 			case 'details':
@@ -74,9 +80,13 @@ function getHiddenTabRedirect({
 	hasSelection,
 	isProcessLevelWaiting,
 	isWaitStateLoading,
-}: TabRedirectInput): 'details' | 'variables' | null {
+}: TabRedirectInput): 'incidents' | 'details' | 'variables' | null {
 	if (visibleTabs.includes(activeTab) || (!hasSelection && isWaitStateLoading)) {
 		return null;
+	}
+
+	if (activeTab === 'history' && visibleTabs.includes('incidents')) {
+		return 'incidents';
 	}
 
 	return hasSelection || isProcessLevelWaiting ? 'details' : 'variables';

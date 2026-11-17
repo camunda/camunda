@@ -15,9 +15,10 @@ import {
 	mockGetProcessInstanceWaitStateStatisticsEndpoint,
 	mockLicenseEndpoint,
 	mockOperateClientConfigEndpoint,
+	mockGetElementInstanceEndpoint,
+	mockQueryElementInstancesEndpoint,
 	mockQueryProcessInstanceIncidentsEndpoint,
 	mockQueryElementInstanceIncidentsEndpoint,
-	mockGetElementInstanceEndpoint,
 	mockQueryVariablesEndpoint,
 	mockSystemConfigurationEndpoint,
 } from '#/shared-test-modules/mock-handlers';
@@ -28,7 +29,10 @@ import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {createIncident} from '#/shared-test-modules/api-mocks/incidents';
-import {createElementInstance} from '#/shared-test-modules/api-mocks/element-instances';
+import {
+	createElementInstance,
+	createQueryElementInstancesResponse,
+} from '#/shared-test-modules/api-mocks/element-instances';
 import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createQueryVariablesByUserTaskResponse, createVariable} from '#/shared-test-modules/api-mocks/variables';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
@@ -395,5 +399,96 @@ test.describe('Operate Process Instance DS preview (/operate-preview/processes/:
 				name: 'View Process Parent Process - Instance 1',
 			}),
 		).toBeVisible();
+	});
+
+	test('should show the instance history tree and select an element from it', async ({
+		network,
+		operatePreviewProcessInstancePage,
+		page,
+	}) => {
+		const task = createElementInstance({
+			elementId: 'task-1',
+			elementInstanceKey: '2251799813685290',
+			elementName: 'Task 1',
+		});
+		network.use(
+			mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(task)}),
+			mockQueryElementInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryElementInstancesResponse([
+						createElementInstance({elementId: 'task-1', elementInstanceKey: '2251799813685290', elementName: 'Task 1'}),
+					]),
+				),
+			}),
+		);
+
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
+		await operatePreviewProcessInstancePage.historyItem('Task 1').click();
+
+		await expect(page).toHaveURL(/elementInstanceKey=%222251799813685290%22/);
+		await expect(operatePreviewProcessInstancePage.historyItem('Task 1')).toHaveAttribute('aria-selected', 'true');
+	});
+	test('should show the variables tab when the history path is opened on a wide viewport', async ({
+		operatePreviewProcessInstancePage,
+	}) => {
+		await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID, '/history');
+
+		await expect(operatePreviewProcessInstancePage.tab('Variables')).toHaveAttribute('aria-selected', 'true');
+	});
+
+	test.describe('on a narrow viewport', () => {
+		test.beforeEach(async ({page}) => {
+			await page.setViewportSize({width: 800, height: 900});
+		});
+
+		test('should leave the history tab for the details tab when an element is selected', async ({
+			network,
+			operatePreviewProcessInstancePage,
+			page,
+		}) => {
+			const task = createElementInstance({elementInstanceKey: '2251799813685290', elementName: 'Task 1'});
+			network.use(
+				mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(task)}),
+				mockQueryElementInstancesEndpoint({
+					successResponse: HttpResponse.json(createQueryElementInstancesResponse([task])),
+				}),
+			);
+			await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID, '/history');
+
+			await page.getByRole('treeitem', {name: /Task 1/}).click();
+
+			await expect(operatePreviewProcessInstancePage.tab('Details')).toHaveAttribute('aria-selected', 'true');
+		});
+
+		test('should leave the history tab for the incidents tab when an element with an incident is selected', async ({
+			network,
+			operatePreviewProcessInstancePage,
+			page,
+		}) => {
+			const task = createElementInstance({
+				elementInstanceKey: '2251799813685290',
+				elementName: 'Task 1',
+				hasIncident: true,
+			});
+			const incidents = HttpResponse.json(createPaginatedResponse({items: [createIncident()]}));
+			network.use(
+				mockGetProcessInstanceEndpoint({
+					successResponse: HttpResponse.json(
+						createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID, hasIncident: true}),
+					),
+				}),
+				mockQueryProcessInstanceIncidentsEndpoint({successResponse: incidents}),
+				mockQueryElementInstanceIncidentsEndpoint({successResponse: incidents}),
+				mockGetElementInstanceEndpoint({successResponse: HttpResponse.json(task)}),
+				mockQueryElementInstancesEndpoint({
+					successResponse: HttpResponse.json(createQueryElementInstancesResponse([task])),
+				}),
+			);
+			await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID, '/history');
+
+			await page.getByRole('treeitem', {name: /Task 1/}).click();
+
+			await expect(operatePreviewProcessInstancePage.tab('Incidents')).toHaveAttribute('aria-selected', 'true');
+		});
 	});
 });

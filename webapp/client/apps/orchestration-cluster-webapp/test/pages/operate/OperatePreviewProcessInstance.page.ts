@@ -47,6 +47,22 @@ class OperatePreviewProcessInstancePage extends BasePage {
 		return this.diagramPanel.locator(`[data-element-id="${elementId}"]`);
 	}
 
+	get historyPanel() {
+		return this.page.getByRole('region', {name: 'Instance History'});
+	}
+
+	get historyTree() {
+		return this.historyPanel.getByRole('tree', {name: 'Instance History'});
+	}
+
+	historyItem(name: string | RegExp) {
+		return this.historyTree.getByRole('treeitem', {name});
+	}
+
+	searchResultItem(name: string | RegExp) {
+		return this.historyPanel.getByRole('tree', {name: 'Search results'}).getByRole('treeitem', {name});
+	}
+
 	get variablesList() {
 		return this.page.getByRole('table', {name: 'Variable List'});
 	}

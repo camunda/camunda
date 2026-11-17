@@ -24,7 +24,7 @@ import {
 } from '#/shared-test-modules/api-mocks/element-instances';
 import {createIncident} from '#/shared-test-modules/api-mocks/incidents';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
-import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
+import {createPaginatedResponse, createProblemDetails} from '#/shared-test-modules/api-mocks/shared';
 import {ProcessInstancePageProvider} from '../ProcessInstancePageProvider';
 import {processInstanceSearchSchema} from '../processInstanceSearch';
 import {ProcessInstanceWithVisibleTabs} from './ProcessInstanceWithVisibleTabs';
@@ -177,5 +177,18 @@ describe('<ProcessInstanceWithVisibleTabs /> (design system)', () => {
 			.poll(() => screen.router.state.location.pathname)
 			.toBe(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables`);
 		await expect.element(screen.getByText('Tab content')).not.toBeInTheDocument();
+	});
+
+	it('should redirect the history tab to variables when the wait-state statistics request fails', async ({worker}) => {
+		worker.use(
+			mockGetProcessInstanceWaitStateStatisticsEndpoint({
+				successResponse: HttpResponse.json(createProblemDetails({status: 500}), {status: 500}),
+			}),
+		);
+		const screen = await renderShell({activeTab: 'history'});
+
+		await expect
+			.poll(() => screen.router.state.location.pathname)
+			.toBe(`/operate-preview/processes/${PROCESS_INSTANCE_ID}/variables`);
 	});
 });
