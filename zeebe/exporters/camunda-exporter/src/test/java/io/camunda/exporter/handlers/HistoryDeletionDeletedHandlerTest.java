@@ -9,12 +9,16 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.zeebe.protocol.record.value.HistoryDeletionType.PROCESS_INSTANCE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
 import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
@@ -24,6 +28,7 @@ import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableHistoryDeletionRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.util.List;
 import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Test;
 
@@ -31,6 +36,7 @@ class HistoryDeletionDeletedHandlerTest {
 
   private static final Long BATCH_OPERATION_KEY = 1L;
   private static final Long RESOURCE_KEY = 123L;
+  private static final int RESOURCE_STORAGE_ORDINAL = 456;
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-history-deletion";
   private final HistoryDeletionDeletedHandler underTest =
@@ -72,12 +78,13 @@ class HistoryDeletionDeletedHandlerTest {
   }
 
   @Test
-  void shouldGenerateIds() {
+  void shouldExtractIdAndIndexes() {
     // given
     final var recordValue =
         ImmutableHistoryDeletionRecordValue.builder()
             .withResourceKey(RESOURCE_KEY)
             .withResourceType(PROCESS_INSTANCE)
+            .withResourceStorageOrdinal(RESOURCE_STORAGE_ORDINAL)
             .build();
     final var record =
         generateRecord(
@@ -86,11 +93,21 @@ class HistoryDeletionDeletedHandlerTest {
                     .withKey(RESOURCE_KEY)
                     .withBatchOperationReference(BATCH_OPERATION_KEY));
 
+    final TargetIndexLocator indexLocator = mock(TargetIndexLocator.class);
+    final TargetIndex index = TargetIndex.mainIndex(indexName);
+    when(indexLocator.locateMainIndex(indexName)).thenReturn(index);
+
     // when
-    final var idList = underTest.generateIds(record);
+    final var idAndIndexes = underTest.extractIdAndIndexes(indexLocator, record);
 
     // then
-    assertThat(idList).containsOnly(BATCH_OPERATION_KEY + "_" + RESOURCE_KEY);
+    assertThat(idAndIndexes)
+        .isEqualTo(List.of(new IdAndIndex(BATCH_OPERATION_KEY + "_" + RESOURCE_KEY, index)));
+
+    // history deletion entities should always go to main index - they are not ordinal-based
+    // though the resources they reference might be.
+    verify(indexLocator).locateMainIndex(eq(indexName));
+    verifyNoMoreInteractions(indexLocator);
   }
 
   @Test
@@ -100,6 +117,7 @@ class HistoryDeletionDeletedHandlerTest {
         ImmutableHistoryDeletionRecordValue.builder()
             .withResourceKey(RESOURCE_KEY)
             .withResourceType(PROCESS_INSTANCE)
+            .withResourceStorageOrdinal(RESOURCE_STORAGE_ORDINAL)
             .build();
     final var record =
         generateRecord(
@@ -116,6 +134,8 @@ class HistoryDeletionDeletedHandlerTest {
     // then
     assertThat(historyDeletionEntity.getResourceKey()).isEqualTo(RESOURCE_KEY);
     assertThat(historyDeletionEntity.getResourceType()).isEqualTo(PROCESS_INSTANCE);
+    assertThat(historyDeletionEntity.getResourceStorageOrdinal())
+        .isEqualTo(RESOURCE_STORAGE_ORDINAL);
     assertThat(historyDeletionEntity.getBatchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
   }
 

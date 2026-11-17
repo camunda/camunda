@@ -61,6 +61,7 @@ public class HistoryDeletionDeletedHandler
     entity.setBatchOperationKey(record.getBatchOperationReference());
     entity.setResourceKey(value.getResourceKey());
     entity.setResourceType(value.getResourceType());
+    entity.setResourceStorageOrdinal(value.getResourceStorageOrdinal());
     entity.setPartitionId(record.getPartitionId());
   }
 
