@@ -15,6 +15,9 @@
  */
 package io.atomix.raft;
 
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.LongSupplier;
+
 /**
  * Options of a join, see {@link RaftServer#join(io.atomix.raft.cluster.RaftMember.Type,
  * java.util.Collection, JoinOptions)}.
@@ -30,6 +33,30 @@ package io.atomix.raft;
  *     before the join.
  */
 public record JoinOptions(long incarnation, long configurationVersion, long emptyStartProbeTerm) {
+
+  public JoinOptions {
+    if (incarnation == Long.MIN_VALUE) {
+      throw new IllegalArgumentException(
+          "incarnation must not be Long.MIN_VALUE, the null value of the log encoding");
+    }
+  }
+
+  /**
+   * @return a new random incarnation for a member that starts without data. It is never 0, the
+   *     incarnation of a member of the initial configuration, and never {@link Long#MIN_VALUE}, the
+   *     null value of the encoding of the log and the meta store, which reads as 0.
+   */
+  public static long newIncarnation() {
+    return newIncarnation(ThreadLocalRandom.current()::nextLong);
+  }
+
+  static long newIncarnation(final LongSupplier random) {
+    long incarnation;
+    do {
+      incarnation = random.getAsLong();
+    } while (incarnation == 0 || incarnation == Long.MIN_VALUE);
+    return incarnation;
+  }
 
   public static JoinOptions withIncarnation(final long incarnation) {
     return new JoinOptions(incarnation, 0, -1);
