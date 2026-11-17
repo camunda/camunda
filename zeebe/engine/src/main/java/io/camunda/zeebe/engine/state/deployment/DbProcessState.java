@@ -587,7 +587,8 @@ public final class DbProcessState implements MutableProcessState {
         processByIdAndVersionColumnFamily.get(tenantAwareProcessIdAndVersionKey);
 
     if (processWithVersionAndId != null) {
-      return updateInMemoryState(processWithVersionAndId);
+      // the by-version copy is written once at deployment and goes stale when the state changes
+      return lookupPersistenceStateForProcessByKey(processWithVersionAndId.getKey(), tenantId);
     }
     return null;
   }
@@ -602,14 +603,8 @@ public final class DbProcessState implements MutableProcessState {
         processByIdAndVersionColumnFamily.get(tenantAwareProcessIdAndVersionKey);
 
     if (processWithVersionAndId != null) {
-      updateInMemoryState(processWithVersionAndId);
-
-      final var tenantIdAndProcessIdAndVersion =
-          new TenantIdAndProcessIdAndVersion(tenantId, processIdBuffer, version);
-
-      // return the cached copy
-      return processesByTenantAndProcessIdAndVersionCache.getIfPresent(
-          tenantIdAndProcessIdAndVersion);
+      // the by-version copy is written once at deployment and goes stale when the state changes
+      return lookupPersistenceStateForProcessByKey(processWithVersionAndId.getKey(), tenantId);
     }
     // does not exist in persistence and in memory state
     return null;
