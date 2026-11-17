@@ -42,7 +42,9 @@ public interface NotOrdinalControlledIndexExportHandler<
               + " on partition "
               + record.getPartitionId()
               + " that should not be ordinal controlled. Storage ordinal was: "
-              + record.getValue().getStorageOrdinal());
+              + record.getValue().getStorageOrdinal()
+              + " handler was: "
+              + getClass().getName());
     }
     return OrdinalIndexExportHandler.super.extractIdAndIndexes(indexLocator, record);
   }
