@@ -15,13 +15,15 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.impl.record.value.probe.ProbeRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProbeIntent;
+import io.camunda.zeebe.protocol.record.value.ProbeEndReason;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.jspecify.annotations.NullMarked;
 
 /**
  * Answers the client of an answered probe with the worker's answer, data included. Only the engine
  * writes it, right after {@code ANSWER}, which answers the worker: a command carries one response
- * (D74).
+ * (D74). It answers the client of a probe canceled on its secrets too, as the poll or the failed
+ * resolution that cancels it has its own requester or cancels several probes (D75).
  */
 @NullMarked
 @ExcludeAuthorizationCheck
@@ -49,6 +51,13 @@ public final class ProbeRespondProcessor implements TypedRecordProcessor<ProbeRe
           command, RejectionType.INVALID_ARGUMENT, NOT_INTERNAL_MESSAGE);
       return;
     }
-    probeBehavior.respondToClient(command.getKey(), ProbeIntent.ANSWERED, command.getValue());
+    final var response = command.getValue();
+    probeBehavior.respondToClient(command.getKey(), responseIntentOf(response), response);
+  }
+
+  private static ProbeIntent responseIntentOf(final ProbeRecord response) {
+    return response.getEndReason() == ProbeEndReason.SECRET_RESOLUTION_ERROR
+        ? ProbeIntent.CANCELED
+        : ProbeIntent.ANSWERED;
   }
 }

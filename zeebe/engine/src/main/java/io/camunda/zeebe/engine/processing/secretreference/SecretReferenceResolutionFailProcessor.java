@@ -97,7 +97,9 @@ public final class SecretReferenceResolutionFailProcessor
   /**
    * A probe has no process to raise an incident in: it is canceled right away, with the job
    * incident's message without the incident part, so the client learns which secret to fix (D13).
-   * Not batched as jobs are: only the probes in flight wait for a reference, a few at most.
+   * Not batched as jobs are: only the probes in flight wait for a reference. A probe that no longer
+   * fits the batch stays parked until its deadline ends it, or a later resolution of the same
+   * reference releases it.
    */
   private void cancelParkedProbes(final String storeId, final String secretReference) {
     // collected first: the CANCELED applier removes the probes from the visited index
@@ -111,8 +113,9 @@ public final class SecretReferenceResolutionFailProcessor
             storeId, secretReference, defaultSecretStoreConfigured, "retry");
     for (final long probeKey : parkedProbes) {
       final var probe = probeState.getProbe(probeKey);
-      if (probe != null) {
-        probeBehavior.cancelForSecretResolutionError(probeKey, probe, message);
+      if (probe != null
+          && !probeBehavior.tryCancelForSecretResolutionError(probeKey, probe, message)) {
+        return;
       }
     }
   }

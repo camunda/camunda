@@ -151,10 +151,20 @@ public final class ProbeBatchActivateProcessor implements TypedRecordProcessor<P
         batchKey, ProbeBatchIntent.ACTIVATED, responseValueFor(value), command);
 
     requestSecretResolution();
-    probesToCancel.forEach(
-        (probeKey, canceled) ->
-            probeBehavior.cancelForSecretResolutionError(
-                probeKey, canceled.probe(), canceled.message()));
+    cancelUninjectableProbes();
+  }
+
+  /**
+   * Cancels the probes whose secrets could not be injected. A probe that no longer fits the batch
+   * stays activatable, and the next poll cancels it.
+   */
+  private void cancelUninjectableProbes() {
+    for (final var canceled : probesToCancel.entrySet()) {
+      if (!probeBehavior.tryCancelForSecretResolutionError(
+          canceled.getKey(), canceled.getValue().probe(), canceled.getValue().message())) {
+        return;
+      }
+    }
   }
 
   /**

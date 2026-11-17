@@ -274,8 +274,64 @@ public final class ProbeSecretTest {
                 .formatted(probeKey));
   }
 
+  @Test
+  public void shouldAnswerThePollAndTheClientOfTheProbeItCancels() {
+    // given - both parked on the same secret, then made activatable by its resolution
+    final long collected = createProbe("={token: camunda.secrets.apiToken}", 43, 431L);
+    final long canceled =
+        createProbe(
+            "={token: if 1 > 2 then camunda.secrets.apiToken else \"camunda.secrets.literal\"}",
+            44,
+            441L);
+    engine.probe().activate(List.of(probeId), "worker-a", 2);
+    RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_COMPLETED)
+        .withSecretReference("apiToken")
+        .await();
+
+    // when
+    final var poll = engine.probe().activate(List.of(probeId), "worker-a", 2);
+
+    // then - a command carries one response: the client is answered by its own RESPOND (D74)
+    assertThat(poll.getValue().getProbeKeys()).containsExactly(collected);
+    RecordingExporter.probeRecords(ProbeIntent.CANCELED).withRecordKey(canceled).await();
+    verify(engine.getCommandResponseWriter(), timeout(5_000)).tryWriteResponse(44, 441L);
+    await("until the activation response is written")
+        .untilAsserted(
+            () ->
+                assertThat(activationResponses())
+                    .anySatisfy(
+                        response ->
+                            assertThat(response.getProbeKeys()).containsExactly(collected)));
+  }
+
+  @Test
+  public void shouldAnswerEveryClientOfTheProbesItsFailedSecretCancels() {
+    // given
+    final long first = createProbe("={token: camunda.secrets.missing}", 45, 451L);
+    final long second = createProbe("={token: camunda.secrets.missing}", 46, 461L);
+
+    // when - both parked on the secret by one poll, then its resolution fails
+    engine.probe().activate(List.of(probeId), "worker-a", 2);
+
+    // then
+    RecordingExporter.probeRecords(ProbeIntent.CANCELED).withRecordKey(first).await();
+    RecordingExporter.probeRecords(ProbeIntent.CANCELED).withRecordKey(second).await();
+    verify(engine.getCommandResponseWriter(), timeout(5_000)).tryWriteResponse(45, 451L);
+    verify(engine.getCommandResponseWriter(), timeout(5_000)).tryWriteResponse(46, 461L);
+  }
+
   private long createProbe(final String input) {
     return engine.probe().withProbeId(probeId).withInput(input).create().getKey();
+  }
+
+  private long createProbe(final String input, final int requestStreamId, final long requestId) {
+    return engine
+        .probe()
+        .withProbeId(probeId)
+        .withInput(input)
+        .withRequest(requestStreamId, requestId)
+        .create()
+        .getKey();
   }
 
   /**
