@@ -42,6 +42,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
+import io.camunda.zeebe.protocol.impl.record.value.cases.CaseRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
@@ -136,6 +137,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.protocol.record.value.CaseStageStatus;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -5817,6 +5819,40 @@ final class JsonSerializableToJsonTest {
           "includeProcessInstances": false,
           "resolvedVersions": [],
           "batchOperationKey": -1
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////////////// CaseRecord ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "CaseRecord",
+        (Supplier<CaseRecord>)
+            () ->
+                new CaseRecord()
+                    .setProcessInstanceKey(123L)
+                    .setProcessDefinitionKey(456L)
+                    .setBpmnProcessId("order-process")
+                    .setTenantId("tenant-1")
+                    .setBusinessId("order-42")
+                    .setTitle("Order #42 for ACME")
+                    .addStage("review", CaseStageStatus.ACTIVE)
+                    .setStorageOrdinal(1001),
+        """
+        {
+          "processInstanceKey": 123,
+          "processDefinitionKey": 456,
+          "bpmnProcessId": "order-process",
+          "tenantId": "tenant-1",
+          "businessId": "order-42",
+          "title": "Order #42 for ACME",
+          "stages": [
+            {
+              "elementId": "review",
+              "status": "ACTIVE"
+            }
+          ],
+          "storageOrdinal": 1001
         }
         """
       },
