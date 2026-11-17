@@ -91,12 +91,23 @@ test.describe('Decision Filters', () => {
   });
 
   test('Evaluated filter shows only evaluated instances', async ({
+    page,
     operateDecisionsPage,
   }) => {
     let totalCount: number;
 
     await test.step('Filter by decision name to scope to test instances', async () => {
       await operateDecisionsPage.selectDecisionName('Invoice Classification');
+      // Wait for the decision-name filter to be committed to the URL before
+      // reading counts or toggling the Failed filter. The decisions list is
+      // driven entirely by the URL query params; the name selection navigates
+      // asynchronously. If we uncheck Failed while that navigation is still
+      // settling, the two URL updates race and the still-pending name
+      // navigation overwrites the Failed change back to failed=true, so no
+      // evaluated-only query is ever issued and failed instances remain in the
+      // result set. Settling the name filter first makes the subsequent uncheck
+      // the only in-flight navigation, so it is applied cleanly.
+      await page.waitForURL(/name=invoiceClassification/);
     });
 
     await test.step('Get total row count with both filters active', async () => {
