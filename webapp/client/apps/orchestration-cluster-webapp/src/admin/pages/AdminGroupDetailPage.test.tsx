@@ -320,6 +320,33 @@ describe('<AdminGroupDetailPage />', () => {
 		await expect.element(screen.getByPlaceholder('Enter username')).toBeVisible();
 	});
 
+	it('should hint that an externally entered username is case-sensitive', async ({worker}) => {
+		// given
+		worker.use(mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}));
+		const {screen} = await renderPage({isOidc: true});
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+
+		// then
+		await expect.element(screen.getByText(/Usernames are case-sensitive/)).toBeVisible();
+	});
+
+	it('should not show the case-sensitivity hint when users are picked from a list', async ({worker}) => {
+		// given
+		worker.use(
+			mockQueryUsersByGroupEndpoint({successResponse: HttpResponse.json(createPage([]))}),
+			mockQueryUsersEndpoint({successResponse: HttpResponse.json(createPage([]))}),
+		);
+		const {screen} = await renderPage();
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Assign user'}));
+
+		// then
+		await expect.element(screen.getByText(/Usernames are case-sensitive/)).not.toBeInTheDocument();
+	});
+
 	it('should assign an external user by username when the login is delegated', async ({worker}) => {
 		// given
 		worker.use(

@@ -729,6 +729,7 @@
 				"learnMore": "Más información sobre {{resources}}"
 			},
 			"members": {
+				"usernameCaseSensitiveHint": "Los nombres de usuario distinguen entre mayúsculas y minúsculas. Introduzca el nombre de usuario exactamente como lo conoce el proveedor de identidad.",
 				"kinds": {
 					"users": "usuarios",
 					"groups": "grupos",

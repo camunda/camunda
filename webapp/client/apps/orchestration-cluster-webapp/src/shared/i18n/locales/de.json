@@ -729,6 +729,7 @@
 				"learnMore": "Mehr über {{resources}} erfahren"
 			},
 			"members": {
+				"usernameCaseSensitiveHint": "Benutzernamen unterscheiden zwischen Groß- und Kleinschreibung. Geben Sie den Benutzernamen genau so ein, wie er beim Identity-Provider bekannt ist.",
 				"kinds": {
 					"users": "Benutzer",
 					"groups": "Gruppen",

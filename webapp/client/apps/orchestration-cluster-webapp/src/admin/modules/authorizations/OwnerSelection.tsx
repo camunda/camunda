@@ -129,20 +129,27 @@ type TextOwnerFieldProps = {
 	onChange: (ownerId: string) => void;
 	onBlur: () => void;
 	error?: string;
+	hint?: string;
 };
 
-const TextOwnerField: React.FC<TextOwnerFieldProps> = ({label, placeholder, value, onChange, onBlur, error}) => (
+const TextOwnerField: React.FC<TextOwnerFieldProps> = ({label, placeholder, value, onChange, onBlur, error, hint}) => (
 	<div className="flex flex-col gap-1.5">
 		<Label htmlFor="authorization-owner">{label}</Label>
 		<Input
 			id="authorization-owner"
 			placeholder={placeholder}
+			aria-describedby={hint ? 'authorization-owner-hint' : undefined}
 			value={value}
 			onChange={(event) => onChange(event.target.value)}
 			onBlur={onBlur}
 			aria-invalid={Boolean(error)}
 			invalidText={error}
 		/>
+		{hint ? (
+			<span id="authorization-owner-hint" className="text-xs text-muted-foreground">
+				{hint}
+			</span>
+		) : null}
 	</div>
 );
 
@@ -158,6 +165,7 @@ const OwnerSelection: React.FC<OwnerSelectionProps> = (props) => {
 					{...textFieldProps}
 					label={t('admin.authorizations.usernameFieldLabel')}
 					placeholder={t('admin.authorizations.usernameFieldPlaceholder')}
+					hint={t('admin.members.usernameCaseSensitiveHint')}
 				/>
 			) : (
 				<EntityCombobox {...props} />

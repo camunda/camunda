@@ -729,6 +729,7 @@
 				"learnMore": "En savoir plus sur : {{resources}}"
 			},
 			"members": {
+				"usernameCaseSensitiveHint": "Les noms d'utilisateur sont sensibles à la casse. Saisissez le nom d'utilisateur exactement tel que le connaît le fournisseur d'identité.",
 				"kinds": {
 					"users": "utilisateurs",
 					"groups": "groupes",

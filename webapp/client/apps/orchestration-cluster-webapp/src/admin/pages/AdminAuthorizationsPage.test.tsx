@@ -246,6 +246,17 @@ describe('<AdminAuthorizationsPage />', () => {
 		await expect.element(screen.getByRole('button', {name: 'Delete authorization'})).toBeDisabled();
 	});
 
+	it('should hint that an externally entered username is case-sensitive', async () => {
+		// given
+		const {screen} = await renderPage();
+
+		// when
+		await userEvent.click(screen.getByRole('button', {name: 'Create authorization'}));
+
+		// then
+		await expect.element(screen.getByText(/Usernames are case-sensitive/)).toBeVisible();
+	});
+
 	it('should create an authorization', async ({worker}) => {
 		worker.use(
 			mockCreateAuthorizationEndpoint({
