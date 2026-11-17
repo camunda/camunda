@@ -18,7 +18,9 @@ import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class MultiInstanceInputCollectionBehavior {
   private final ExpressionProcessor expressionProcessor;
   private final BpmnStateBehavior stateBehavior;

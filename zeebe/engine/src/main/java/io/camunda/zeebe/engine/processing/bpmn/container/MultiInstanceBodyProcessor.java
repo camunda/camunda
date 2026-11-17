@@ -35,7 +35,10 @@ import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public final class MultiInstanceBodyProcessor
     implements BpmnElementContainerProcessor<ExecutableMultiInstanceBody> {
 
@@ -180,10 +183,10 @@ public final class MultiInstanceBodyProcessor
                 return Either.left(failure);
               }
             })
-        .map(
+        .flatMap(
             inputElement -> {
               setLoopVariables(multiInstanceBody, childContext, loopCounter, inputElement);
-              return null;
+              return Either.rightVoid();
             });
   }
 
@@ -428,7 +431,8 @@ public final class MultiInstanceBodyProcessor
     return Either.right(false);
   }
 
-  private DirectBuffer getVariable(final long elementInstanceKey, final String variableName) {
+  private @Nullable DirectBuffer getVariable(
+      final long elementInstanceKey, final String variableName) {
     return switch (variableName) {
       case "numberOfInstances" -> getNumberOfInstancesVariable(elementInstanceKey);
 

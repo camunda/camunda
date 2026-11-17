@@ -24,7 +24,9 @@ import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public final class MultiInstanceOutputCollectionBehavior {
 
   private final MsgPackReader outputCollectionReader = new MsgPackReader();
@@ -68,7 +70,7 @@ public final class MultiInstanceOutputCollectionBehavior {
         .map(
             variableName ->
                 updateOutputCollection(element, childContext, flowScopeContext, variableName))
-        .orElse(Either.right(null));
+        .orElse(Either.rightVoid());
   }
 
   private Either<Failure, Void> updateOutputCollection(
@@ -103,11 +105,11 @@ public final class MultiInstanceOutputCollectionBehavior {
                       elementVariable,
                       flowScopeContext.getElementInstanceKey(),
                       variableName)
-                  .map(
+                  .flatMap(
                       updatedCollection -> {
                         stateBehavior.setLocalVariable(
                             flowScopeContext, variableName, updatedCollection);
-                        return null;
+                        return Either.rightVoid();
                       });
             });
   }

@@ -36,8 +36,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
+@NullMarked
 public final class ExpressionProcessor {
 
   private static final Logger LOG = Loggers.ENGINE_PROCESSING_LOGGER;
@@ -128,7 +131,8 @@ public final class ExpressionProcessor {
    * @return a new secret-aware processor; this one is left unchanged
    * @see SecretReferenceEvaluationContext
    */
-  public ExpressionProcessor withSecretReferenceContext(final ReferencedSecretCollector collector) {
+  public ExpressionProcessor withSecretReferenceContext(
+      final @Nullable ReferencedSecretCollector collector) {
     return new ExpressionProcessor(
         expressionLanguage,
         new SecretReferenceEvaluationContext(scopedEvaluationContext, collector),
@@ -771,7 +775,7 @@ public final class ExpressionProcessor {
   private Either<Failure, EvaluationResult> evaluateExpressionAsEither(
       final Expression expression,
       final long variableScopeKey,
-      final String tenantId,
+      @Nullable final String tenantId,
       final ExpressionLabel label) {
     final EvaluationContext context;
     if (variableScopeKey < 0 && (tenantId == null || tenantId.isEmpty())) {
@@ -944,7 +948,7 @@ public final class ExpressionProcessor {
       super(message);
     }
 
-    public EvaluationException(final String message, final Throwable cause) {
+    public EvaluationException(final String message, final @Nullable Throwable cause) {
       super(message, cause);
     }
   }

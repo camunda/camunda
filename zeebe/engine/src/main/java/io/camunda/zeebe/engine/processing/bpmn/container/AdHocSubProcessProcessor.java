@@ -37,8 +37,11 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public class AdHocSubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableAdHocSubProcess> {
 
@@ -162,7 +165,8 @@ public class AdHocSubProcessProcessor
   }
 
   private AdHocSubProcessBehavior behaviorFor(final ExecutableAdHocSubProcess adHocSubProcess) {
-    return adHocSubProcessBehaviors.get(adHocSubProcess.getImplementationType());
+    return Objects.requireNonNull(
+        adHocSubProcessBehaviors.get(adHocSubProcess.getImplementationType()));
   }
 
   private void terminate(
@@ -241,14 +245,14 @@ public class AdHocSubProcessProcessor
       final BpmnElementContext childContext) {
     return adHocSubProcess
         .getOutputCollection()
-        .map(
+        .<Either<Failure, ?>>map(
             outputCollectionVariableName ->
                 updateOutputCollection(
                     adHocSubProcess,
                     outputCollectionVariableName,
                     adHocSubProcessContext,
                     childContext))
-        .orElse(Either.right(null))
+        .orElse(Either.rightVoid())
         .flatMap(
             ok ->
                 behaviorFor(adHocSubProcess)
@@ -365,7 +369,7 @@ public class AdHocSubProcessProcessor
         final BpmnElementContext childContext) {
       final Expression completionConditionExpression = adHocSubProcess.getCompletionCondition();
       if (completionConditionExpression == null) {
-        return Either.right(null);
+        return Either.rightVoid();
       }
 
       return expressionProcessor
