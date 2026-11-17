@@ -44,7 +44,7 @@ function ProcessInstancePageProvider({
 	modification?: ModificationController;
 	children: React.ReactNode;
 }) {
-	const history = useHistoryController(processInstance);
+	const history = useHistoryController(processInstance, modification?.isModificationModeEnabled ?? false);
 	const selection = useResolvedSelection(
 		processInstanceId,
 		search,

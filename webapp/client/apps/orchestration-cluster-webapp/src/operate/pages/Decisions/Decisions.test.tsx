@@ -615,4 +615,40 @@ describe('<Decisions />', () => {
 		await expect.element(screen.getByRole('button', {name: 'More Filters'})).toBeVisible();
 		await expect.element(screen.getByLabelText('Business ID', {exact: true})).not.toBeInTheDocument();
 	});
+
+	it('should validate Decision Instance Key(s) like legacy and filter by a key with an index', async ({worker}) => {
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({successResponse: EMPTY_DECISION_INSTANCES}),
+		);
+		const error = 'Key has to be a 16 to 20 digit number with an index, e.g. 2251799813702856-1';
+		const screen = await renderDecisionsPage();
+		const keyField = screen.getByLabelText('Decision Instance Key(s)', {exact: true});
+
+		await userEvent.click(screen.getByRole('button', {name: 'More Filters'}));
+		await userEvent.click(screen.getByRole('menuitem', {name: 'Decision Instance Key(s)'}));
+		await userEvent.fill(keyField, '2251799813702856');
+
+		await expect.element(screen.getByText(error)).toBeVisible();
+
+		worker.use(
+			mockQueryDecisionInstancesEndpoint({
+				schema: z.looseObject({
+					filter: z.looseObject({
+						decisionEvaluationInstanceKey: z.object({$in: z.tuple([z.literal('2251799813702856-1')])}).strict(),
+					}),
+				}),
+				successResponse: HttpResponse.json(
+					createQueryDecisionInstancesResponse({
+						items: [createDecisionInstance({decisionEvaluationInstanceKey: '2251799813702856-1'})],
+					}),
+				),
+				failureResponse: EMPTY_DECISION_INSTANCES,
+			}),
+		);
+		await userEvent.fill(keyField, '2251799813702856-1');
+
+		await expect.element(screen.getByRole('link', {name: 'View decision instance 2251799813702856-1'})).toBeVisible();
+		await expect.element(screen.getByText(error)).not.toBeInTheDocument();
+	});
 });

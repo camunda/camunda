@@ -80,7 +80,7 @@ function historyWindowQuery(
 		refetchOnWindowFocus: false,
 	});
 }
-function useHistoryController(instance: ProcessInstance) {
+function useHistoryController(instance: ProcessInstance, isModificationModeEnabled: boolean) {
 	const instanceKey = instance.processInstanceKey;
 	const client = useQueryClient();
 	const [state, setState] = useState(() => createHistoryState(instanceKey));
@@ -209,12 +209,12 @@ function useHistoryController(instance: ProcessInstance) {
 		}
 	}, [client, instanceKey, instance.state]);
 	useEffect(() => {
-		if (!visible || forbidden || instance.state !== 'ACTIVE') {
+		if (!visible || forbidden || instance.state !== 'ACTIVE' || isModificationModeEnabled) {
 			return;
 		}
 		const timer = window.setInterval(() => void poll(), 5000);
 		return () => window.clearInterval(timer);
-	}, [forbidden, instance.state, visible]);
+	}, [forbidden, instance.state, visible, isModificationModeEnabled]);
 	function toggle(key: string, parent?: string) {
 		if (windows.has(key)) {
 			const removed = new Set([key]);
