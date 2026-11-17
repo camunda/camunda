@@ -27,8 +27,10 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.VoterPolicy;
 import io.atomix.raft.cluster.VoterPolicy.ZoneVoters;
+import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftPartitionConfig;
+import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureResponse;
@@ -45,6 +47,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -604,6 +607,87 @@ final class SystemPartitionRaftTest {
       assertThat(response.status()).isEqualTo(Status.ERROR);
       assertThat(response.error().type()).isEqualTo(RaftError.Type.FENCED);
       assertThat(m1.getTerm()).isEqualTo(termBefore);
+    }
+
+    @Test
+    void shouldNotFenceMemberThatForwardsJoinOfFencedMember() {
+      // given - passive member 4 has caught up
+      final var members =
+          Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE, id4, Type.PASSIVE);
+      final var m1 = createServer(id1, id2, id3, id4);
+      final var m2 = createServer(id2, id1, id3, id4);
+      final var m3 = createServer(id3, id1, id2, id4);
+      final var m4 = createServer(id4, id1, id2, id3);
+      CompletableFuture.allOf(
+              m1.bootstrap(members),
+              m2.bootstrap(members),
+              m3.bootstrap(members),
+              m4.bootstrap(members))
+          .orTimeout(30, TimeUnit.SECONDS)
+          .join();
+      Awaitility.await("member 3 is not the leader")
+          .until(
+              () -> {
+                final var leader = awaitLeader(m1, m2, m3);
+                if (leader == m3) {
+                  m3.stepDown().join();
+                  return false;
+                }
+                return true;
+              });
+      final var leader = awaitLeader(m1, m2);
+      final var index = appendEntry(leader);
+      Awaitility.await("passive member caught up")
+          .untilAsserted(() -> assertThat(commitIndex(m4)).isGreaterThanOrEqualTo(index));
+
+      // given - member 4 lags behind: it does not get the change that fences member 3
+      final var leaderProtocol = (TestRaftServerProtocol) leader.getContext().getProtocol();
+      leaderProtocol.disconnect(id4);
+      Awaitility.await("member 3 is demoted and fenced")
+          .until(
+              () -> {
+                final var current = configurationId(leader);
+                return leader
+                    .reconfigure(
+                        Map.of(
+                            id1,
+                            Type.ACTIVE,
+                            id2,
+                            Type.ACTIVE,
+                            id3,
+                            Type.PASSIVE,
+                            id4,
+                            Type.PASSIVE),
+                        List.of(new FenceEntry(id3, 0)),
+                        null,
+                        current.index(),
+                        current.term())
+                    .orTimeout(10, TimeUnit.SECONDS)
+                    .join();
+              },
+              response -> response.status() == Status.OK);
+
+      // when - the fenced member asks member 4 to join with its fenced incarnation, and member 4
+      // forwards the request to the leader
+      final var response =
+          ((TestRaftServerProtocol) m3.getContext().getProtocol())
+              .join(
+                  id4,
+                  JoinRequest.builder()
+                      .withJoiningMember(new DefaultRaftMember(id3, Type.PASSIVE, Instant.now()))
+                      .build())
+              .orTimeout(10, TimeUnit.SECONDS)
+              .join();
+
+      // then - the rejection reaches the fenced member, and the forwarder stays healthy
+      assertThat(response.status()).isEqualTo(Status.ERROR);
+      assertThat(response.error().type()).isEqualTo(RaftError.Type.FENCED);
+      assertThat(onRaftThread(m4, () -> m4.getContext().isFenced())).isFalse();
+      assertThat(m4.getRole()).isEqualTo(Role.PASSIVE);
+      leaderProtocol.reconnect(id4);
+      final var nextIndex = appendEntry(leader);
+      Awaitility.await("member 4 catches up again")
+          .untilAsserted(() -> assertThat(commitIndex(m4)).isGreaterThanOrEqualTo(nextIndex));
     }
 
     @Test

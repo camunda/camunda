@@ -34,7 +34,8 @@ import java.util.concurrent.CompletionException;
  *
  * <ul>
  *   <li>every request that the local member sends carries its incarnation;
- *   <li>a {@link RaftError.Type#FENCED} rejection tells the local member that it is fenced;
+ *   <li>a {@link RaftError.Type#FENCED} rejection of a request that the local member sent on its
+ *       own behalf tells the local member that it is fenced;
  *   <li>a response from a fenced member fails like an unreachable member, so that its term is never
  *       taken over.
  * </ul>
@@ -56,7 +57,7 @@ final class OutboundRaftProtocol {
                 stamp(request, raft);
                 final CompletableFuture<?> response =
                     (CompletableFuture<?>) invoke(delegate, method, args);
-                return response.thenApply(r -> checkResponse(target, r, raft));
+                return response.thenApply(r -> checkResponse(target, request, r, raft));
               }
               return invoke(delegate, method, args);
             });
@@ -71,13 +72,18 @@ final class OutboundRaftProtocol {
   }
 
   private static <T> T checkResponse(
-      final MemberId target, final T response, final RaftContext raft) {
+      final MemberId target, final RaftRequest request, final T response, final RaftContext raft) {
     if (!(response instanceof final AbstractRaftResponse raftResponse)) {
       return response;
     }
     if (raftResponse.status() == Status.ERROR
         && raftResponse.error() != null
         && raftResponse.error().type() == RaftError.Type.FENCED) {
+      // A forwarded request is rejected because its original sender is fenced; the rejection is
+      // only passed back to that sender.
+      if (!isOwnRequest(request, raft)) {
+        return response;
+      }
       raft.getThreadContext()
           .execute(
               () ->
@@ -94,6 +100,12 @@ final class OutboundRaftProtocol {
               target, raftResponse.senderIncarnation()));
     }
     return response;
+  }
+
+  private static boolean isOwnRequest(final RaftRequest request, final RaftContext raft) {
+    final var localMember = raft.getCluster().getLocalMember();
+    return localMember.memberId().equals(request.from())
+        && localMember.getIncarnation() == request.senderIncarnation();
   }
 
   private static Object invoke(
