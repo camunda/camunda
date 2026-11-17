@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.encoding;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.auth.JwtDecoder;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
@@ -15,12 +16,20 @@ import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /** */
 public class AuthInfo extends UnpackedObject {
+
+  private static final List<String> ACTOR_CLAIMS =
+      List.of(
+          Authorization.AUTHORIZED_ANONYMOUS_USER,
+          Authorization.AUTHORIZED_USERNAME,
+          Authorization.AUTHORIZED_CLIENT_ID);
 
   private final EnumProperty<AuthDataFormat> formatProp =
       new EnumProperty<>("format", AuthDataFormat.class, AuthDataFormat.UNKNOWN);
@@ -31,6 +40,25 @@ public class AuthInfo extends UnpackedObject {
   public AuthInfo() {
     super(3);
     declareProperty(formatProp).declareProperty(authDataProp).declareProperty(claimsProp);
+  }
+
+  /**
+   * Returns an auth info with the same format and only the actor claims: the anonymous flag, the
+   * username and the client id.
+   */
+  public AuthInfo withActorClaimsOnly() {
+    if (getFormat() == AuthDataFormat.JWT) {
+      // The claims are inside the token, so they cannot be reduced without the token.
+      return this;
+    }
+    final var claims = getClaims();
+    final var actorClaims = new HashMap<String, Object>();
+    for (final var key : ACTOR_CLAIMS) {
+      if (claims.containsKey(key)) {
+        actorClaims.put(key, claims.get(key));
+      }
+    }
+    return new AuthInfo().setFormat(getFormat()).setClaims(actorClaims);
   }
 
   public AuthDataFormat getFormat() {

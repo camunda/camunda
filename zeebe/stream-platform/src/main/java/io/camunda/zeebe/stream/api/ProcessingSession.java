@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Agent;
+import io.camunda.zeebe.protocol.record.RecordType;
 import java.util.function.Consumer;
 
 public interface ProcessingSession {
@@ -41,8 +42,13 @@ public interface ProcessingSession {
 
   default void appendAuthInfoToFollowUps(final AuthInfo authInfo) {
     if (authInfo != null && authInfo.hasAnyClaims()) {
-      // no explicit copy needed: RecordMetadata.authorization() already copies via copyFrom()
-      appendMetadataToFollowUps(metadata -> metadata.authorization(authInfo));
+      // Events need only the actor, for example for the audit log. The full claims make nearly
+      // each record much larger. Commands keep the full claims for the authorization checks.
+      final var actorAuthInfo = authInfo.withActorClaimsOnly();
+      appendMetadataToFollowUps(
+          metadata ->
+              metadata.authorization(
+                  metadata.getRecordType() == RecordType.EVENT ? actorAuthInfo : authInfo));
     }
   }
 
