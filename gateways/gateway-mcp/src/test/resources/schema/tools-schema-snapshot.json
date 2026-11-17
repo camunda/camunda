@@ -168,6 +168,11 @@
                 "type": "integer",
                 "format": "int32",
                 "description": "The maximum number of items to return in one request."
+              },
+              "totalItemsAccuracy": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Counts the response's `totalItems` accurately up to this many items. If more items match, `totalItems` equals this value and `hasMoreTotalItems` is true. Counting more items costs more, so request only what is needed; combine with `limit: 0` to count without fetching items. Omit it to use the data layer's default cap. Has no effect on data layers whose count is always accurate. "
               }
             },
             "description": "Pagination criteria."
@@ -331,6 +336,11 @@
                 "type": "integer",
                 "format": "int32",
                 "description": "The maximum number of items to return in one request."
+              },
+              "totalItemsAccuracy": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Counts the response's `totalItems` accurately up to this many items. If more items match, `totalItems` equals this value and `hasMoreTotalItems` is true. Counting more items costs more, so request only what is needed; combine with `limit: 0` to count without fetching items. Omit it to use the data layer's default cap. Has no effect on data layers whose count is always accurate. "
               }
             },
             "description": "Pagination criteria."
@@ -604,6 +614,11 @@
                 "type": "integer",
                 "format": "int32",
                 "description": "The maximum number of items to return in one request."
+              },
+              "totalItemsAccuracy": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Counts the response's `totalItems` accurately up to this many items. If more items match, `totalItems` equals this value and `hasMoreTotalItems` is true. Counting more items costs more, so request only what is needed; combine with `limit: 0` to count without fetching items. Omit it to use the data layer's default cap. Has no effect on data layers whose count is always accurate. "
               }
             },
             "description": "Pagination criteria."
@@ -815,6 +830,11 @@
                 "type": "integer",
                 "format": "int32",
                 "description": "The maximum number of items to return in one request."
+              },
+              "totalItemsAccuracy": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Counts the response's `totalItems` accurately up to this many items. If more items match, `totalItems` equals this value and `hasMoreTotalItems` is true. Counting more items costs more, so request only what is needed; combine with `limit: 0` to count without fetching items. Omit it to use the data layer's default cap. Has no effect on data layers whose count is always accurate. "
               }
             },
             "description": "Pagination criteria"
@@ -1031,6 +1051,11 @@
                 "type": "integer",
                 "format": "int32",
                 "description": "The maximum number of items to return in one request."
+              },
+              "totalItemsAccuracy": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Counts the response's `totalItems` accurately up to this many items. If more items match, `totalItems` equals this value and `hasMoreTotalItems` is true. Counting more items costs more, so request only what is needed; combine with `limit: 0` to count without fetching items. Omit it to use the data layer's default cap. Has no effect on data layers whose count is always accurate. "
               }
             },
             "description": "Pagination criteria."
@@ -1185,6 +1210,11 @@
                 "type": "integer",
                 "format": "int32",
                 "description": "The maximum number of items to return in one request."
+              },
+              "totalItemsAccuracy": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Counts the response's `totalItems` accurately up to this many items. If more items match, `totalItems` equals this value and `hasMoreTotalItems` is true. Counting more items costs more, so request only what is needed; combine with `limit: 0` to count without fetching items. Omit it to use the data layer's default cap. Has no effect on data layers whose count is always accurate. "
               }
             },
             "description": "Pagination criteria"

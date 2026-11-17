@@ -39,6 +39,9 @@ components:
           type: integer
           format: int32
           minimum: 1
+      x-properties-added-in-version:
+        - propertyName: totalItemsAccuracy
+          addedInVersion: "8.11"
 
     OffsetPagination:
       type: object
