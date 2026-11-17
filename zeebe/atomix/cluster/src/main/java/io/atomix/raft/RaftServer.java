@@ -29,6 +29,7 @@ import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.RaftServerProtocol;
+import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.zeebe.EntryValidator;
@@ -258,6 +259,24 @@ public interface RaftServer {
    * @return A completable future to be completed once the cluster has been bootstrapped.
    */
   CompletableFuture<RaftServer> bootstrap(Collection<MemberId> cluster);
+
+  /**
+   * Changes the configuration to the given full target membership. The target must be calculated
+   * from the configuration with the given index and term: the leader accepts the change only if its
+   * configuration index is exactly {@code index}. A member that is not part of the current
+   * configuration must not be {@link Type#ACTIVE}. If the target is already the configuration, the
+   * leader answers OK without a change. A non-leader forwards the request to the leader.
+   *
+   * <p>A rejection carries the leader's current configuration (index, term and members) so that the
+   * caller can calculate the target again and retry.
+   *
+   * @param members the full target membership with types
+   * @param index the index of the configuration the target was calculated from
+   * @param term the term of the configuration the target was calculated from
+   * @return the leader's response; it does not fail exceptionally
+   */
+  CompletableFuture<ReconfigureResponse> reconfigure(
+      Map<MemberId, Type> members, long index, long term);
 
   /**
    * Bootstraps the cluster with typed members, see {@link

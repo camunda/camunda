@@ -68,6 +68,7 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -177,11 +178,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     // See https://groups.google.com/forum/#!topic/raft-dev/t4xj6dJTP6E
     if (initializing()) {
       return CompletableFuture.completedFuture(
-          logResponse(
-              ReconfigureResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(Type.CONFIGURATION_ERROR, "Not ready to make configuration changes")
-                  .build()));
+          rejectReconfigure(Type.CONFIGURATION_ERROR, "Not ready to make configuration changes"));
     }
 
     if (isPausedForTransfer()) {
@@ -189,13 +186,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       // so reject it (subject to retries). Force reconfiguration steps the leader down, which
       // clears the pause, so it is not gated here.
       return CompletableFuture.completedFuture(
-          logResponse(
-              ReconfigureResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(
-                      Type.CONFIGURATION_ERROR,
-                      "Cannot reconfigure while paused for a leadership transfer")
-                  .build()));
+          rejectReconfigure(
+              Type.CONFIGURATION_ERROR,
+              "Cannot reconfigure while paused for a leadership transfer"));
     }
 
     // If another configuration change is already under way, reject the configuration. A forced
@@ -219,18 +212,38 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
         return ongoingReconfigurationRequestFuture;
       }
       return CompletableFuture.completedFuture(
-          logResponse(
-              ReconfigureResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(
-                      Type.CONFIGURATION_ERROR, "Another configuration change is in progress")
-                  .build()));
+          rejectReconfigure(
+              Type.CONFIGURATION_ERROR, "Another configuration change is in progress"));
     }
 
     // If the configuration request index is less than the last known configuration index for
     // the leader, fail the request to ensure servers can't reconfigure an old configuration.
     final var configuration = raft.getCluster().getConfiguration();
     final var configurationTerm = raft.getCluster().getConfigurationTerm();
+    // The exact-index API (RaftServer#reconfigure) sends a full target configuration that the
+    // requester calculated from the configuration at request.index(). The target is only correct
+    // for that configuration, thus any other index is rejected. If the target is already the
+    // current configuration, it is a retry of a change that succeeded and is answered OK.
+    if (request.exactIndex()
+        && equalMembership(configuration.newMembers(), request.members())
+        && !configuration.requiresJointConsensus()) {
+      return CompletableFuture.completedFuture(
+          logResponse(
+              ReconfigureResponse.builder()
+                  .withStatus(Status.OK)
+                  .withIndex(configuration.index())
+                  .withTerm(configurationTerm)
+                  .withTime(configuration.time())
+                  .withMembers(new ArrayList<>(configuration.newMembers()))
+                  .build()));
+    }
+    if (request.exactIndex() && request.index() != configuration.index()) {
+      return CompletableFuture.completedFuture(
+          rejectReconfigure(
+              RaftError.Type.CONFIGURATION_ERROR,
+              "Configuration index %d does not match the current configuration index %d"
+                  .formatted(request.index(), configuration.index())));
+    }
     // Report which half is stale. Both mean "you are not amending the configuration I have", but
     // they need different reactions: a stale index means the requester has to be configured up to
     // the current one first, while a matching index with a different term means the two disagree
@@ -238,25 +251,17 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     // own.
     if (request.index() > 0 && request.index() < configuration.index()) {
       return CompletableFuture.completedFuture(
-          logResponse(
-              ReconfigureResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(
-                      RaftError.Type.CONFIGURATION_ERROR,
-                      "Stale configuration index %d, expected at least %d"
-                          .formatted(request.index(), configuration.index()))
-                  .build()));
+          rejectReconfigure(
+              RaftError.Type.CONFIGURATION_ERROR,
+              "Stale configuration index %d, expected at least %d"
+                  .formatted(request.index(), configuration.index())));
     }
     if (request.term() != configurationTerm) {
       return CompletableFuture.completedFuture(
-          logResponse(
-              ReconfigureResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(
-                      RaftError.Type.CONFIGURATION_ERROR,
-                      "Stale configuration term %d at index %d, expected %d"
-                          .formatted(request.term(), request.index(), configurationTerm))
-                  .build()));
+          rejectReconfigure(
+              RaftError.Type.CONFIGURATION_ERROR,
+              "Stale configuration term %d at index %d, expected %d"
+                  .formatted(request.term(), request.index(), configurationTerm)));
     }
 
     // Write a new configuration entry with the updated member list.
@@ -270,14 +275,10 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
         updatedMembers.stream().anyMatch(member -> member.getType() == RaftMember.Type.ACTIVE);
     if (!updatedMembers.isEmpty() && !hasActiveMember) {
       return CompletableFuture.completedFuture(
-          logResponse(
-              ReconfigureResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(
-                      Type.CONFIGURATION_ERROR,
-                      "Requested configuration %s must be empty or have at least one active member"
-                          .formatted(updatedMembers))
-                  .build()));
+          rejectReconfigure(
+              Type.CONFIGURATION_ERROR,
+              "Requested configuration %s must be empty or have at least one active member"
+                  .formatted(updatedMembers)));
     }
 
     if (equalMembership(currentMembers, updatedMembers)) {
@@ -290,6 +291,26 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .withTime(configuration.time())
                   .withMembers(currentMembers)
                   .build()));
+    }
+
+    if (request.exactIndex()) {
+      // A new member must first join as a non-voter and catch up. As a new voter it would count
+      // for the quorum before it has any entry, and it could vote with an empty log.
+      final var newActiveMember =
+          updatedMembers.stream()
+              .filter(member -> member.getType() == RaftMember.Type.ACTIVE)
+              .filter(member -> !configuration.hasMember(member.memberId()))
+              .findAny();
+      if (newActiveMember.isPresent()) {
+        return CompletableFuture.completedFuture(
+            rejectReconfigure(
+                Type.CONFIGURATION_ERROR,
+                "Cannot add %s as %s, a new member must not be %s"
+                    .formatted(
+                        newActiveMember.get().memberId(),
+                        RaftMember.Type.ACTIVE,
+                        RaftMember.Type.ACTIVE)));
+      }
     }
 
     // Gate promotions of existing members to ACTIVE on the member being caught up: it joins the
@@ -336,23 +357,19 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   || memberContext.getReplicationLagBytes() <= raft.getPromotionLagThreshold());
       if (!caughtUp) {
         return CompletableFuture.completedFuture(
-            logResponse(
-                ReconfigureResponse.builder()
-                    .withStatus(RaftResponse.Status.ERROR)
-                    .withError(
-                        Type.CONFIGURATION_ERROR,
-                        "Cannot promote %s to ACTIVE because it is not caught up (match index %s, commit index %d, replication lag %s bytes, threshold %d bytes)"
-                            .formatted(
-                                updatedMember.memberId(),
-                                memberContext == null
-                                    ? "unknown"
-                                    : String.valueOf(memberContext.getMatchIndex()),
-                                raft.getCommitIndex(),
-                                memberContext == null
-                                    ? "unknown"
-                                    : String.valueOf(memberContext.getReplicationLagBytes()),
-                                raft.getPromotionLagThreshold()))
-                    .build()));
+            rejectReconfigure(
+                Type.CONFIGURATION_ERROR,
+                "Cannot promote %s to ACTIVE because it is not caught up (match index %s, commit index %d, replication lag %s bytes, threshold %d bytes)"
+                    .formatted(
+                        updatedMember.memberId(),
+                        memberContext == null
+                            ? "unknown"
+                            : String.valueOf(memberContext.getMatchIndex()),
+                        raft.getCommitIndex(),
+                        memberContext == null
+                            ? "unknown"
+                            : String.valueOf(memberContext.getReplicationLagBytes()),
+                        raft.getPromotionLagThreshold())));
       }
     }
 
@@ -373,6 +390,25 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               }
             });
     return ongoingReconfigurationRequestFuture;
+  }
+
+  /**
+   * Builds a rejection of a reconfigure request that carries the current configuration (index, the
+   * term that a request must use, and the members), so that the requester can calculate its target
+   * again without another round trip.
+   */
+  private ReconfigureResponse rejectReconfigure(final RaftError.Type type, final String message) {
+    final var configuration = raft.getCluster().getConfiguration();
+    return logResponse(
+        ReconfigureResponse.builder()
+            .withStatus(RaftResponse.Status.ERROR)
+            .withError(type, message)
+            .withIndex(configuration.index())
+            .withTerm(raft.getCluster().getConfigurationTerm())
+            .withTime(configuration.time())
+            // Beware that immutable collections cannot be serialized by Kryo
+            .withMembers(new ArrayList<>(configuration.newMembers()))
+            .build());
   }
 
   @Override

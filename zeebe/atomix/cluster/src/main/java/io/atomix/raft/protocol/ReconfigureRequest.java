@@ -37,12 +37,33 @@ public class ReconfigureRequest extends AbstractRaftRequest {
   // The sender for this request
   private final String from;
 
+  /**
+   * True if {@link #members} is a full target configuration that is only valid for the
+   * configuration at exactly {@link #index}. Absent (false) in requests of members that predate
+   * this field, which keep the "at least this index" semantics.
+   */
+  private final boolean exactIndex;
+
   public ReconfigureRequest(
       final Collection<RaftMember> members, final long index, final long term, final String from) {
+    this(members, index, term, from, false);
+  }
+
+  public ReconfigureRequest(
+      final Collection<RaftMember> members,
+      final long index,
+      final long term,
+      final String from,
+      final boolean exactIndex) {
     this.members = members;
     this.index = index;
     this.term = term;
     this.from = from;
+    this.exactIndex = exactIndex;
+  }
+
+  public boolean exactIndex() {
+    return exactIndex;
   }
 
   /**
@@ -100,6 +121,7 @@ public class ReconfigureRequest extends AbstractRaftRequest {
         .add("index", index)
         .add("term", term)
         .add("members", members)
+        .add("exactIndex", exactIndex)
         .toString();
   }
 
@@ -110,6 +132,17 @@ public class ReconfigureRequest extends AbstractRaftRequest {
 
   /** Reconfigure request builder. */
   public static class Builder extends AbstractRaftRequest.Builder<Builder, ReconfigureRequest> {
+
+    private boolean exactIndex;
+
+    /**
+     * Requires the leader's configuration index to be exactly the request index, see {@link
+     * ReconfigureRequest#exactIndex()}.
+     */
+    public Builder withExactIndex(final boolean exactIndex) {
+      this.exactIndex = exactIndex;
+      return this;
+    }
 
     private Set<RaftMember> members;
     private long index = -1;
@@ -182,7 +215,7 @@ public class ReconfigureRequest extends AbstractRaftRequest {
     @Override
     public ReconfigureRequest build() {
       validate();
-      return new ReconfigureRequest(members, index, term, from);
+      return new ReconfigureRequest(members, index, term, from, exactIndex);
     }
 
     @Override

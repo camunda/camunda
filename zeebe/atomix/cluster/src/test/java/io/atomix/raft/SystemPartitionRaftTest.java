@@ -25,6 +25,8 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftPartitionConfig;
+import io.atomix.raft.protocol.RaftResponse.Status;
+import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
@@ -159,6 +161,43 @@ final class SystemPartitionRaftTest {
     return result.commit().orTimeout(10, TimeUnit.SECONDS).join();
   }
 
+  private record ConfigurationId(long index, long term) {}
+
+  private static ConfigurationId configurationId(final RaftServer server) {
+    return onRaftThread(
+        server,
+        () ->
+            new ConfigurationId(
+                server.getContext().getCluster().getConfiguration().index(),
+                server.getContext().getCluster().getConfigurationTerm()));
+  }
+
+  private List<RaftServer> bootstrapTwoVotersOnePassive() {
+    final var members = twoVotersOnePassive();
+    final var m1 = createServer(id1, id2, id3);
+    final var m2 = createServer(id2, id1, id3);
+    final var m3 = createServer(id3, id1, id2);
+    CompletableFuture.allOf(m1.bootstrap(members), m2.bootstrap(members), m3.bootstrap(members))
+        .orTimeout(30, TimeUnit.SECONDS)
+        .join();
+    return List.of(m1, m2, m3);
+  }
+
+  /** Retries the change until the leader accepts it, e.g. once the member caught up. */
+  private static ReconfigureResponse awaitReconfigured(
+      final RaftServer requester, final RaftServer leader, final Map<MemberId, Type> target) {
+    return Awaitility.await("reconfiguration to %s is accepted".formatted(target))
+        .until(
+            () -> {
+              final var current = configurationId(leader);
+              return requester
+                  .reconfigure(target, current.index(), current.term())
+                  .orTimeout(10, TimeUnit.SECONDS)
+                  .join();
+            },
+            response -> response.status() == Status.OK);
+  }
+
   private Map<MemberId, Type> twoVotersOnePassive() {
     return Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.PASSIVE);
   }
@@ -237,6 +276,142 @@ final class SystemPartitionRaftTest {
       assertThatThrownBy(
               () -> m4.bootstrap(twoVotersOnePassive()).orTimeout(5, TimeUnit.SECONDS).join())
           .hasRootCauseInstanceOf(IllegalArgumentException.class);
+    }
+  }
+
+  @Nested
+  final class ExactIndexReconfigure {
+
+    @Test
+    void shouldPromotePassiveMemberThroughForwardedRequest() {
+      // given
+      final var cluster = bootstrapTwoVotersOnePassive();
+      final var m3 = cluster.get(2);
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+      appendEntry(leader);
+      final var target = Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.ACTIVE);
+
+      // when - the passive member requests its own promotion, which it forwards to the leader
+      awaitReconfigured(m3, leader, target);
+
+      // then
+      Awaitility.await("all members see the promotion")
+          .untilAsserted(
+              () -> cluster.forEach(server -> assertThat(memberTypes(server)).isEqualTo(target)));
+      Awaitility.await("the promoted member is a voter")
+          .untilAsserted(
+              () -> assertThat(m3.getRole()).isIn(Role.FOLLOWER, Role.CANDIDATE, Role.LEADER));
+    }
+
+    @Test
+    void shouldRejectStaleIndexWithCurrentConfiguration() {
+      // given
+      final var cluster = bootstrapTwoVotersOnePassive();
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+      final var before = configurationId(leader);
+      final var withPassive4 =
+          Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.PASSIVE, id4, Type.PASSIVE);
+      awaitReconfigured(leader, leader, withPassive4);
+      final var current = configurationId(leader);
+
+      // when - a different target calculated from the old configuration
+      final var response =
+          leader
+              .reconfigure(twoVotersOnePassive(), before.index(), before.term())
+              .orTimeout(10, TimeUnit.SECONDS)
+              .join();
+
+      // then
+      assertThat(response.status()).isEqualTo(Status.ERROR);
+      assertThat(response.error().type()).isEqualTo(RaftError.Type.CONFIGURATION_ERROR);
+      assertThat(response.index()).isEqualTo(current.index());
+      assertThat(response.term()).isEqualTo(current.term());
+      assertThat(response.members())
+          .extracting(RaftMember::memberId, RaftMember::getType)
+          .containsExactlyInAnyOrder(
+              withPassive4.entrySet().stream()
+                  .map(e -> org.assertj.core.groups.Tuple.tuple(e.getKey(), e.getValue()))
+                  .toArray(org.assertj.core.groups.Tuple[]::new));
+    }
+
+    @Test
+    void shouldRejectHigherIndex() {
+      // given
+      final var cluster = bootstrapTwoVotersOnePassive();
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+      final var current = configurationId(leader);
+
+      // when
+      final var response =
+          leader
+              .reconfigure(
+                  Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.PASSIVE, id4, Type.PASSIVE),
+                  current.index() + 1,
+                  current.term())
+              .orTimeout(10, TimeUnit.SECONDS)
+              .join();
+
+      // then
+      assertThat(response.status()).isEqualTo(Status.ERROR);
+      assertThat(response.index()).isEqualTo(current.index());
+    }
+
+    @Test
+    void shouldAnswerOkWhenTargetIsAlreadyTheConfiguration() {
+      // given
+      final var cluster = bootstrapTwoVotersOnePassive();
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+      final var before = configurationId(leader);
+      final var target =
+          Map.of(id1, Type.ACTIVE, id2, Type.ACTIVE, id3, Type.PASSIVE, id4, Type.PASSIVE);
+      awaitReconfigured(leader, leader, target);
+      final var after = configurationId(leader);
+
+      // when - a retry with the old index
+      final var response =
+          leader
+              .reconfigure(target, before.index(), before.term())
+              .orTimeout(10, TimeUnit.SECONDS)
+              .join();
+
+      // then
+      assertThat(response.status()).isEqualTo(Status.OK);
+      assertThat(configurationId(leader)).isEqualTo(after);
+    }
+
+    @Test
+    void shouldRejectNewActiveMember() {
+      // given
+      final var cluster = bootstrapTwoVotersOnePassive();
+      final var leader = awaitLeader(cluster.toArray(RaftServer[]::new));
+      final var current = configurationId(leader);
+
+      // when
+      final var response =
+          Awaitility.await("leader answers with a final response")
+              .until(
+                  () ->
+                      leader
+                          .reconfigure(
+                              Map.of(
+                                  id1,
+                                  Type.ACTIVE,
+                                  id2,
+                                  Type.ACTIVE,
+                                  id3,
+                                  Type.PASSIVE,
+                                  id4,
+                                  Type.ACTIVE),
+                              current.index(),
+                              current.term())
+                          .orTimeout(10, TimeUnit.SECONDS)
+                          .join(),
+                  r -> r.error() == null || r.error().message().contains("new member"));
+
+      // then
+      assertThat(response.status()).isEqualTo(Status.ERROR);
+      assertThat(response.error().message()).contains("must not be ACTIVE");
+      assertThat(configurationId(leader)).isEqualTo(current);
     }
   }
 }

@@ -26,6 +26,7 @@ import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
+import io.atomix.raft.protocol.ReconfigureResponse;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.health.FailureListener;
@@ -154,6 +155,16 @@ public final class RaftPartition implements Partition, HealthMonitorable {
    */
   public CompletableFuture<RaftPartition> demoteMember() {
     return server.demoteMember().thenApply(v -> this);
+  }
+
+  /**
+   * Changes the configuration to the given full target membership, calculated from the
+   * configuration with the given index and term. See {@link io.atomix.raft.RaftServer#reconfigure(
+   * Map, long, long)}.
+   */
+  public CompletableFuture<ReconfigureResponse> reconfigure(
+      final Map<MemberId, RaftMember.Type> members, final long index, final long term) {
+    return server.reconfigure(members, index, term);
   }
 
   private void initServer(

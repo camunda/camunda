@@ -39,6 +39,7 @@ import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
+import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.roles.RaftRole;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
@@ -210,6 +211,12 @@ public class RaftPartitionServer implements HealthMonitorable {
   public CompletableFuture<RaftPartitionServer> forceReconfigure(
       final Map<MemberId, Type> members) {
     return server.forceConfigure(members).thenApply(v -> this);
+  }
+
+  /** See {@link RaftServer#reconfigure(Map, long, long)}. */
+  public CompletableFuture<ReconfigureResponse> reconfigure(
+      final Map<MemberId, Type> members, final long index, final long term) {
+    return server.reconfigure(members, index, term);
   }
 
   public CompletableFuture<Void> stop() {

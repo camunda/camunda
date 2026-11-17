@@ -26,6 +26,7 @@ import io.atomix.raft.RaftThreadContextFactory;
 import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.impl.RaftContext.State;
+import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.storage.RaftStorage;
 import io.camunda.zeebe.util.health.FailureListener;
 import java.util.Collection;
@@ -120,6 +121,12 @@ public class DefaultRaftServer implements RaftServer {
   @Override
   public CompletableFuture<RaftServer> forceConfigure(final Map<MemberId, Type> membersToRetain) {
     return new ReconfigurationHelper(context).forceConfigure(membersToRetain).thenApply(v -> this);
+  }
+
+  @Override
+  public CompletableFuture<ReconfigureResponse> reconfigure(
+      final Map<MemberId, Type> members, final long index, final long term) {
+    return new ReconfigurationHelper(context).reconfigure(members, index, term);
   }
 
   @Override

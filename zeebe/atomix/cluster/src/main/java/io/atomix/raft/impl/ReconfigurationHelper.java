@@ -22,6 +22,8 @@ import io.atomix.raft.protocol.ForceConfigureRequest;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.RaftResponse.Status;
+import io.atomix.raft.protocol.ReconfigureRequest;
+import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.utils.ForceConfigureQuorum;
@@ -276,6 +278,53 @@ public final class ReconfigurationHelper {
     }
 
     new LocalCommitWait(index, result).start();
+  }
+
+  /**
+   * Requests a change to the given full target configuration. The target is calculated from the
+   * configuration at {@code index}, thus the leader accepts it only if its configuration index is
+   * exactly {@code index} (and the term matches). A non-leader forwards the request to the leader.
+   * A rejection carries the leader's current configuration, from which the caller can calculate the
+   * target again.
+   *
+   * @return the response of the leader: OK with the new configuration, or an error. Never fails
+   *     exceptionally; a forwarding failure is answered as {@link RaftError.Type#NO_LEADER}.
+   */
+  public CompletableFuture<ReconfigureResponse> reconfigure(
+      final Map<MemberId, Type> members, final long index, final long term) {
+    final var result = new CompletableFuture<ReconfigureResponse>();
+    threadContext.execute(
+        () -> {
+          final var now = Instant.now();
+          final Set<RaftMember> targetMembers =
+              members.entrySet().stream()
+                  .map(entry -> new DefaultRaftMember(entry.getKey(), entry.getValue(), now))
+                  .collect(Collectors.toSet());
+          final var request =
+              ReconfigureRequest.builder()
+                  .withIndex(index)
+                  .withTerm(term)
+                  .withMembers(targetMembers)
+                  .withExactIndex(true)
+                  .from(raftContext.getCluster().getLocalMember().memberId().id())
+                  .build();
+          raftContext
+              .getRaftRole()
+              .onReconfigure(request)
+              .whenComplete(
+                  (response, error) -> {
+                    if (error == null) {
+                      result.complete(response);
+                    } else {
+                      result.complete(
+                          ReconfigureResponse.builder()
+                              .withStatus(Status.ERROR)
+                              .withError(RaftError.Type.NO_LEADER, error.getMessage())
+                              .build());
+                    }
+                  });
+        });
+    return result;
   }
 
   public CompletableFuture<Void> leave() {
