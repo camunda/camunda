@@ -6864,10 +6864,10 @@ date-fns@^4.1.0, date-fns@^4.4.0:
   resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-4.4.0.tgz#806539edf45c616b2b76b5f78b88c56ed3c7e036"
   integrity sha512-+1UMbeh68lH1SegH83CGWwpb6OHHbpSgr3+s5Eww5M4CAgswBpoWS0AjTOfEJ33HiYKz1hdj/KTFprzXHmq/6w==
 
-debounce@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.npmjs.org/debounce/-/debounce-3.0.0.tgz"
-  integrity sha512-64byRbF0/AirwbuHqB3/ZpMG9/nckDa6ZA0yd6UnaQNwbbemCOwvz2sL5sjXLHhZHADyiwLm0M5qMhltUUx+TA==
+debounce@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/debounce/-/debounce-4.0.0.tgz#63de5ae349506abf1e386df099b9dba52d1299ce"
+  integrity sha512-o6nMNFRtqLR6mRlyt0b21cgYPSKAEMZFpROIRS9ZRH6hhSJWvGErqeSCJnWyiwVQYMSw7f/DZLilF5YRDwFz7w==
 
 debug@2.6.9, debug@^2.2.0, debug@^2.3.3, debug@^2.6.0:
   version "2.6.9"
