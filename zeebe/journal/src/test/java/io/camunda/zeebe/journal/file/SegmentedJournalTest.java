@@ -37,12 +37,14 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.SortedMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Phaser;
@@ -990,7 +992,7 @@ class SegmentedJournalTest {
             invocation -> {
               final var tail = (SortedMap<?, ?>) invocation.callRealMethod();
               for (final var segment : tail.values()) {
-                final var file = ((Segment) segment).file().file();
+                final var file = ((Segment) segment).file().file().toPath();
                 Files.copy(
                     file,
                     flushed.resolve("data").resolve(file.getFileName()),
