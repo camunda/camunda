@@ -546,6 +546,36 @@ class SegmentedJournalTest {
   }
 
   @Test
+  void shouldDeleteSegmentsOfFailedDeletionOnReset() throws IOException {
+    // given
+    final Queue<Runnable> deletions = new ConcurrentLinkedQueue<>();
+    closeables.add(() -> deletions.forEach(Runnable::run));
+    journal = openJournal(2, deletions::add);
+    for (int i = 0; i < 6; i++) {
+      journal.append(journalFactory.entry());
+    }
+    final Path logDirectory = directory.resolve("data");
+    final Path firstSegment = logDirectory.resolve("journal-1.log");
+    final Path movedFirstSegment = directory.resolve("journal-1.log.moved");
+    Files.move(firstSegment, movedFirstSegment);
+    journal.deleteUntil(5);
+    deletions.poll().run();
+    Files.move(movedFirstSegment, firstSegment);
+
+    // when
+    journal.reset(100);
+    journal.append(journalFactory.entry());
+
+    // then
+    assertThat(logDirectory)
+        .isDirectoryNotContaining(p -> p.getFileName().toString().equals("journal-2.log"));
+    journal.close();
+    journal = openJournal(2);
+    assertThat(journal.getFirstIndex()).isEqualTo(100);
+    assertThat(journal.getLastIndex()).isEqualTo(100);
+  }
+
+  @Test
   void shouldWaitForPendingSegmentDeletionWhenOutOfDiskSpace() {
     // given
     final Path firstSegment = directory.resolve("data").resolve("journal-1.log");
