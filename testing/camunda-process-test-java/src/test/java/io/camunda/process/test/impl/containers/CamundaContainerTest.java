@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.containers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
@@ -75,6 +76,23 @@ class CamundaContainerTest {
     expected.put("/tmp/camunda-cluster-secrets/OTHER", "other-value");
     assertThat(copiedContents(container)).containsExactlyInAnyOrderEntriesOf(expected);
     assertThat(container.getCopyToFileContainerPathMap()).isEmpty();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"value\n", "value\r\n", "value\n\n"})
+  void shouldKeepTrailingLineTerminatorOfClusterSecret(final String value) throws Exception {
+    // given
+    final CamundaContainer container =
+        new CamundaContainer(DockerImageName.parse("camunda/camunda:SNAPSHOT"));
+
+    // when
+    final Map<String, String> secrets = new HashMap<>();
+    secrets.put("MY_API_KEY", value);
+    container.withClusterSecrets(secrets);
+
+    // then
+    assertThat(copiedContents(container))
+        .containsExactly(entry("/tmp/camunda-cluster-secrets/MY_API_KEY", value + "\n"));
   }
 
   @ParameterizedTest
