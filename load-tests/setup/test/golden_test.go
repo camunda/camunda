@@ -42,9 +42,13 @@ var update = flag.Bool("update-golden", false,
 // PlatformOnly, when true, renders only the platform chart. Use it for
 // scenarios whose assertions are scoped to platform-only templates.
 //
+// PlatformScenario, when set, passes scenario=<x> to the platform template target, so the
+// platform chart renders with that workload's overrides. Combine it with PlatformOnly and a
+// PathFilter, as in "max-platform-config".
+//
 // PathFilter, when set, restricts golden comparison (and, under
-// -update-golden, what gets committed) to rendered manifest paths with one of
-// these prefixes, relative to each chart's own output tree — e.g.
+// -update-golden, what gets committed) to rendered manifest paths that equal one of
+// these entries or start with one as a directory prefix, relative to each chart's own output tree — e.g.
 // "templates/orchestration" keeps templates/orchestration/statefulset.yaml
 // but drops everything else. Use this for scenarios whose purpose is
 // verifying one narrow area (a specific bugfix's blast radius): committing
@@ -64,6 +68,7 @@ type scenario struct {
 	PathFilter          []string
 	ExtraArgs           []string // extra newLoadTest.sh flags, e.g. "--use-pgbouncer"
 	OnlyVersions        []string // when set, the scenario runs on these versions only
+	PlatformScenario    string   // when set, passed as scenario=<x> to the platform template target
 }
 
 // versionedScenario defines a scenario with a specific version
@@ -77,8 +82,9 @@ type versionedScenario struct {
 // the same rdbms.yaml base; only the storage-specific file differs).
 //
 // The workload scenarios (max, realistic) are the profiles we run most often.
-// They only change load-tester flags, so they use elasticsearch as a fixed
-// backend and render the combined load-test-setup chart. "realistic" pulls a
+// They change the load-tester flags (and, for max, the leader balancer), so they use
+// elasticsearch as a fixed backend and render the combined load-test-setup chart.
+// The platform side of max is covered by max-platform-config. "realistic" pulls a
 // values file from the camunda-load-tests-helm repo at render time — the same
 // live-latest policy as the load-tester chart itself, so its golden is
 // regenerated when that file changes.
@@ -106,6 +112,17 @@ var defaultScenarios = []scenario{
 	{Name: "max", Storage: "elasticsearch", Optimize: true, Stable: false, Workload: "max"},
 	// The max rate depends on the storage (650 PI/s for none, 300 otherwise), see common.mk.
 	{Name: "max-none", Storage: "none", Optimize: false, Stable: false, Workload: "max"},
+	// The max workload scenarios above render only the load-test-setup chart. This one renders
+	// the platform chart with scenario=max and keeps only the broker ConfigMap, so the max
+	// overrides that land in the broker configuration (consistency checks off, 1m archiver
+	// wait) are snapshot-tested. 8.8 and 8.7 keep their broker ConfigMap in another file.
+	{Name: "max-platform-config", Storage: "elasticsearch", Optimize: true, Stable: false,
+		PlatformOnly: true, PlatformScenario: "max",
+		PathFilter: []string{
+			"templates/orchestration/configmap.yaml",
+			"templates/orchestration/configmap-unified.yaml",
+			"templates/zeebe/configmap.yaml",
+		}},
 	{Name: "realistic", Storage: "elasticsearch", Optimize: true, Stable: false, Workload: "realistic"},
 	// SetupTarget scenarios render only the load-test-setup chart via a named
 	// Makefile target, verifying opt-in chart features without duplicating the
@@ -233,7 +250,7 @@ func TestGoldenFiles(t *testing.T) {
 				extraVars = append(extraVars, fmt.Sprintf("physical_tenant_count=%d", s.PhysicalTenantCount))
 			}
 
-			renderAndAssert(t, s.Version, s.Name, "platform", ns, platformTarget, "", s.PathFilter, extraVars...)
+			renderAndAssert(t, s.Version, s.Name, "platform", ns, platformTarget, s.PlatformScenario, s.PathFilter, extraVars...)
 			if s.PlatformOnly {
 				return
 			}
