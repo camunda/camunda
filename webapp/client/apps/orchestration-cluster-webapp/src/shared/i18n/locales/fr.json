@@ -2080,6 +2080,7 @@
 					"imageAlt": "Page de détails de l'instance de processus avec l'onglet des incidents et le diagramme"
 				},
 				"incidents": {
+					"list": "Liste des incidents",
 					"filterByType": "Filtrer par type d'incident",
 					"resetFilters": "Réinitialiser les filtres",
 					"errorMessage": "Message d'erreur",
@@ -2089,6 +2090,8 @@
 					"operations": "Opérations",
 					"retryIncident": "Relancer l'incident",
 					"expandRow": "Développer la ligne",
+					"collapseRow": "Réduire la ligne",
+					"selectedRow": "Sélectionné",
 					"jobId": "ID du job",
 					"more": "Plus",
 					"errorModalTitle": "Erreur de l'élément \"{{name}}\"",
@@ -2586,7 +2589,9 @@
 					"active_other": "{{count}} instances actives"
 				},
 				"sortableTable": {
-					"sortBy": "Trier par {{label}}"
+					"sortBy": "Trier par {{label}}",
+					"loadingPreviousPage": "Chargement des éléments précédents",
+					"loadingNextPage": "Chargement des éléments suivants"
 				}
 			}
 		}

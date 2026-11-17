@@ -8,13 +8,31 @@
 
 import {test, expect} from '#/pw-modules/test-extend';
 import {HttpResponse} from 'msw';
-import {mockGetProcessInstanceCallHierarchyEndpoint} from '#/shared-test-modules/mock-handlers';
+import {
+	mockGetProcessInstanceCallHierarchyEndpoint,
+	mockQueryProcessInstanceIncidentsEndpoint,
+} from '#/shared-test-modules/mock-handlers';
+import {createIncident} from '#/shared-test-modules/api-mocks/incidents';
+import {createPaginatedResponse} from '#/shared-test-modules/api-mocks/shared';
 import {createProcessInstance} from '#/shared-test-modules/api-mocks/process-instances';
 import {createCallHierarchy} from '#/shared-test-modules/api-mocks/call-hierarchy';
 import {processInstanceHeaderHandlers} from '#/shared-test-modules/process-instance-header-handlers';
 
 const PROCESS_INSTANCE_ID = '2251799813685280';
 const NARROW_VIEWPORT = {width: 1000, height: 800};
+
+function incidentHandlers() {
+	return [
+		mockQueryProcessInstanceIncidentsEndpoint({
+			successResponse: HttpResponse.json(
+				createPaginatedResponse({
+					items: [createIncident({processInstanceKey: PROCESS_INSTANCE_ID})],
+					page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+				}),
+			),
+		}),
+	];
+}
 
 function callHierarchyOf(names: string[]) {
 	return names.map((name, index) =>
@@ -35,6 +53,7 @@ test('should match the header snapshot of a running instance with an incident', 
 			createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID, hasIncident: true}),
 		),
 	);
+	network.use(...incidentHandlers());
 
 	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
 
@@ -121,6 +140,7 @@ test('should match the header snapshot with the collapsed operations menu open',
 			createProcessInstance({processInstanceKey: PROCESS_INSTANCE_ID, hasIncident: true}),
 		),
 	);
+	network.use(...incidentHandlers());
 	await page.setViewportSize(NARROW_VIEWPORT);
 
 	await operatePreviewProcessInstancePage.goto(PROCESS_INSTANCE_ID);
