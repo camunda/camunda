@@ -67,4 +67,10 @@ public interface ProcessState {
 
   /** TODO: Remove the cache entirely from the immutable state */
   void clearCache();
+
+  /** Whether the given partition still owes a drain report for the given process definition. */
+  boolean hasPendingDeletion(long processDefinitionKey, int partitionId);
+
+  /** Whether any partition still owes a drain report for the given process definition. */
+  boolean hasPendingDeletion(long processDefinitionKey);
 }

@@ -42,6 +42,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -410,6 +411,11 @@ public final class EngineRule extends ExternalResource {
 
   public void writeRecords(final RecordToWrite... records) {
     environmentRule.writeBatch(records);
+  }
+
+  public long writeCommandOnPartition(
+      final int partitionId, final long key, final Intent intent, final UnifiedRecordValue value) {
+    return environmentRule.writeCommandOnPartition(partitionId, key, intent, value);
   }
 
   public CommandResponseWriter getCommandResponseWriter() {

@@ -238,7 +238,12 @@ public enum ZbColumnFamilies implements EnumValue {
   SCALING_STARTED_AT(123),
 
   RUNTIME_INSTRUCTIONS(124),
-  MULTI_INSTANCE_INPUT_COLLECTION(125);
+  MULTI_INSTANCE_INPUT_COLLECTION(125),
+
+  // (processDefinitionKey, partitionId) → ∅: partitions that still owe a drain report for a
+  // definition being deleted while it has running instances. Lives on the aggregating partition.
+  // Uses the same ID as on 8.8+ so that the state survives an upgrade.
+  PENDING_PROCESS_DELETIONS_PER_PARTITION(159);
 
   private final int value;
 
