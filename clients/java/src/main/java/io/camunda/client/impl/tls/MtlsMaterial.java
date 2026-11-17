@@ -289,7 +289,9 @@ public final class MtlsMaterial {
     }
 
     public Builder keyPassphrase(final String keyPassphrase) {
-      this.keyPassphrase = emptyToNull(keyPassphrase);
+      // Assigned directly (no empty-to-null normalization): an explicitly empty passphrase is a
+      // valid, distinct passphrase for an encrypted key and must be preserved.
+      this.keyPassphrase = keyPassphrase;
       return this;
     }
 
@@ -309,7 +311,10 @@ public final class MtlsMaterial {
     }
 
     public Builder keystorePassword(final String keystorePassword) {
-      this.keystorePassword = emptyToNull(keystorePassword);
+      // Assigned directly (no empty-to-null normalization): an explicitly empty store password is
+      // a valid, distinct password (PKCS#12 stores can lose encrypted entries when loaded with
+      // null) and must be preserved.
+      this.keystorePassword = keystorePassword;
       return this;
     }
 
@@ -327,7 +332,9 @@ public final class MtlsMaterial {
     }
 
     public Builder truststorePassword(final String truststorePassword) {
-      this.truststorePassword = emptyToNull(truststorePassword);
+      // Assigned directly (no empty-to-null normalization): an explicitly empty store password is
+      // a valid, distinct password and must be preserved.
+      this.truststorePassword = truststorePassword;
       return this;
     }
 
