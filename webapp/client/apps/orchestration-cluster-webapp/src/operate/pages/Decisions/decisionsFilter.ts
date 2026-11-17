@@ -81,9 +81,17 @@ function mapDecisionInstancesFilter(search: DecisionsSearch): DecisionInstancesF
 type ResolvedDecisionInstancesSort = [{field: DecisionInstancesSortField; order: QuerySortOrder}];
 
 const DEFAULT_SORT: ResolvedDecisionInstancesSort = [{field: 'evaluationDate', order: 'DESC'}];
-// The only two sortable columns InstancesTable actually wires up — the app itself never produces
-// a `sort` value outside this set, so anything else can only come from a hand-edited URL.
-const SORTABLE_FIELDS = ['evaluationDate', 'businessId'] as const satisfies readonly DecisionInstancesSortField[];
+// The sortable columns InstancesTable wires up — the app never produces a `sort` value outside
+// this set, so anything else can only come from a hand-edited URL.
+const SORTABLE_FIELDS = [
+	'decisionDefinitionName',
+	'decisionEvaluationInstanceKey',
+	'decisionDefinitionVersion',
+	'businessId',
+	'tenantId',
+	'evaluationDate',
+	'processInstanceKey',
+] as const satisfies readonly DecisionInstancesSortField[];
 const decisionInstancesSortSchema = createSortSearchParamSchema(z.enum(SORTABLE_FIELDS));
 
 /**

@@ -395,7 +395,62 @@ describe('<Decisions />', () => {
 		await expect.element(screen.getByTitle('View decision instance 123567')).toBeVisible();
 	});
 
+	it.for([
+		{label: 'Name', field: 'decisionDefinitionName'},
+		{label: 'Decision Instance Key', field: 'decisionEvaluationInstanceKey'},
+		{label: 'Version', field: 'decisionDefinitionVersion'},
+		{label: 'Process Instance Key', field: 'processInstanceKey'},
+	] as const)('should sort the instances by $label from the column header', async ({label, field}, {worker}) => {
+		worker.use(
+			mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+			mockQueryDecisionInstancesEndpoint({
+				successResponse: HttpResponse.json(
+					createQueryDecisionInstancesResponse({items: [createDecisionInstance({decisionEvaluationInstanceKey: '1'})]}),
+				),
+			}),
+		);
+
+		const screen = await renderDecisionsPage();
+		await expect.element(screen.getByTitle('View decision instance 1')).toBeVisible();
+
+		worker.use(
+			mockQueryDecisionInstancesEndpoint({
+				schema: z.looseObject({
+					sort: z.tuple([z.strictObject({field: z.literal(field), order: z.literal('DESC')})]),
+				}),
+				successResponse: HttpResponse.json(
+					createQueryDecisionInstancesResponse({items: [createDecisionInstance({decisionEvaluationInstanceKey: '2'})]}),
+				),
+				failureResponse: new HttpResponse(null, {status: 400}),
+			}),
+		);
+		await userEvent.click(screen.getByRole('columnheader', {name: `Sort by ${label}`}));
+
+		await expect.element(screen.getByTitle('View decision instance 2')).toBeVisible();
+	});
+
 	describe('legacy bookmarks', () => {
+		it('should apply a lowercase sort order from a legacy URL', async ({worker}) => {
+			worker.use(
+				mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}),
+				mockQueryDecisionInstancesEndpoint({
+					schema: z.looseObject({
+						sort: z.tuple([z.strictObject({field: z.literal('decisionDefinitionName'), order: z.literal('ASC')})]),
+					}),
+					successResponse: HttpResponse.json(
+						createQueryDecisionInstancesResponse({
+							items: [createDecisionInstance({decisionEvaluationInstanceKey: '1'})],
+						}),
+					),
+					failureResponse: new HttpResponse(null, {status: 400}),
+				}),
+			);
+
+			const screen = await renderDecisionsPage({sort: 'decisionDefinitionName+asc'});
+
+			await expect.element(screen.getByTitle('View decision instance 1')).toBeVisible();
+		});
+
 		it('should not query instances when a bookmarked filter has no selected states', async ({worker}) => {
 			worker.use(mockQueryDecisionDefinitionsEndpoint({successResponse: DECISION_DEFINITIONS}));
 

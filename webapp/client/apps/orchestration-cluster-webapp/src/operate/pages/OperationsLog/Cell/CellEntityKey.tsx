@@ -11,6 +11,7 @@ import {Link as RouterLink, createLink} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.11/audit-log';
 import {mapToCellEntityKeyData} from '#/operate/shared/OperationsLogDetailsModal/operationsLogUtils';
+import {getClientConfig} from '#/shared/config/getClientConfig';
 
 type Props = {
 	item: AuditLog;
@@ -29,7 +30,7 @@ const CellEntityKey: React.FC<Props> = ({item, processDefinitionName, decisionDe
 	return (
 		<div>
 			<div>
-				{item.entityType === 'USER_TASK' ? (
+				{item.entityType === 'USER_TASK' && getClientConfig().components.active.includes('tasklist') ? (
 					<RouterLink
 						to="/tasklist/$userTaskKey"
 						params={{userTaskKey: item.entityKey}}

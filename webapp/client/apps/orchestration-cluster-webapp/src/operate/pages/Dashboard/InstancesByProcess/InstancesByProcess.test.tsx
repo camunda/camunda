@@ -423,6 +423,47 @@ describe('<InstancesByProcess />', () => {
 			.toHaveAttribute('href', expect.stringContaining('process=orders&version=2&tenantId=%3Ctenant-B%3E'));
 	});
 
+	it('should request the expanded version rows ordered by incidents, then by active instances', async ({worker}) => {
+		worker.use(
+			mockGetProcessDefinitionInstanceStatisticsEndpoint({
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [
+							createProcessDefinitionInstanceStatistics({processDefinitionId: 'orders', hasMultipleVersions: true}),
+						],
+						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+			}),
+			mockGetProcessDefinitionInstanceVersionStatisticsEndpoint({
+				schema: z.looseObject({
+					sort: z.tuple([
+						z.strictObject({field: z.literal('activeInstancesWithIncidentCount'), order: z.literal('DESC')}),
+						z.strictObject({field: z.literal('activeInstancesWithoutIncidentCount'), order: z.literal('DESC')}),
+					]),
+				}),
+				successResponse: HttpResponse.json(
+					createPaginatedResponse({
+						items: [
+							createProcessDefinitionInstanceVersionStatistics({
+								processDefinitionId: 'orders',
+								processDefinitionVersion: 2,
+							}),
+						],
+						page: {totalItems: 1, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+					}),
+				),
+				failureResponse: FAILURE_RESPONSE,
+			}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: NO_DRAINING_RESPONSE}),
+		);
+
+		const screen = await renderWithRouter(() => <InstancesByProcess />, {path: '/operate'});
+		await userEvent.click(screen.getByRole('button', {name: 'Expand current row'}));
+
+		await expect.element(screen.getByRole('link', {name: /My Process.*version 2/})).toBeVisible();
+	});
+
 	it('should show an error state when the request fails', async ({worker}) => {
 		worker.use(
 			mockGetProcessDefinitionInstanceStatisticsEndpoint({

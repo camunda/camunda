@@ -7,6 +7,7 @@
  */
 
 import {z} from 'zod';
+import {normalizeSortOrder} from '#/operate/shared/utils/normalizeSortOrder';
 import type {DecisionsSearch} from './decisionsFilter';
 
 const decisionsSearchSchema = z.object({
@@ -23,7 +24,7 @@ const decisionsSearchSchema = z.object({
 	businessId: z.coerce.string().optional(),
 	evaluationDateFrom: z.coerce.string().optional(),
 	evaluationDateTo: z.coerce.string().optional(),
-	sort: z.coerce.string().optional(),
+	sort: z.coerce.string().optional().transform(normalizeSortOrder),
 });
 
 function validateDecisionsSearch(search: unknown): DecisionsSearch {
