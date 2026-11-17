@@ -59,7 +59,7 @@ class ProcessDefinitionWriterTest {
   void shouldUpdateProcessDefinitionState() {
     final Long processDefinitionKey = 123L;
 
-    writer.updateState(processDefinitionKey, ProcessDefinitionState.DELETED);
+    writer.updateState(processDefinitionKey, ProcessDefinitionState.SUSPENDED);
 
     verify(executionQueue)
         .executeInQueue(
@@ -70,6 +70,6 @@ class ProcessDefinitionWriterTest {
                     processDefinitionKey,
                     "io.camunda.db.rdbms.sql.ProcessDefinitionMapper.updateState",
                     new ProcessDefinitionStateDto(
-                        processDefinitionKey, ProcessDefinitionState.DELETED))));
+                        processDefinitionKey, ProcessDefinitionState.SUSPENDED))));
   }
 }

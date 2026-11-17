@@ -41,6 +41,22 @@ class ProcessDefinitionEntityTransfomerTest {
     assertThat(entity.resourceName()).isEqualTo("order-process.bpmn");
   }
 
+  @Test
+  void shouldMapSuspendedState() {
+    // given
+    final var document =
+        processDocument()
+            .setState(io.camunda.webapps.schema.entities.ProcessDefinitionState.SUSPENDED);
+
+    // when
+    final var entity = transformer.apply(document);
+
+    // then
+    assertThat(entity.state())
+        .isEqualTo(
+            io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState.SUSPENDED);
+  }
+
   private static ProcessEntity processDocument() {
     return new ProcessEntity()
         .setKey(1L)

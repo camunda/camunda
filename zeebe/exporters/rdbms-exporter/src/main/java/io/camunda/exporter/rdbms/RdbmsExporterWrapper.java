@@ -40,6 +40,7 @@ import io.camunda.exporter.rdbms.handlers.JobMetricsBatchExportHandler;
 import io.camunda.exporter.rdbms.handlers.MappingRuleExportHandler;
 import io.camunda.exporter.rdbms.handlers.MessageSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.MessageSubscriptionFromMessageStartEventSubscriptionExportHandler;
+import io.camunda.exporter.rdbms.handlers.ProcessDefinitionSuspensionExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceBusinessIdExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceExportHandler;
@@ -247,6 +248,9 @@ public class RdbmsExporterWrapper implements Exporter {
               rdbmsWriters.getProcessDefinitionWriter(),
               cacheRegistry.processCache(),
               config.getExtensionProperties()));
+      builder.withHandler(
+          ValueType.PROCESS_DEFINITION_SUSPENSION,
+          new ProcessDefinitionSuspensionExportHandler(rdbmsWriters.getProcessDefinitionWriter()));
       builder.withHandler(
           ValueType.MAPPING_RULE,
           new MappingRuleExportHandler(rdbmsWriters.getMappingRuleWriter()));
