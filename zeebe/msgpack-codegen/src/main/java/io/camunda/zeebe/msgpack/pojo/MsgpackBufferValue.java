@@ -46,6 +46,11 @@ public abstract class MsgpackBufferValue<T extends MsgpackBufferValue<T>>
     return codec().write(MsgpackScratch.writer(buffer, offset), self());
   }
 
+  /** Reads the whole buffer, like {@code UnpackedObject#wrap(DirectBuffer)}. */
+  public void wrap(final DirectBuffer buffer) {
+    wrap(buffer, 0, buffer.capacity());
+  }
+
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     reset();
