@@ -46,10 +46,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -420,6 +423,65 @@ class SegmentedJournalTest {
     assertThat(journal.getFirstIndex()).isEqualTo(lastIndex - 1);
     reader.seekToFirst();
     assertThat(reader.next().index()).isEqualTo(lastIndex - 1);
+  }
+
+  // Regression test for https://github.com/camunda/camunda/issues/69324
+  @Test
+  void shouldDeleteCompactedSegmentFilesOutsideOfCompaction() {
+    // given
+    final Queue<Runnable> deletions = new ConcurrentLinkedQueue<>();
+    closeables.add(() -> deletions.forEach(Runnable::run));
+    journal = openJournal(2, deletions::add);
+    for (int i = 0; i < 6; i++) {
+      journal.append(journalFactory.entry());
+    }
+    final JournalReader reader = journal.openReader();
+    final Path logDirectory = directory.resolve("data");
+
+    // when
+    final boolean compacted = journal.deleteUntil(5);
+
+    // then
+    assertThat(compacted).isTrue();
+    assertThat(journal.getFirstIndex()).isEqualTo(5);
+    assertThat(reader.hasNext()).isFalse();
+    assertThat(reader.seekToFirst()).isEqualTo(5);
+    assertThat(journal.append(journalFactory.entry()).index()).isEqualTo(7);
+    assertThat(deletions).hasSize(1);
+    assertThat(logDirectory)
+        .isDirectoryContaining(p -> p.getFileName().toString().equals("journal-1.log"))
+        .isDirectoryContaining(p -> p.getFileName().toString().equals("journal-2.log"));
+
+    // when
+    deletions.poll().run();
+
+    // then
+    assertThat(logDirectory)
+        .isDirectoryNotContaining(p -> p.getFileName().toString().equals("journal-1.log"))
+        .isDirectoryNotContaining(p -> p.getFileName().toString().equals("journal-2.log"))
+        .isDirectoryNotContaining(
+            p -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, p.getFileName().toString()))
+        .isDirectoryContaining(p -> p.getFileName().toString().equals("journal-3.log"));
+  }
+
+  @Test
+  void shouldResetAfterPendingSegmentDeletionIsDone() {
+    // given
+    journal = openJournal(2, CompletableFuture.delayedExecutor(200, TimeUnit.MILLISECONDS));
+    for (int i = 0; i < 6; i++) {
+      journal.append(journalFactory.entry());
+    }
+    journal.deleteUntil(5);
+
+    // when
+    journal.reset(100);
+    journal.append(journalFactory.entry());
+    journal.close();
+
+    // then
+    journal = openJournal(2);
+    assertThat(journal.getFirstIndex()).isEqualTo(100);
+    assertThat(journal.getLastIndex()).isEqualTo(100);
   }
 
   @Test
@@ -1159,6 +1221,15 @@ class SegmentedJournalTest {
 
   private SegmentedJournal openJournal(final int entriesPerSegment) {
     return openJournal("test", entriesPerSegment);
+  }
+
+  private SegmentedJournal openJournal(
+      final int entriesPerSegment, final Executor deletionExecutor) {
+    journalFactory = new TestJournalFactory(entriesPerSegment);
+    final var journal =
+        journalFactory.journal(journalFactory.segmentsManager(directory, deletionExecutor));
+    closeables.add(journal);
+    return journal;
   }
 
   private SegmentedJournal openJournal(final String data, final int entriesPerSegment) {

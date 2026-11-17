@@ -22,6 +22,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.util.concurrent.ForkJoinPool;
 
 /** Raft log builder. */
 @SuppressWarnings("UnusedReturnValue")
@@ -177,7 +178,8 @@ public class SegmentedJournalBuilder {
             name,
             segmentLoader,
             journalMetrics,
-            journalMetaStore);
+            journalMetaStore,
+            ForkJoinPool.commonPool());
 
     return new SegmentedJournal(journalIndex, segmentsManager, journalMetrics, journalMetaStore);
   }

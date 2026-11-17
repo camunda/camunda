@@ -32,6 +32,7 @@ import java.util.SortedMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +48,8 @@ final class SegmentsManager implements AutoCloseable {
   private final NavigableMap<Long, Segment> segments = new ConcurrentSkipListMap<>();
   private final ThrottledLogger throttledLog = new ThrottledLogger(LOG, Duration.ofSeconds(5));
   private CompletableFuture<UninitializedSegment> nextSegment = null;
+  // stops at the first failed batch, so that the log on disk never has a gap
+  private CompletableFuture<Void> pendingDeletion = CompletableFuture.completedFuture(null);
 
   private final JournalMetrics journalMetrics;
   private final JournalIndex journalIndex;
@@ -55,6 +58,7 @@ final class SegmentsManager implements AutoCloseable {
   private final SegmentLoader segmentLoader;
   private final String name;
   private final JournalMetaStore metaStore;
+  private final Executor deletionExecutor;
 
   private volatile Segment currentSegment;
 
@@ -65,7 +69,8 @@ final class SegmentsManager implements AutoCloseable {
       final String name,
       final SegmentLoader segmentLoader,
       final JournalMetrics journalMetrics,
-      final JournalMetaStore metaStore) {
+      final JournalMetaStore metaStore,
+      final Executor deletionExecutor) {
     this.name = checkNotNull(name, "name cannot be null");
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
@@ -73,10 +78,12 @@ final class SegmentsManager implements AutoCloseable {
     this.segmentLoader = segmentLoader;
     this.journalMetrics = journalMetrics;
     this.metaStore = metaStore;
+    this.deletionExecutor = deletionExecutor;
   }
 
   @Override
   public void close() {
+    awaitPendingDeletion();
     segments
         .values()
         .forEach(
@@ -195,18 +202,45 @@ final class SegmentsManager implements AutoCloseable {
         getFirstIndex(),
         compactSegments.get(compactSegments.lastKey()).index(),
         compactSegments.size());
-    for (final Segment segment : compactSegments.values()) {
-      LOG.trace("{} - Deleting segment: {}", name, segment);
-      segment.delete();
+    final List<Segment> segmentsToDelete = List.copyOf(compactSegments.values());
+    // removes them from the segment map
+    compactSegments.clear();
+    for (final Segment segment : segmentsToDelete) {
+      segment.markAsClosed();
       journalMetrics.decSegmentCount();
     }
 
-    // removes them from the segment map
-    compactSegments.clear();
-
     journalIndex.deleteUntil(index);
 
+    // file deletion is slow, and appends and readers wait for the journal lock
+    pendingDeletion =
+        pendingDeletion.thenRunAsync(() -> deleteSegments(segmentsToDelete), deletionExecutor);
+
     return true;
+  }
+
+  private void deleteSegments(final List<Segment> segmentsToDelete) {
+    for (final Segment segment : segmentsToDelete) {
+      LOG.trace("{} - Deleting segment: {}", name, segment);
+      try {
+        segment.delete();
+      } catch (final RuntimeException e) {
+        LOG.error(
+            "{} - Failed to delete segment {}. The journal keeps the compacted segments until restart.",
+            name,
+            segment,
+            e);
+        throw e;
+      }
+    }
+  }
+
+  private void awaitPendingDeletion() {
+    try {
+      pendingDeletion.join();
+    } catch (final CompletionException e) {
+      // already logged when the deletion failed
+    }
   }
 
   /**
@@ -216,6 +250,9 @@ final class SegmentsManager implements AutoCloseable {
    * @return the first segment
    */
   Segment resetSegments(final long index) {
+    // the new first segment can use the ID of a segment that waits for deletion
+    awaitPendingDeletion();
+
     // reset the last flushed index before deleting data to avoid data corruption on start up in
     // case of node crash
     // setting the last flushed index to a semantic-null value will let us know on start up that
