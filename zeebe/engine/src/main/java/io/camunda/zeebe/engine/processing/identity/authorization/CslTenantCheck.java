@@ -112,11 +112,11 @@ public final class CslTenantCheck {
    * <p>Encapsulates the skip-logic hand-rolled across engine processors: when multi-tenancy checks
    * are disabled the check is a no-op; for an internal command that is not distributed the check is
    * a no-op; when no username or clientId claim is present the check is also a no-op (mirrors
-   * {@link CslAuthorizationCheck#resolveForCheck} — a no-principal command is either an internal
-   * command already exempted upstream, or authorizations are disabled and the primary permission
-   * check already let it through; either way there is no principal to hold a tenant assignment
-   * requirement against). Otherwise the authorized tenants are resolved from the command's claims
-   * (anonymous access is authorized for every tenant) and {@code tenantId} must be among them.
+   * {@link CslAuthorizationCheck#resolveForCheck} — a no-principal command is either a distributed
+   * command without claims, or authorizations are disabled and the primary permission check already
+   * let it through; either way there is no principal to hold a tenant assignment requirement
+   * against). Otherwise the authorized tenants are resolved from the command's claims (anonymous
+   * access is authorized for every tenant) and {@code tenantId} must be among them.
    *
    * <p>This no-principal skip is load-bearing: every caller must ensure a RBAC {@link
    * CslAuthorizationCheck#check} or {@link CslAuthorizationCheck#checkForDistributedCommand} call
