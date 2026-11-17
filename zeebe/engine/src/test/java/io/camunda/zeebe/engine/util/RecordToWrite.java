@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
@@ -72,6 +73,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
@@ -253,6 +255,13 @@ public final class RecordToWrite implements LogAppendEntry {
       final ProcessInstanceCreationIntent intent, final ProcessInstanceCreationRecordValue value) {
     recordMetadata.valueType(ValueType.PROCESS_INSTANCE_CREATION).intent(intent);
     unifiedRecordValue = (ProcessInstanceCreationRecord) value;
+    return this;
+  }
+
+  public RecordToWrite resourceDeletion(
+      final ResourceDeletionIntent intent, final ResourceDeletionRecord value) {
+    recordMetadata.valueType(ValueType.RESOURCE_DELETION).intent(intent);
+    unifiedRecordValue = value;
     return this;
   }
 
