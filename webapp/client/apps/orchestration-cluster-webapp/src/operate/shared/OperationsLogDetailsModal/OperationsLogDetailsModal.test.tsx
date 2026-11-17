@@ -7,10 +7,11 @@
  */
 
 import {format, parseISO} from 'date-fns';
-import {describe, expect} from 'vitest';
+import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
 import {createAuditLog} from '#/shared-test-modules/api-mocks/audit-logs';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {OperationsLogDetailsModal} from './OperationsLogDetailsModal';
 
 const OPERATE_ROOT_PATH = '/operate';
@@ -32,6 +33,37 @@ function renderModal(auditLog: ReturnType<typeof createAuditLog>, basepath = '')
 }
 
 describe('<OperationsLogDetailsModal />', () => {
+	beforeEach(() => {
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+	});
+
+	afterEach(() => {
+		sessionStorage.clear();
+	});
+
+	it('should link the user task when Tasklist is available', async () => {
+		sessionStorage.setItem(
+			'clientConfig',
+			JSON.stringify(createSystemConfiguration({components: {active: ['operate', 'tasklist']}})),
+		);
+
+		const screen = await renderModal(createAuditLog({entityType: 'USER_TASK', entityKey: '777'}));
+
+		await expect.element(screen.getByRole('link', {name: 'View user task 777'})).toBeVisible();
+	});
+
+	it('should show the user task as plain text when Tasklist is not available', async () => {
+		sessionStorage.setItem(
+			'clientConfig',
+			JSON.stringify(createSystemConfiguration({components: {active: ['operate']}})),
+		);
+
+		const screen = await renderModal(createAuditLog({entityType: 'USER_TASK', entityKey: '777'}));
+
+		await expect.element(screen.getByRole('dialog')).toMatchTextContent('777');
+		await expect.element(screen.getByRole('link', {name: 'View user task 777'})).not.toBeInTheDocument();
+	});
+
 	it('should render the status, actor, entity key and date rows', async () => {
 		const auditLog = createAuditLog({
 			operationType: 'CREATE',

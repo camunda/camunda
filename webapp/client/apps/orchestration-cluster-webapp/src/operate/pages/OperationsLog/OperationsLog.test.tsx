@@ -10,6 +10,7 @@ import {format, parseISO} from 'date-fns';
 import {stringifySearchWith, useSearch} from '@tanstack/react-router';
 import {afterEach, beforeEach, describe, expect, vi} from 'vitest';
 import {HttpResponse} from 'msw';
+import {z} from 'zod';
 import {userEvent} from 'vitest/browser';
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
@@ -621,6 +622,89 @@ describe('<OperationsLog />', () => {
 				.toHaveAttribute('href', `${expectedPathPrefix}/operate/decisions/888`);
 		},
 	);
+
+	describe('user task entity', () => {
+		const USER_TASK_AUDIT_LOGS = HttpResponse.json(
+			createQueryAuditLogsResponse({
+				items: [
+					createAuditLog({
+						auditLogKey: '123',
+						entityKey: '777',
+						entityType: 'USER_TASK',
+						operationType: 'ASSIGN',
+						processDefinitionKey: '2251799813685279',
+					}),
+				],
+			}),
+		);
+
+		it('should link the user task when Tasklist is available', async ({worker}) => {
+			sessionStorage.setItem(
+				'clientConfig',
+				JSON.stringify(createSystemConfiguration({components: {active: ['operate', 'tasklist']}})),
+			);
+			worker.use(
+				mockGetProcessDefinitionEndpoint({successResponse: HttpResponse.json(createGetProcessDefinitionResponse())}),
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
+				mockQueryAuditLogsEndpoint({successResponse: USER_TASK_AUDIT_LOGS}),
+			);
+
+			const screen = await renderPage();
+
+			await expect.element(screen.getByRole('link', {name: 'View user task 777'})).toBeVisible();
+		});
+
+		it('should show the user task as plain text when Tasklist is not available', async ({worker}) => {
+			sessionStorage.setItem(
+				'clientConfig',
+				JSON.stringify(createSystemConfiguration({components: {active: ['operate']}})),
+			);
+			worker.use(
+				mockGetProcessDefinitionEndpoint({successResponse: HttpResponse.json(createGetProcessDefinitionResponse())}),
+				mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+				mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
+				mockQueryAuditLogsEndpoint({successResponse: USER_TASK_AUDIT_LOGS}),
+			);
+
+			const screen = await renderPage();
+
+			await expect.element(screen.getByText('777', {exact: true})).toBeVisible();
+			await expect.element(screen.getByRole('link', {name: 'View user task 777'})).not.toBeInTheDocument();
+		});
+	});
+
+	it('should apply a lowercase sort order from a legacy URL', async ({worker}) => {
+		worker.use(
+			mockGetProcessDefinitionEndpoint({successResponse: HttpResponse.json(createGetProcessDefinitionResponse())}),
+			mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}),
+			mockQueryDecisionDefinitionsEndpoint({successResponse: NO_DECISION_DEFINITIONS}),
+			mockQueryAuditLogsEndpoint({
+				schema: z.looseObject({
+					sort: z.tuple([z.strictObject({field: z.literal('operationType'), order: z.literal('ASC')})]),
+				}),
+				successResponse: HttpResponse.json(
+					createQueryAuditLogsResponse({
+						items: [
+							createAuditLog({
+								auditLogKey: '123',
+								entityKey: '999',
+								processInstanceKey: '999',
+								entityType: 'PROCESS_INSTANCE',
+								operationType: 'CANCEL',
+								processDefinitionKey: '2251799813685279',
+							}),
+						],
+					}),
+				),
+				failureResponse: HttpResponse.json(createQueryAuditLogsResponse()),
+			}),
+		);
+
+		const screen = await renderPage({search: {sort: 'operationType+asc'}});
+
+		await expect.element(screen.getByRole('link', {name: 'View process instance 999'})).toBeVisible();
+	});
 
 	it('should open the details modal when the comment button is clicked', async ({worker}) => {
 		worker.use(

@@ -13,6 +13,7 @@ import {
 	auditLogOperationTypeSchema,
 	auditLogResultSchema,
 } from '@camunda/camunda-api-zod-schemas/8.11';
+import {normalizeSortOrder} from '#/operate/shared/utils/normalizeSortOrder';
 
 const commaSeparated = <T extends z.ZodType>(item: T) =>
 	z.preprocess((value) => (typeof value === 'string' ? value.split(',') : value), z.array(item).optional());
@@ -39,7 +40,7 @@ const operationsLogSearchSchema = z
 		timestampAfter: z.string().optional(),
 		timestampBefore: z.string().optional(),
 		tenantId: z.coerce.string().optional(),
-		sort: z.string().optional(),
+		sort: z.string().optional().transform(normalizeSortOrder),
 	})
 	.transform(({processDefinitionId, processDefinitionVersion, ...search}) => ({
 		...search,

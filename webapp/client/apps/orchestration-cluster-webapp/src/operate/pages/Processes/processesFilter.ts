@@ -15,6 +15,7 @@ import type {
 import {z} from 'zod';
 import {parseIds} from '#/operate/shared/utils/parseIds';
 import {createSortSearchParamSchema} from '#/shared/sortSearchParam';
+import {normalizeSortOrder} from '#/operate/shared/utils/normalizeSortOrder';
 import {decodeAdvancedStringFilter} from '#/operate/shared/utils/advancedStringFilter';
 import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {toVariableEntry, type VariableCondition} from './VariablesFilter/variableConditions';
@@ -83,7 +84,7 @@ const processesSearchSchema = z
 		completed: z.boolean().default(processesSearchDefaults.completed),
 		canceled: z.boolean().default(processesSearchDefaults.canceled),
 		suspended: z.boolean().default(processesSearchDefaults.suspended),
-		sort: z.string().optional(),
+		sort: z.string().optional().transform(normalizeSortOrder),
 	})
 	.transform(({processDefinitionId, processDefinitionVersion, version, ...search}) => {
 		const resolvedVersion = version ?? processDefinitionVersion;

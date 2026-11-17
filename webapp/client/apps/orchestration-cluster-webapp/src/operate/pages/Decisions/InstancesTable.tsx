@@ -62,6 +62,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 	const columns = [
 		{
 			key: 'decisionDefinitionName',
+			sortKey: 'decisionDefinitionName',
 			label: t('operate.decisions.instancesTable.name'),
 			render: (row: DecisionInstance) => (
 				<DecisionName>
@@ -76,6 +77,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 		},
 		{
 			key: 'decisionEvaluationInstanceKey',
+			sortKey: 'decisionEvaluationInstanceKey',
 			label: t('operate.decisions.instancesTable.decisionInstanceKey'),
 			render: (row: DecisionInstance) => (
 				<InstanceLink
@@ -93,6 +95,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 		},
 		{
 			key: 'decisionDefinitionVersion',
+			sortKey: 'decisionDefinitionVersion',
 			label: t('operate.decisions.instancesTable.version'),
 			render: (row: DecisionInstance) => row.decisionDefinitionVersion,
 		},
@@ -110,6 +113,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 			? [
 					{
 						key: 'tenantId',
+						sortKey: 'tenantId',
 						label: t('operate.decisions.instancesTable.tenant'),
 						render: (row: DecisionInstance) => row.tenantId,
 					},
@@ -125,6 +129,7 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 		},
 		{
 			key: 'processInstanceKey',
+			sortKey: 'processInstanceKey',
 			label: t('operate.decisions.instancesTable.processInstanceKey'),
 			render: (row: DecisionInstance) =>
 				row.processInstanceKey ? (
