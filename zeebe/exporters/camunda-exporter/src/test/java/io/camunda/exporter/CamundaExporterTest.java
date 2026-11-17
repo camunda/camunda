@@ -375,6 +375,47 @@ final class CamundaExporterTest {
     }
 
     @Test
+    void shouldFlushOnScheduleAfterClockMovedForwardAndReset() {
+      // Regression test: a flush while the clock was moved forward (clock API `add`) left
+      // lastFlushTimestamp in the future, so after `reset` the time-based flush waited for as
+      // long as the clock had been moved forward.
+
+      // given
+      final var clock = new MutableClock(1000);
+      testContext.setClock(clock);
+      configuration.getBulk().setSize(10); // a single export never triggers a size-based flush
+      configuration.getBulk().setDelay(1);
+      exporter =
+          new CamundaExporter(
+              targetIndexLocator,
+              resourceProvider,
+              new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+      exporter.open(testController);
+
+      // the clock moves forward by 120 s and a record is flushed on schedule meanwhile
+      clock.advance(120_000);
+      final var whileMoved =
+          protocolFactory.generateRecord(ValueType.VARIABLE, b -> b.withPosition(1L));
+      exporter.export(whileMoved);
+      testController.runScheduledTasks(Duration.ofSeconds(1));
+      assertThat(testController.getPosition()).isEqualTo(whileMoved.getPosition());
+
+      // when — the clock is reset and a new record arrives
+      clock.advance(-120_000);
+      final var afterReset =
+          protocolFactory.generateRecord(ValueType.VARIABLE, b -> b.withPosition(2L));
+      exporter.export(afterReset);
+      clock.advance(1000);
+      testController.runScheduledTasks(Duration.ofSeconds(1));
+
+      // then — it is flushed within the bulk delay, not 120 s later
+      assertThat(testController.getPosition())
+          .as("the record exported after the clock reset is flushed on schedule")
+          .isEqualTo(afterReset.getPosition());
+    }
+
+    @Test
     void shouldKeepStableDelayAcrossMultipleFlushCycles() {
       // Regression test: the rescheduled flush delay must remain stable across
       // repeated flush cycles and not degrade to zero.

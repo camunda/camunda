@@ -330,8 +330,7 @@ public class CamundaExporter implements Exporter {
       metrics.recordFlushReasonBatchMemory();
       return true;
     }
-    if (writer.getBatchSize() > 0
-        && (context.clock().millis() - lastFlushTimestamp) >= flushDelayMs) {
+    if (writer.getBatchSize() > 0 && isFlushDelayElapsed(context.clock().millis())) {
       metrics.recordFlushReasonScheduled();
       return true;
     }
@@ -346,10 +345,20 @@ public class CamundaExporter implements Exporter {
     return builder.build();
   }
 
+  /**
+   * Whether the bulk delay has passed since the last flush. A last flush in the future means the
+   * clock moved back (e.g. the clock API reset after a forward offset); that counts as elapsed, or
+   * the time-based flush would wait for as long as the clock had been moved forward.
+   */
+  private boolean isFlushDelayElapsed(final long now) {
+    return now < lastFlushTimestamp || now - lastFlushTimestamp >= flushDelayMs;
+  }
+
   private void scheduleDelayedFlush(final long now) {
     long nextDelayMs = flushDelayMs;
     if (lastFlushTimestamp > 0) {
-      nextDelayMs = Math.max(0, flushDelayMs - (now - lastFlushTimestamp));
+      nextDelayMs =
+          now < lastFlushTimestamp ? 0 : Math.max(0, flushDelayMs - (now - lastFlushTimestamp));
     }
 
     scheduledFlushTask =
@@ -360,7 +369,7 @@ public class CamundaExporter implements Exporter {
   private void flushAndReschedule() {
     final var now = context.clock().millis();
     try {
-      if (now - lastFlushTimestamp >= flushDelayMs) {
+      if (isFlushDelayElapsed(now)) {
         metrics.recordFlushReasonScheduled();
         flush();
       }
