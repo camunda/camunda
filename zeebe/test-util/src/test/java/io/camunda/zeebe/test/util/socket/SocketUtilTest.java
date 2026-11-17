@@ -29,5 +29,9 @@ final class SocketUtilTest {
 
     // then
     assertThat(ports).doesNotHaveDuplicates().hasSize(callers);
+    // then
+    // tests bind fixed defaults below 10000 (e.g. 8080, 9200) and the Zeebe defaults 26500-26502
+    // later, which the allocator cannot detect when it hands out a port
+    assertThat(ports).allSatisfy(port -> assertThat(port).isBetween(10000, 25999));
   }
 }
