@@ -310,6 +310,13 @@ final class CslTenantCheckTest {
     final var tenantCheck = tenantCheck(true);
     when(command.isInternalCommand()).thenReturn(true);
     when(command.isCommandDistributed()).thenReturn(false);
+    lenient()
+        .when(command.getAuthInfo())
+        .thenReturn(AuthInfo.ofClaims(Map.of(Authorization.AUTHORIZED_USERNAME, "user")));
+    lenient().when(authentication.authenticatedTenantIds()).thenReturn(List.of("tenant-a"));
+    lenient()
+        .when(claimsConverter.resolve(Map.of(Authorization.AUTHORIZED_USERNAME, "user")))
+        .thenReturn(authentication);
 
     // when
     final var result =
