@@ -8,88 +8,96 @@
 package io.camunda.zeebe.protocol.impl.record.value.agenthistory;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue.AgentHistoryMetricsValue;
+import org.jspecify.annotations.NullMarked;
 
-@JsonIgnoreProperties({"encodedLength", "empty"})
-public final class AgentHistoryMetrics extends ObjectValue implements AgentHistoryMetricsValue {
+@MsgpackPojo
+@NullMarked
+@JsonIgnoreProperties({"encodedLength", "empty", "length"})
+public final class AgentHistoryMetrics extends MsgpackBufferValue<AgentHistoryMetrics>
+    implements AgentHistoryMetricsValue {
 
-  private final LongProperty inputTokensProp = new LongProperty("inputTokens", -1L);
-  private final LongProperty outputTokensProp = new LongProperty("outputTokens", -1L);
-  private final LongProperty reasoningTokenCountProp = new LongProperty("reasoningTokenCount", -1L);
-  private final LongProperty cacheCreationTokenCountProp =
-      new LongProperty("cacheCreationTokenCount", -1L);
-  private final LongProperty cacheReadTokenCountProp = new LongProperty("cacheReadTokenCount", -1L);
-  private final LongProperty durationMsProp = new LongProperty("durationMs", -1L);
-
-  public AgentHistoryMetrics() {
-    super(6);
-    declareProperty(inputTokensProp)
-        .declareProperty(outputTokensProp)
-        .declareProperty(reasoningTokenCountProp)
-        .declareProperty(cacheCreationTokenCountProp)
-        .declareProperty(cacheReadTokenCountProp)
-        .declareProperty(durationMsProp);
-  }
+  long inputTokens = -1L;
+  long outputTokens = -1L;
+  long reasoningTokenCount = -1L;
+  long cacheCreationTokenCount = -1L;
+  long cacheReadTokenCount = -1L;
+  long durationMs = -1L;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getInputTokens() {
-    return inputTokensProp.getValue();
+    return inputTokens;
   }
 
   public AgentHistoryMetrics setInputTokens(final long inputTokens) {
-    inputTokensProp.setValue(inputTokens);
+    this.inputTokens = inputTokens;
     return this;
   }
 
   @Override
   public long getOutputTokens() {
-    return outputTokensProp.getValue();
+    return outputTokens;
   }
 
   public AgentHistoryMetrics setOutputTokens(final long outputTokens) {
-    outputTokensProp.setValue(outputTokens);
+    this.outputTokens = outputTokens;
     return this;
   }
 
   @Override
   public long getReasoningTokenCount() {
-    return reasoningTokenCountProp.getValue();
+    return reasoningTokenCount;
   }
 
   public AgentHistoryMetrics setReasoningTokenCount(final long reasoningTokenCount) {
-    reasoningTokenCountProp.setValue(reasoningTokenCount);
+    this.reasoningTokenCount = reasoningTokenCount;
     return this;
   }
 
   @Override
   public long getCacheCreationTokenCount() {
-    return cacheCreationTokenCountProp.getValue();
+    return cacheCreationTokenCount;
   }
 
   public AgentHistoryMetrics setCacheCreationTokenCount(final long cacheCreationTokenCount) {
-    cacheCreationTokenCountProp.setValue(cacheCreationTokenCount);
+    this.cacheCreationTokenCount = cacheCreationTokenCount;
     return this;
   }
 
   @Override
   public long getCacheReadTokenCount() {
-    return cacheReadTokenCountProp.getValue();
+    return cacheReadTokenCount;
   }
 
   public AgentHistoryMetrics setCacheReadTokenCount(final long cacheReadTokenCount) {
-    cacheReadTokenCountProp.setValue(cacheReadTokenCount);
+    this.cacheReadTokenCount = cacheReadTokenCount;
     return this;
   }
 
   @Override
   public long getDurationMs() {
-    return durationMsProp.getValue();
+    return durationMs;
   }
 
   public AgentHistoryMetrics setDurationMs(final long durationMs) {
-    durationMsProp.setValue(durationMs);
+    this.durationMs = durationMs;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<AgentHistoryMetrics> codec() {
+    return AgentHistoryMetricsCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<AgentHistoryMetrics> ops() {
+    return AgentHistoryMetricsOps.INSTANCE;
   }
 }

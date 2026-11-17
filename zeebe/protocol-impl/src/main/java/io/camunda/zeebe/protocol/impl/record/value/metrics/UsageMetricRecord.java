@@ -8,130 +8,133 @@
 package io.camunda.zeebe.protocol.impl.record.value.metrics;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
 import java.util.Map;
 import java.util.Set;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetricRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class UsageMetricRecord extends MsgpackBufferValue<UsageMetricRecord>
+    implements MsgpackRecordValue, UsageMetricRecordValue {
 
-  // Static StringValue keys to avoid memory waste
-  private static final StringValue INTERVAL_TYPE_KEY = new StringValue("intervalType");
-  private static final StringValue EVENT_TYPE_KEY = new StringValue("eventType");
-  private static final StringValue START_TIME_KEY = new StringValue("startTime");
-  private static final StringValue END_TIME_KEY = new StringValue("endTime");
-  private static final StringValue COUNTER_VALUES_KEY = new StringValue("counterValues");
-  private static final StringValue SET_VALUES_KEY = new StringValue("setValues");
-  private static final StringValue RESET_TIME_KEY = new StringValue("resetTime");
+  IntervalType intervalType = IntervalType.ACTIVE;
+  long resetTime = -1L;
+  long startTime = -1L;
+  long endTime = -1L;
+  EventType eventType = EventType.NONE;
 
-  private final EnumProperty<IntervalType> intervalTypeProp =
-      new EnumProperty<>(INTERVAL_TYPE_KEY, IntervalType.class, IntervalType.ACTIVE);
-  private final EnumProperty<EventType> eventTypeProp =
-      new EnumProperty<>(EVENT_TYPE_KEY, EventType.class, EventType.NONE);
-  private final LongProperty resetTimeProp = new LongProperty(RESET_TIME_KEY, -1);
-  private final LongProperty startTimeProp = new LongProperty(START_TIME_KEY, -1);
-  private final LongProperty endTimeProp = new LongProperty(END_TIME_KEY, -1);
-  private final DocumentProperty counterValuesProp = new DocumentProperty(COUNTER_VALUES_KEY);
-  private final DocumentProperty setValuesProp = new DocumentProperty(SET_VALUES_KEY);
+  @MsgpackProperty(document = true)
+  DirectBuffer counterValues = DocumentValue.EMPTY_DOCUMENT;
 
-  public UsageMetricRecord() {
-    super(7);
-    declareProperty(intervalTypeProp)
-        .declareProperty(resetTimeProp)
-        .declareProperty(startTimeProp)
-        .declareProperty(endTimeProp)
-        .declareProperty(eventTypeProp)
-        .declareProperty(counterValuesProp)
-        .declareProperty(setValuesProp);
-  }
+  @MsgpackProperty(document = true)
+  DirectBuffer setValues = DocumentValue.EMPTY_DOCUMENT;
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public IntervalType getIntervalType() {
-    return intervalTypeProp.getValue();
+    return intervalType;
   }
 
   public UsageMetricRecord setIntervalType(final IntervalType intervalType) {
-    intervalTypeProp.setValue(intervalType);
+    this.intervalType = intervalType;
     return this;
   }
 
   @Override
   public EventType getEventType() {
-    return eventTypeProp.getValue();
+    return eventType;
   }
 
   public UsageMetricRecord setEventType(final EventType event) {
-    eventTypeProp.setValue(event);
+    eventType = event;
     return this;
   }
 
   @Override
   public long getStartTime() {
-    return startTimeProp.getValue();
+    return startTime;
   }
 
   public UsageMetricRecord setStartTime(final Long startTime) {
-    startTimeProp.setValue(startTime);
+    this.startTime = startTime;
     return this;
   }
 
   @Override
   public long getEndTime() {
-    return endTimeProp.getValue();
+    return endTime;
   }
 
   public UsageMetricRecord setEndTime(final Long endTime) {
-    endTimeProp.setValue(endTime);
+    this.endTime = endTime;
     return this;
   }
 
   @Override
   public long getResetTime() {
-    return resetTimeProp.getValue();
+    return resetTime;
   }
 
   public UsageMetricRecord setResetTime(final Long resetTime) {
-    resetTimeProp.setValue(resetTime);
+    this.resetTime = resetTime;
     return this;
   }
 
   @Override
   public Map<String, Long> getCounterValues() {
-    return MsgPackConverter.convertToLongMap(counterValuesProp.getValue());
+    return MsgPackConverter.convertToLongMap(counterValues);
   }
 
   public UsageMetricRecord setCounterValues(final DirectBuffer value) {
-    counterValuesProp.setValue(value);
+    counterValues = Decoding.document(value);
     return this;
   }
 
   @Override
   public Map<String, Set<Long>> getSetValues() {
-    return MsgPackConverter.convertToSetLongMap(setValuesProp.getValue());
+    return MsgPackConverter.convertToSetLongMap(setValues);
   }
 
   public UsageMetricRecord setSetValues(final DirectBuffer value) {
-    setValuesProp.setValue(value);
+    setValues = Decoding.document(value);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getCounterValueBuffer() {
-    return counterValuesProp.getValue();
+    return counterValues;
   }
 
   @JsonIgnore
   public DirectBuffer getSetValueBuffer() {
-    return setValuesProp.getValue();
+    return setValues;
   }
 
   public boolean hasData() {
     return !(getCounterValues().isEmpty() && getSetValues().isEmpty());
+  }
+
+  @Override
+  protected MsgpackCodec<UsageMetricRecord> codec() {
+    return UsageMetricRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<UsageMetricRecord> ops() {
+    return UsageMetricRecordOps.INSTANCE;
   }
 }

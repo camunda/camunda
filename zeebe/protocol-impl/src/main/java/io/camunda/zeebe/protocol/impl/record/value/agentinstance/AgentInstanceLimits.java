@@ -8,63 +8,63 @@
 package io.camunda.zeebe.protocol.impl.record.value.agentinstance;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
+import org.jspecify.annotations.NullMarked;
 
-@JsonIgnoreProperties({"encodedLength", "empty"})
-public final class AgentInstanceLimits extends ObjectValue
+@MsgpackPojo
+@NullMarked
+@JsonIgnoreProperties({"encodedLength", "empty", "length"})
+public final class AgentInstanceLimits extends MsgpackBufferValue<AgentInstanceLimits>
     implements AgentInstanceRecordValue.AgentInstanceLimitsValue {
 
-  private final LongProperty maxTokensProp = new LongProperty("maxTokens", -1L);
-  private final IntegerProperty maxModelCallsProp = new IntegerProperty("maxModelCalls", -1);
-  private final IntegerProperty maxToolCallsProp = new IntegerProperty("maxToolCalls", -1);
-
-  public AgentInstanceLimits() {
-    super(3);
-    declareProperty(maxTokensProp)
-        .declareProperty(maxModelCallsProp)
-        .declareProperty(maxToolCallsProp);
-  }
+  long maxTokens = -1L;
+  int maxModelCalls = -1;
+  int maxToolCalls = -1;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getMaxTokens() {
-    return maxTokensProp.getValue();
+    return maxTokens;
   }
 
   public AgentInstanceLimits setMaxTokens(final long maxTokens) {
-    maxTokensProp.setValue(maxTokens);
+    this.maxTokens = maxTokens;
     return this;
   }
 
   @Override
   public int getMaxModelCalls() {
-    return maxModelCallsProp.getValue();
+    return maxModelCalls;
   }
 
   public AgentInstanceLimits setMaxModelCalls(final int maxModelCalls) {
-    maxModelCallsProp.setValue(maxModelCalls);
+    this.maxModelCalls = maxModelCalls;
     return this;
   }
 
   @Override
   public int getMaxToolCalls() {
-    return maxToolCallsProp.getValue();
+    return maxToolCalls;
   }
 
   public AgentInstanceLimits setMaxToolCalls(final int maxToolCalls) {
-    maxToolCallsProp.setValue(maxToolCalls);
+    this.maxToolCalls = maxToolCalls;
     return this;
   }
 
   @Override
-  public int hashCode() {
-    return super.hashCode();
+  protected MsgpackCodec<AgentInstanceLimits> codec() {
+    return AgentInstanceLimitsCodec.INSTANCE;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return super.equals(o);
+  protected MsgpackOps<AgentInstanceLimits> ops() {
+    return AgentInstanceLimitsOps.INSTANCE;
   }
 }

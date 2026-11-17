@@ -10,163 +10,164 @@ package io.camunda.zeebe.protocol.impl.record.value.timer;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredInt;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class TimerRecord extends UnifiedRecordValue implements TimerRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class TimerRecord extends MsgpackBufferValue<TimerRecord>
+    implements MsgpackRecordValue, TimerRecordValue {
 
-  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
-  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey");
-  private final LongProperty dueDateProp = new LongProperty("dueDate");
-  private final StringProperty targetElementId = new StringProperty("targetElementId");
-  private final IntegerProperty repetitionsProp = new IntegerProperty("repetitions");
-  private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey");
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty rootProcessInstanceKeyProp =
-      new LongProperty("rootProcessInstanceKey", -1L);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
-  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
-  private final EnumProperty<BpmnElementType> elementTypeProp =
-      new EnumProperty<>(
-          new StringValue("elementType"), BpmnElementType.class, BpmnElementType.UNSPECIFIED);
-
-  public TimerRecord() {
-    super(11);
-    declareProperty(elementInstanceKeyProp)
-        .declareProperty(processInstanceKeyProp)
-        .declareProperty(dueDateProp)
-        .declareProperty(targetElementId)
-        .declareProperty(repetitionsProp)
-        .declareProperty(processDefinitionKeyProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(bpmnProcessIdProp)
-        .declareProperty(elementTypeProp);
-  }
+  final RequiredLong elementInstanceKey = new RequiredLong();
+  final RequiredLong processInstanceKey = new RequiredLong();
+  final RequiredLong dueDate = new RequiredLong();
+  @Nullable DirectBuffer targetElementId;
+  final RequiredInt repetitions = new RequiredInt();
+  final RequiredLong processDefinitionKey = new RequiredLong();
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long rootProcessInstanceKey = -1L;
+  int storageOrdinal = 0;
+  DirectBuffer bpmnProcessId = Decoding.EMPTY;
+  BpmnElementType elementType = BpmnElementType.UNSPECIFIED;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @JsonIgnore
   public DirectBuffer getTargetElementIdBuffer() {
-    return targetElementId.getValue();
+    return Decoding.required(targetElementId, "targetElementId");
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey.get();
   }
 
   @Override
   public long getElementInstanceKey() {
-    return elementInstanceKeyProp.getValue();
+    return elementInstanceKey.get();
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey.get();
   }
 
   public TimerRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
+    this.processInstanceKey.set(processInstanceKey);
     return this;
   }
 
   @Override
   public long getDueDate() {
-    return dueDateProp.getValue();
+    return dueDate.get();
   }
 
   @Override
   public String getTargetElementId() {
-    return BufferUtil.bufferAsString(targetElementId.getValue());
+    return BufferUtil.bufferAsString(Decoding.required(targetElementId, "targetElementId"));
   }
 
   @Override
   public int getRepetitions() {
-    return repetitionsProp.getValue();
+    return repetitions.get();
   }
 
   public TimerRecord setRepetitions(final int repetitions) {
-    repetitionsProp.setValue(repetitions);
+    this.repetitions.set(repetitions);
     return this;
   }
 
   public TimerRecord setTargetElementId(final DirectBuffer targetElementId) {
-    this.targetElementId.setValue(targetElementId);
+    this.targetElementId = targetElementId;
     return this;
   }
 
   public TimerRecord setDueDate(final long dueDate) {
-    dueDateProp.setValue(dueDate);
+    this.dueDate.set(dueDate);
     return this;
   }
 
   public TimerRecord setElementInstanceKey(final long key) {
-    elementInstanceKeyProp.setValue(key);
+    elementInstanceKey.set(key);
     return this;
   }
 
   public TimerRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProp.setValue(processDefinitionKey);
+    this.processDefinitionKey.set(processDefinitionKey);
     return this;
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public TimerRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @Override
   public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
+    return rootProcessInstanceKey;
   }
 
   public TimerRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
   }
 
   @Override
   public String getBpmnProcessId() {
-    return bufferAsString(bpmnProcessIdProp.getValue());
+    return bufferAsString(bpmnProcessId);
   }
 
   public TimerRecord setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = BufferUtil.wrapString(bpmnProcessId);
     return this;
   }
 
   @Override
   public BpmnElementType getElementType() {
-    return elementTypeProp.getValue();
+    return elementType;
   }
 
   public TimerRecord setElementType(final BpmnElementType elementType) {
-    elementTypeProp.setValue(elementType);
+    this.elementType = elementType;
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public TimerRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<TimerRecord> codec() {
+    return TimerRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<TimerRecord> ops() {
+    return TimerRecordOps.INSTANCE;
   }
 }

@@ -8,48 +8,35 @@
 package io.camunda.zeebe.protocol.impl.encoding;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-/** */
-public class AgentInfo extends UnpackedObject implements Agent {
+@MsgpackPojo
+@NullMarked
+public final class AgentInfo extends MsgpackBufferValue<AgentInfo> implements Agent {
 
-  private final StringProperty elementIdProp = new StringProperty("elementId", "");
-
-  public AgentInfo() {
-    super(1);
-    declareProperty(elementIdProp);
-  }
+  DirectBuffer elementId = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getElementId() {
-    return BufferUtil.bufferAsString(elementIdProp.getValue());
+    return BufferUtil.bufferAsString(elementId);
   }
 
   public AgentInfo setElementId(final String elementId) {
-    elementIdProp.setValue(elementId);
+    this.elementId = BufferUtil.wrapString(elementId);
     return this;
-  }
-
-  @Override
-  public void reset() {
-    elementIdProp.setValue("");
-  }
-
-  @Override
-  @JsonIgnore
-  public int getEncodedLength() {
-    return super.getEncodedLength();
-  }
-
-  @Override
-  @JsonIgnore
-  public boolean isEmpty() {
-    return super.isEmpty();
   }
 
   @Override
@@ -66,11 +53,21 @@ public class AgentInfo extends UnpackedObject implements Agent {
     return buffer;
   }
 
-  public static AgentInfo of(final Agent agent) {
+  public static @Nullable AgentInfo of(final @Nullable Agent agent) {
     if (agent != null) {
       return new AgentInfo().setElementId(agent.getElementId());
     } else {
       return null;
     }
+  }
+
+  @Override
+  protected MsgpackCodec<AgentInfo> codec() {
+    return AgentInfoCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<AgentInfo> ops() {
+    return AgentInfoOps.INSTANCE;
   }
 }

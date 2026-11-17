@@ -59,8 +59,7 @@ public final class CreateProcessInstanceWithResultTest extends GatewayTest {
     final ProcessInstanceCreationRecord brokerRequestValue = brokerRequest.getRequestWriter();
     assertThat(brokerRequestValue.getProcessDefinitionKey())
         .isEqualTo(stub.getProcessDefinitionKey());
-    assertThat(brokerRequestValue.fetchVariables().iterator().next().getValue())
-        .isEqualTo(wrapString("x"));
+    assertThat(brokerRequestValue.fetchVariables().iterator().next()).isEqualTo(wrapString("x"));
     assertThat(brokerRequestValue.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(brokerRequestValue.getTags()).isEqualTo(stub.getTags());
   }

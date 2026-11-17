@@ -10,91 +10,70 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.List;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
-    implements ProcessInstanceMigrationRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class ProcessInstanceMigrationRecord
+    extends MsgpackBufferValue<ProcessInstanceMigrationRecord>
+    implements MsgpackRecordValue, ProcessInstanceMigrationRecordValue {
 
   public static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  // Static StringValue keys to avoid memory waste
-  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
-  private static final StringValue TARGET_PROCESS_DEFINITION_KEY_KEY =
-      new StringValue("targetProcessDefinitionKey");
-  private static final StringValue MAPPING_INSTRUCTIONS_KEY =
-      new StringValue("mappingInstructions");
-  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
-      new StringValue("rootProcessInstanceKey");
-  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
-  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
-      new StringValue("processDefinitionKey");
-  private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
-  private final LongProperty processInstanceKeyProperty =
-      new LongProperty(PROCESS_INSTANCE_KEY_KEY);
-  private final LongProperty targetProcessDefinitionKeyProperty =
-      new LongProperty(TARGET_PROCESS_DEFINITION_KEY_KEY);
-  private final ArrayProperty<ProcessInstanceMigrationMappingInstruction>
-      mappingInstructionsProperty =
-          new ArrayProperty<>(
-              MAPPING_INSTRUCTIONS_KEY, ProcessInstanceMigrationMappingInstruction::new);
 
-  private final StringProperty tenantIdProperty =
-      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty rootProcessInstanceKeyProperty =
-      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1);
-  private final IntegerProperty storageOrdinalProperty =
-      new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
-  private final LongProperty processDefinitionKeyProperty =
-      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
-  private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
-
-  public ProcessInstanceMigrationRecord() {
-    super(8);
-    declareProperty(processInstanceKeyProperty)
-        .declareProperty(targetProcessDefinitionKeyProperty)
-        .declareProperty(mappingInstructionsProperty)
-        .declareProperty(tenantIdProperty)
-        .declareProperty(rootProcessInstanceKeyProperty)
-        .declareProperty(storageOrdinalProperty)
-        .declareProperty(processDefinitionKeyProperty)
-        .declareProperty(bpmnProcessIdProperty);
-  }
+  final RequiredLong processInstanceKey = new RequiredLong();
+  final RequiredLong targetProcessDefinitionKey = new RequiredLong();
+  final List<ProcessInstanceMigrationMappingInstruction> mappingInstructions = new ArrayList<>();
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long rootProcessInstanceKey = -1L;
+  int storageOrdinal = 0;
+  long processDefinitionKey = -1L;
+  DirectBuffer bpmnProcessId = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProperty.getValue();
+    return processInstanceKey.get();
   }
 
   public ProcessInstanceMigrationRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProperty.setValue(processInstanceKey);
+    this.processInstanceKey.set(processInstanceKey);
     return this;
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProperty.getValue();
+    return processDefinitionKey;
   }
 
   public ProcessInstanceMigrationRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProperty.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
   @Override
   public long getTargetProcessDefinitionKey() {
-    return targetProcessDefinitionKeyProperty.getValue();
+    return targetProcessDefinitionKey.get();
   }
 
   public ProcessInstanceMigrationRecord setTargetProcessDefinitionKey(
       final long targetProcessDefinitionKey) {
-    targetProcessDefinitionKeyProperty.setValue(targetProcessDefinitionKey);
+    this.targetProcessDefinitionKey.set(targetProcessDefinitionKey);
     return this;
   }
 
@@ -106,9 +85,7 @@ public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
    */
   @Override
   public List<ProcessInstanceMigrationMappingInstructionValue> getMappingInstructions() {
-    // we need to make a copy of each element in the ArrayProperty while iterating it because the
-    // inner values are updated during the iteration
-    return mappingInstructionsProperty.stream()
+    return mappingInstructions.stream()
         .map(
             element -> {
               final var elementCopy = new ProcessInstanceMigrationMappingInstruction();
@@ -120,54 +97,66 @@ public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
 
   @Override
   public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProperty.getValue();
+    return rootProcessInstanceKey;
   }
 
   public ProcessInstanceMigrationRecord setRootProcessInstanceKey(
       final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProperty.setValue(rootProcessInstanceKey);
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
   }
 
   @Override
   public String getBpmnProcessId() {
-    return bufferAsString(bpmnProcessIdProperty.getValue());
+    return bufferAsString(bpmnProcessId);
   }
 
   public ProcessInstanceMigrationRecord setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProperty.setValue(bpmnProcessId);
+    this.bpmnProcessId = BufferUtil.wrapString(bpmnProcessId);
     return this;
   }
 
   /** Returns true if this record has mapping instructions, otherwise false. */
   @JsonIgnore
   public boolean hasMappingInstructions() {
-    return !mappingInstructionsProperty.isEmpty();
+    return !mappingInstructions.isEmpty();
   }
 
   public ProcessInstanceMigrationRecord addMappingInstruction(
       final ProcessInstanceMigrationMappingInstruction mappingInstruction) {
-    mappingInstructionsProperty.add().copy(mappingInstruction);
+    final var instruction = new ProcessInstanceMigrationMappingInstruction();
+    instruction.copy(mappingInstruction);
+    mappingInstructions.add(instruction);
     return this;
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProperty.getValue());
+    return bufferAsString(tenantId);
   }
 
   public ProcessInstanceMigrationRecord setTenantId(final String tenantId) {
-    tenantIdProperty.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProperty.getValue();
+    return storageOrdinal;
   }
 
   public ProcessInstanceMigrationRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProperty.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ProcessInstanceMigrationRecord> codec() {
+    return ProcessInstanceMigrationRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ProcessInstanceMigrationRecord> ops() {
+    return ProcessInstanceMigrationRecordOps.INSTANCE;
   }
 }

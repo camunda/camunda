@@ -7,135 +7,135 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.agentdefinition;
 
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentDefinitionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AgentDefinitionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class AgentDefinitionRecord extends UnifiedRecordValue
-    implements AgentDefinitionRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class AgentDefinitionRecord extends MsgpackBufferValue<AgentDefinitionRecord>
+    implements MsgpackRecordValue, AgentDefinitionRecordValue {
 
-  private final LongProperty agentDefinitionKeyProp = new LongProperty("agentDefinitionKey", -1L);
-  private final EnumProperty<AgentDefinitionType> agentTypeProp =
-      new EnumProperty<>("agentType", AgentDefinitionType.class, AgentDefinitionType.UNSPECIFIED);
-  private final StringProperty nameProp = new StringProperty("name", "");
-  private final StringProperty elementIdProp = new StringProperty("elementId", "");
-  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty("processDefinitionKey", -1L);
-  private final IntegerProperty processDefinitionVersionProp =
-      new IntegerProperty("processDefinitionVersion", -1);
-  private final StringProperty processDefinitionVersionTagProp =
-      new StringProperty("processDefinitionVersionTag", "");
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-
-  public AgentDefinitionRecord() {
-    super(9);
-    declareProperty(agentDefinitionKeyProp)
-        .declareProperty(agentTypeProp)
-        .declareProperty(nameProp)
-        .declareProperty(elementIdProp)
-        .declareProperty(bpmnProcessIdProp)
-        .declareProperty(processDefinitionKeyProp)
-        .declareProperty(processDefinitionVersionProp)
-        .declareProperty(processDefinitionVersionTagProp)
-        .declareProperty(tenantIdProp);
-  }
+  long agentDefinitionKey = -1L;
+  AgentDefinitionType agentType = AgentDefinitionType.UNSPECIFIED;
+  DirectBuffer name = Decoding.EMPTY;
+  DirectBuffer elementId = Decoding.EMPTY;
+  DirectBuffer bpmnProcessId = Decoding.EMPTY;
+  long processDefinitionKey = -1L;
+  int processDefinitionVersion = -1;
+  DirectBuffer processDefinitionVersionTag = Decoding.EMPTY;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getAgentDefinitionKey() {
-    return agentDefinitionKeyProp.getValue();
+    return agentDefinitionKey;
   }
 
   public AgentDefinitionRecord setAgentDefinitionKey(final long agentDefinitionKey) {
-    agentDefinitionKeyProp.setValue(agentDefinitionKey);
+    this.agentDefinitionKey = agentDefinitionKey;
     return this;
   }
 
   @Override
   public AgentDefinitionType getAgentType() {
-    return agentTypeProp.getValue();
+    return agentType;
   }
 
   public AgentDefinitionRecord setAgentType(final AgentDefinitionType agentType) {
-    agentTypeProp.setValue(agentType);
+    this.agentType = agentType;
     return this;
   }
 
   @Override
   public String getName() {
-    return BufferUtil.bufferAsString(nameProp.getValue());
+    return BufferUtil.bufferAsString(name);
   }
 
   public AgentDefinitionRecord setName(final String name) {
-    nameProp.setValue(name);
+    this.name = BufferUtil.wrapString(name);
     return this;
   }
 
   @Override
   public String getElementId() {
-    return BufferUtil.bufferAsString(elementIdProp.getValue());
+    return BufferUtil.bufferAsString(elementId);
   }
 
   public AgentDefinitionRecord setElementId(final String elementId) {
-    elementIdProp.setValue(elementId);
+    this.elementId = BufferUtil.wrapString(elementId);
     return this;
   }
 
   @Override
   public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+    return BufferUtil.bufferAsString(bpmnProcessId);
   }
 
   public AgentDefinitionRecord setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = BufferUtil.wrapString(bpmnProcessId);
     return this;
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey;
   }
 
   public AgentDefinitionRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProp.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
   @Override
   public int getProcessDefinitionVersion() {
-    return processDefinitionVersionProp.getValue();
+    return processDefinitionVersion;
   }
 
   public AgentDefinitionRecord setProcessDefinitionVersion(final int processDefinitionVersion) {
-    processDefinitionVersionProp.setValue(processDefinitionVersion);
+    this.processDefinitionVersion = processDefinitionVersion;
     return this;
   }
 
   @Override
   public String getProcessDefinitionVersionTag() {
-    return BufferUtil.bufferAsString(processDefinitionVersionTagProp.getValue());
+    return BufferUtil.bufferAsString(processDefinitionVersionTag);
   }
 
   public AgentDefinitionRecord setProcessDefinitionVersionTag(
       final String processDefinitionVersionTag) {
-    processDefinitionVersionTagProp.setValue(processDefinitionVersionTag);
+    this.processDefinitionVersionTag = BufferUtil.wrapString(processDefinitionVersionTag);
     return this;
   }
 
   @Override
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+    return BufferUtil.bufferAsString(tenantId);
   }
 
   public AgentDefinitionRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<AgentDefinitionRecord> codec() {
+    return AgentDefinitionRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<AgentDefinitionRecord> ops() {
+    return AgentDefinitionRecordOps.INSTANCE;
   }
 }

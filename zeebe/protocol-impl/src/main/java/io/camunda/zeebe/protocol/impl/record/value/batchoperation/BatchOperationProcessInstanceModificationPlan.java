@@ -8,23 +8,29 @@
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationProcessInstanceModificationPlanValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationMoveInstructionValue;
+import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.NullMarked;
 
-public final class BatchOperationProcessInstanceModificationPlan extends ObjectValue
+@MsgpackPojo
+@NullMarked
+@JsonIgnoreProperties("length")
+public final class BatchOperationProcessInstanceModificationPlan
+    extends MsgpackBufferValue<BatchOperationProcessInstanceModificationPlan>
     implements BatchOperationProcessInstanceModificationPlanValue {
 
-  private final ArrayProperty<ProcessInstanceModificationMoveInstruction> moveInstructionsProperty =
-      new ArrayProperty<>("moveInstructions", ProcessInstanceModificationMoveInstruction::new);
-
-  public BatchOperationProcessInstanceModificationPlan() {
-    super(1);
-    declareProperty(moveInstructionsProperty);
-  }
+  final List<ProcessInstanceModificationMoveInstruction> moveInstructions = new ArrayList<>();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   /**
    * This method is expensive because it copies each element before returning it. It is recommended
@@ -34,7 +40,7 @@ public final class BatchOperationProcessInstanceModificationPlan extends ObjectV
    */
   @Override
   public List<ProcessInstanceModificationMoveInstructionValue> getMoveInstructions() {
-    return moveInstructionsProperty.stream()
+    return moveInstructions.stream()
         .map(
             element ->
                 (ProcessInstanceModificationMoveInstructionValue)
@@ -45,12 +51,12 @@ public final class BatchOperationProcessInstanceModificationPlan extends ObjectV
   /** Returns true if this record has mapping instructions, otherwise false. */
   @JsonIgnore
   public boolean hasMoveInstructions() {
-    return !moveInstructionsProperty.isEmpty();
+    return !moveInstructions.isEmpty();
   }
 
   public BatchOperationProcessInstanceModificationPlan addMoveInstruction(
       final ProcessInstanceModificationMoveInstruction mappingInstruction) {
-    moveInstructionsProperty.add().copy(mappingInstruction);
+    moveInstructions.add(new ProcessInstanceModificationMoveInstruction().copy(mappingInstruction));
     return this;
   }
 
@@ -60,5 +66,25 @@ public final class BatchOperationProcessInstanceModificationPlan extends ObjectV
         .getMoveInstructions()
         .forEach(inst -> addMoveInstruction((ProcessInstanceModificationMoveInstruction) inst));
     return this;
+  }
+
+  /** Kept so that the exported JSON stays unchanged. */
+  public boolean isEmpty() {
+    return false;
+  }
+
+  /** Kept so that the exported JSON stays unchanged. */
+  public int getEncodedLength() {
+    return getLength();
+  }
+
+  @Override
+  protected MsgpackCodec<BatchOperationProcessInstanceModificationPlan> codec() {
+    return BatchOperationProcessInstanceModificationPlanCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<BatchOperationProcessInstanceModificationPlan> ops() {
+    return BatchOperationProcessInstanceModificationPlanOps.INSTANCE;
   }
 }

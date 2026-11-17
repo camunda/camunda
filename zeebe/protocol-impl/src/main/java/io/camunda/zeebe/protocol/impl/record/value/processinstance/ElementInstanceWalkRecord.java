@@ -7,104 +7,109 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.ElementInstanceWalkRecordValue;
+import org.jspecify.annotations.NullMarked;
 
-public final class ElementInstanceWalkRecord extends UnifiedRecordValue
-    implements ElementInstanceWalkRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class ElementInstanceWalkRecord extends MsgpackBufferValue<ElementInstanceWalkRecord>
+    implements MsgpackRecordValue, ElementInstanceWalkRecordValue {
 
-  private final LongProperty processInstanceKeyProperty =
-      new LongProperty("processInstanceKey", -1L);
-  private final LongProperty processDefinitionKeyProperty =
-      new LongProperty("processDefinitionKey", -1L);
+  long processInstanceKey = -1L;
+  long processDefinitionKey = -1L;
 
   /** The element instance to suspend. */
-  private final LongProperty elementInstanceKeyProperty =
-      new LongProperty("elementInstanceKey", -1L);
+  long elementInstanceKey = -1L;
 
   /**
    * The parent of {@code elementInstanceKey}, or {@code -1} for the process instance; used to
    * continue the walk if the element instance is gone.
    */
-  private final LongProperty parentKeyProperty = new LongProperty("parentKey", -1L);
+  long parentKey = -1L;
 
   /**
    * The child of {@code elementInstanceKey} that was suspended last, so the walk continues after
    * it; {@code -1} to start at the first child.
    */
-  private final LongProperty indexProperty = new LongProperty("index", -1L);
+  long index = -1L;
 
-  private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
-
-  public ElementInstanceWalkRecord() {
-    super(6);
-    declareProperty(processInstanceKeyProperty)
-        .declareProperty(processDefinitionKeyProperty)
-        .declareProperty(elementInstanceKeyProperty)
-        .declareProperty(parentKeyProperty)
-        .declareProperty(indexProperty)
-        .declareProperty(storageOrdinalProperty);
-  }
+  int storageOrdinal = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProperty.getValue();
+    return processInstanceKey;
   }
 
   public ElementInstanceWalkRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProperty.setValue(processInstanceKey);
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProperty.getValue();
+    return processDefinitionKey;
   }
 
   public ElementInstanceWalkRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProperty.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
   @Override
   public long getElementInstanceKey() {
-    return elementInstanceKeyProperty.getValue();
+    return elementInstanceKey;
   }
 
   public ElementInstanceWalkRecord setElementInstanceKey(final long elementInstanceKey) {
-    elementInstanceKeyProperty.setValue(elementInstanceKey);
+    this.elementInstanceKey = elementInstanceKey;
     return this;
   }
 
   @Override
   public long getParentKey() {
-    return parentKeyProperty.getValue();
+    return parentKey;
   }
 
   public ElementInstanceWalkRecord setParentKey(final long parentKey) {
-    parentKeyProperty.setValue(parentKey);
+    this.parentKey = parentKey;
     return this;
   }
 
   @Override
   public long getIndex() {
-    return indexProperty.getValue();
+    return index;
   }
 
   public ElementInstanceWalkRecord setIndex(final long index) {
-    indexProperty.setValue(index);
+    this.index = index;
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProperty.getValue();
+    return storageOrdinal;
   }
 
   public ElementInstanceWalkRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProperty.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ElementInstanceWalkRecord> codec() {
+    return ElementInstanceWalkRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ElementInstanceWalkRecord> ops() {
+    return ElementInstanceWalkRecordOps.INSTANCE;
   }
 }

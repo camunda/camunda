@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.IntegerValue;
-import io.camunda.zeebe.msgpack.value.LongValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
 import io.camunda.zeebe.protocol.record.value.StorageOrdinalRelated;
 import java.util.ArrayList;
@@ -20,77 +22,75 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.agrona.collections.IntArrayList;
+import org.agrona.collections.LongArrayList;
+import org.jspecify.annotations.NullMarked;
 
-public final class BatchOperationExecutionRecord extends UnifiedRecordValue
-    implements BatchOperationExecutionRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class BatchOperationExecutionRecord
+    extends MsgpackBufferValue<BatchOperationExecutionRecord>
+    implements MsgpackRecordValue, BatchOperationExecutionRecordValue {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String PROP_STORAGE_ORDINAL = "storageOrdinal";
   public static final String PROP_ITEM_KEY_LIST = "itemKeys";
   public static final String PROP_ITEM_STORAGE_ORDINAL_LIST = "itemStorageOrdinals";
 
-  private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(PROP_STORAGE_ORDINAL, 0);
-  private final ArrayProperty<LongValue> itemKeysProp =
-      new ArrayProperty<>(PROP_ITEM_KEY_LIST, LongValue::new);
+  final RequiredLong batchOperationKey = new RequiredLong();
+  int storageOrdinal = 0;
+  final LongArrayList itemKeys = new LongArrayList();
 
   /**
-   * The storage ordinal of the item at the same position in {@link #itemKeysProp}. Records written
+   * The storage ordinal of the item at the same position in {@link #itemKeys}. Records written
    * before ordinals were tracked have no entries here, their items read as ordinal 0.
    */
-  private final ArrayProperty<IntegerValue> itemStorageOrdinalsProp =
-      new ArrayProperty<>(PROP_ITEM_STORAGE_ORDINAL_LIST, IntegerValue::new);
+  final IntArrayList itemStorageOrdinals = new IntArrayList();
 
-  public BatchOperationExecutionRecord() {
-    super(4);
-    declareProperty(batchOperationKeyProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(itemKeysProp)
-        .declareProperty(itemStorageOrdinalsProp);
-  }
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getBatchOperationKey() {
-    return batchOperationKeyProp.getValue();
+    return batchOperationKey.get();
   }
 
   public BatchOperationExecutionRecord setBatchOperationKey(final Long batchOperationKey) {
-    batchOperationKeyProp.reset();
-    batchOperationKeyProp.setValue(batchOperationKey);
+    this.batchOperationKey.set(batchOperationKey);
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public BatchOperationExecutionRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 
   @Override
   public Set<Long> getItemKeys() {
-    return itemKeysProp.stream().map(LongValue::getValue).collect(Collectors.toSet());
+    return itemKeys.stream().collect(Collectors.toSet());
   }
 
   /** Replaces the items with bare keys, their storage ordinal reads as 0. */
   public BatchOperationExecutionRecord setItemKeys(final Set<Long> keys) {
-    itemKeysProp.reset();
-    itemStorageOrdinalsProp.reset();
-    keys.forEach(key -> itemKeysProp.add().setValue(key));
+    itemKeys.clear();
+    itemStorageOrdinals.clear();
+    keys.forEach(itemKeys::addLong);
     return this;
   }
 
   @Override
   public List<BatchOperationExecutionItemValue> getItems() {
-    final var itemKeys = itemKeysProp.stream().map(LongValue::getValue).toList();
-    final var ordinals = itemStorageOrdinalsProp.stream().map(IntegerValue::getValue).toList();
     final var items = new ArrayList<BatchOperationExecutionItemValue>(itemKeys.size());
     for (int i = 0; i < itemKeys.size(); i++) {
-      final int ordinal = i < ordinals.size() ? ordinals.get(i) : StorageOrdinalRelated.MAIN_INDEX;
-      items.add(new BatchOperationExecutionItem(itemKeys.get(i), ordinal));
+      final int ordinal =
+          i < itemStorageOrdinals.size()
+              ? itemStorageOrdinals.getInt(i)
+              : StorageOrdinalRelated.MAIN_INDEX;
+      items.add(new BatchOperationExecutionItem(itemKeys.getLong(i), ordinal));
     }
     return items;
   }
@@ -98,11 +98,11 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
   /** Replaces the items, keys and storage ordinals alike. */
   public BatchOperationExecutionRecord setItems(
       final Collection<? extends BatchOperationExecutionItemValue> items) {
-    itemKeysProp.reset();
-    itemStorageOrdinalsProp.reset();
+    itemKeys.clear();
+    itemStorageOrdinals.clear();
     for (final var item : items) {
-      itemKeysProp.add().setValue(item.getItemKey());
-      itemStorageOrdinalsProp.add().setValue(item.getStorageOrdinal());
+      itemKeys.addLong(item.getItemKey());
+      itemStorageOrdinals.addInt(item.getStorageOrdinal());
     }
     return this;
   }
@@ -112,5 +112,15 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
     setStorageOrdinal(record.getStorageOrdinal());
     setItems(record.getItems());
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<BatchOperationExecutionRecord> codec() {
+    return BatchOperationExecutionRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<BatchOperationExecutionRecord> ops() {
+    return BatchOperationExecutionRecordOps.INSTANCE;
   }
 }

@@ -7,9 +7,16 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredInt;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * DeploymentDistributionRecord is deprecated as of 8.2.0. A generalised way of distributing
@@ -18,22 +25,31 @@ import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
  * only remains to stay backwards compatible.
  */
 @Deprecated
-public class DeploymentDistributionRecord extends UnifiedRecordValue
-    implements DeploymentDistributionRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class DeploymentDistributionRecord
+    extends MsgpackBufferValue<DeploymentDistributionRecord>
+    implements MsgpackRecordValue, DeploymentDistributionRecordValue {
 
-  private final IntegerProperty partitionIdProperty = new IntegerProperty("partitionId");
-
-  public DeploymentDistributionRecord() {
-    super(1);
-    declareProperty(partitionIdProperty);
-  }
+  final RequiredInt partitionId = new RequiredInt();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public int getPartitionId() {
-    return partitionIdProperty.getValue();
+    return partitionId.get();
   }
 
   public void setPartition(final int partitionId) {
-    partitionIdProperty.setValue(partitionId);
+    this.partitionId.set(partitionId);
+  }
+
+  @Override
+  protected MsgpackCodec<DeploymentDistributionRecord> codec() {
+    return DeploymentDistributionRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<DeploymentDistributionRecord> ops() {
+    return DeploymentDistributionRecordOps.INSTANCE;
   }
 }

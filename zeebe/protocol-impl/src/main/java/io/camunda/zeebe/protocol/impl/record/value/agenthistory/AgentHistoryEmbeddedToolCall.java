@@ -8,68 +8,76 @@
 package io.camunda.zeebe.protocol.impl.record.value.agenthistory;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue.AgentHistoryEmbeddedToolCallValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-@JsonIgnoreProperties({"encodedLength", "empty"})
-public final class AgentHistoryEmbeddedToolCall extends ObjectValue
+@MsgpackPojo
+@NullMarked
+@JsonIgnoreProperties({"encodedLength", "empty", "length"})
+public final class AgentHistoryEmbeddedToolCall
+    extends MsgpackBufferValue<AgentHistoryEmbeddedToolCall>
     implements AgentHistoryEmbeddedToolCallValue {
 
-  private final StringProperty toolCallIdProp = new StringProperty("toolCallId", "");
-  private final StringProperty toolNameProp = new StringProperty("toolName", "");
-  private final StringProperty elementIdProp = new StringProperty("elementId", "");
-  private final DocumentProperty argumentsProp = new DocumentProperty("arguments");
+  DirectBuffer toolCallId = Decoding.EMPTY;
+  DirectBuffer toolName = Decoding.EMPTY;
+  DirectBuffer elementId = Decoding.EMPTY;
 
-  public AgentHistoryEmbeddedToolCall() {
-    super(4);
-    declareProperty(toolCallIdProp)
-        .declareProperty(toolNameProp)
-        .declareProperty(elementIdProp)
-        .declareProperty(argumentsProp);
-  }
+  @MsgpackProperty(document = true)
+  DirectBuffer arguments = DocumentValue.EMPTY_DOCUMENT;
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getToolCallId() {
-    return BufferUtil.bufferAsString(toolCallIdProp.getValue());
+    return BufferUtil.bufferAsString(toolCallId);
   }
 
   public AgentHistoryEmbeddedToolCall setToolCallId(final String toolCallId) {
-    toolCallIdProp.setValue(toolCallId);
+    this.toolCallId = BufferUtil.wrapString(toolCallId);
     return this;
   }
 
   @Override
   public String getToolName() {
-    return BufferUtil.bufferAsString(toolNameProp.getValue());
+    return BufferUtil.bufferAsString(toolName);
   }
 
   public AgentHistoryEmbeddedToolCall setToolName(final String toolName) {
-    toolNameProp.setValue(toolName);
+    this.toolName = BufferUtil.wrapString(toolName);
     return this;
   }
 
   @Override
   public String getElementId() {
-    return BufferUtil.bufferAsString(elementIdProp.getValue());
+    return BufferUtil.bufferAsString(elementId);
   }
 
   public AgentHistoryEmbeddedToolCall setElementId(final String elementId) {
-    elementIdProp.setValue(elementId);
+    this.elementId = BufferUtil.wrapString(elementId);
     return this;
   }
 
   @Override
   public Map<String, Object> getArguments() {
-    return MsgPackConverter.convertToMap(argumentsProp.getValue());
+    return MsgPackConverter.convertToMap(arguments);
   }
 
   public AgentHistoryEmbeddedToolCall setArguments(final Map<String, Object> arguments) {
-    argumentsProp.setValue(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(arguments)));
+    this.arguments =
+        Decoding.document(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(arguments)));
     return this;
   }
 
@@ -78,5 +86,15 @@ public final class AgentHistoryEmbeddedToolCall extends ObjectValue
     setToolName(other.getToolName());
     setElementId(other.getElementId());
     setArguments(other.getArguments());
+  }
+
+  @Override
+  protected MsgpackCodec<AgentHistoryEmbeddedToolCall> codec() {
+    return AgentHistoryEmbeddedToolCallCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<AgentHistoryEmbeddedToolCall> ops() {
+    return AgentHistoryEmbeddedToolCallOps.INSTANCE;
   }
 }

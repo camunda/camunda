@@ -10,32 +10,37 @@ package io.camunda.zeebe.protocol.impl.record.value.signal;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class SignalRecord extends UnifiedRecordValue implements SignalRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class SignalRecord extends MsgpackBufferValue<SignalRecord>
+    implements MsgpackRecordValue, SignalRecordValue {
 
-  // Static StringValue keys for property names
-  private static final StringValue SIGNAL_NAME_KEY = new StringValue("signalName");
-  private static final StringValue VARIABLES_KEY = new StringValue("variables");
-  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  @Nullable DirectBuffer signalName;
 
-  private final StringProperty signalNameProp = new StringProperty(SIGNAL_NAME_KEY);
-  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
-  private final StringProperty tenantIdProp =
-      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  @MsgpackProperty(document = true)
+  DirectBuffer variables = DocumentValue.EMPTY_DOCUMENT;
 
-  public SignalRecord() {
-    super(3);
-    declareProperty(signalNameProp).declareProperty(variablesProp).declareProperty(tenantIdProp);
-  }
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public void wrap(final SignalRecord record) {
     setSignalName(record.getSignalNameBuffer())
@@ -45,46 +50,56 @@ public final class SignalRecord extends UnifiedRecordValue implements SignalReco
 
   @Override
   public String getSignalName() {
-    return bufferAsString(signalNameProp.getValue());
+    return bufferAsString(Decoding.required(signalName, "signalName"));
   }
 
   public SignalRecord setSignalName(final String signalName) {
-    signalNameProp.setValue(signalName);
+    this.signalName = BufferUtil.wrapString(signalName);
     return this;
   }
 
   public SignalRecord setSignalName(final DirectBuffer signalName) {
-    signalNameProp.setValue(signalName);
+    this.signalName = signalName;
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getSignalNameBuffer() {
-    return signalNameProp.getValue();
+    return Decoding.required(signalName, "signalName");
   }
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProp.getValue());
+    return MsgPackConverter.convertToMap(variables);
   }
 
   public SignalRecord setVariables(final DirectBuffer variables) {
-    variablesProp.setValue(variables);
+    this.variables = Decoding.document(variables);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProp.getValue();
+    return variables;
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public SignalRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<SignalRecord> codec() {
+    return SignalRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<SignalRecord> ops() {
+    return SignalRecordOps.INSTANCE;
   }
 }

@@ -7,81 +7,55 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.job;
 
-import static io.camunda.zeebe.msgpack.value.StringValue.EMPTY_STRING;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobResultActivateElementValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobResultValue;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.StreamSupport;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
 @JsonIgnoreProperties({
-  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
+  /* encodedLength and empty were inherited from ObjectValue, length is inherited from
+  MsgpackBufferValue; they have no purpose in exported JSON records*/
   "empty",
   "encodedLength",
   "length"
 })
-public class JobResult extends UnpackedObject implements JobResultValue {
+@MsgpackPojo
+@NullMarked
+public final class JobResult extends MsgpackBufferValue<JobResult> implements JobResultValue {
 
-  // Static StringValue keys to avoid memory waste
-  private static final StringValue TYPE_KEY = new StringValue("type");
-  private static final StringValue DENIED_KEY = new StringValue("denied");
-  private static final StringValue CORRECTED_ATTRIBUTES_KEY =
-      new StringValue("correctedAttributes");
-  private static final StringValue CORRECTIONS_KEY = new StringValue("corrections");
-  private static final StringValue DENIED_REASON_KEY = new StringValue("deniedReason");
-  private static final StringValue ACTIVATE_ELEMENTS_KEY = new StringValue("activateElements");
-  private static final StringValue COMPLETION_CONDITION_FULFILLED_KEY =
-      new StringValue("isCompletionConditionFulfilled");
-  private static final StringValue CANCEL_REMAINING_INSTANCES_KEY =
-      new StringValue("isCancelRemainingInstances");
-
-  private final EnumProperty<JobResultType> typeProp =
-      new EnumProperty<>(TYPE_KEY, JobResultType.class, JobResultType.USER_TASK);
+  JobResultType type = JobResultType.USER_TASK;
 
   // User task properties
-  private final BooleanProperty deniedProp = new BooleanProperty(DENIED_KEY, false);
-  private final ArrayProperty<StringValue> correctedAttributesProp =
-      new ArrayProperty<>(CORRECTED_ATTRIBUTES_KEY, StringValue::new);
-  private final ObjectProperty<JobResultCorrections> correctionsProp =
-      new ObjectProperty<>(CORRECTIONS_KEY, new JobResultCorrections());
-  private final StringProperty deniedReasonProp =
-      new StringProperty(DENIED_REASON_KEY, EMPTY_STRING);
+  boolean denied = false;
+  final JobResultCorrections corrections = new JobResultCorrections();
+  final List<DirectBuffer> correctedAttributes = new ArrayList<>();
+  DirectBuffer deniedReason = Decoding.EMPTY;
 
   // Ad-hoc subprocess properties
-  private final ArrayProperty<JobResultActivateElement> activateElementsProp =
-      new ArrayProperty<>(ACTIVATE_ELEMENTS_KEY, JobResultActivateElement::new);
-  private final BooleanProperty isCompletionConditionFulfilledProp =
-      new BooleanProperty(COMPLETION_CONDITION_FULFILLED_KEY, false);
-  private final BooleanProperty isCancelRemainingInstancesProp =
-      new BooleanProperty(CANCEL_REMAINING_INSTANCES_KEY, false);
+  final List<JobResultActivateElement> activateElements = new ArrayList<>();
+  boolean isCompletionConditionFulfilled = false;
+  boolean isCancelRemainingInstances = false;
 
-  public JobResult() {
-    super(8);
-    declareProperty(typeProp)
-        .declareProperty(deniedProp)
-        .declareProperty(correctionsProp)
-        .declareProperty(correctedAttributesProp)
-        .declareProperty(deniedReasonProp)
-        .declareProperty(activateElementsProp)
-        .declareProperty(isCompletionConditionFulfilledProp)
-        .declareProperty(isCancelRemainingInstancesProp);
-  }
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   /** Sets all properties to current instance from provided user task job data */
   public void wrap(final JobResult result) {
-    typeProp.setValue(result.getType());
-    deniedProp.setValue(result.isDenied());
+    type = result.getType();
+    denied = result.isDenied();
     setCorrectedAttributes(result.getCorrectedAttributes());
     setCorrections(result.getCorrections());
     setDeniedReason(result.getDeniedReason());
@@ -92,100 +66,105 @@ public class JobResult extends UnpackedObject implements JobResultValue {
 
   @Override
   public JobResultType getType() {
-    return typeProp.getValue();
+    return type;
   }
 
   public JobResult setType(final JobResultType type) {
-    typeProp.setValue(type);
+    this.type = type;
     return this;
   }
 
   @Override
   public boolean isDenied() {
-    return deniedProp.getValue();
+    return denied;
   }
 
   public JobResult setDenied(final boolean denied) {
-    deniedProp.setValue(denied);
+    this.denied = denied;
     return this;
   }
 
   @Override
   public String getDeniedReason() {
-    return bufferAsString(deniedReasonProp.getValue());
+    return bufferAsString(deniedReason);
   }
 
   public JobResult setDeniedReason(final String deniedReason) {
-    deniedReasonProp.setValue(deniedReason);
+    this.deniedReason = BufferUtil.wrapString(deniedReason);
     return this;
   }
 
   @Override
   public List<String> getCorrectedAttributes() {
-    return StreamSupport.stream(correctedAttributesProp.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .toList();
+    return correctedAttributes.stream().map(BufferUtil::bufferAsString).toList();
   }
 
   public JobResult setCorrectedAttributes(final List<String> correctedAttributes) {
-    correctedAttributesProp.reset();
+    this.correctedAttributes.clear();
     correctedAttributes.forEach(
-        attribute -> correctedAttributesProp.add().wrap(BufferUtil.wrapString(attribute)));
+        attribute -> this.correctedAttributes.add(BufferUtil.wrapString(attribute)));
     return this;
   }
 
   @Override
   public JobResultCorrections getCorrections() {
-    return correctionsProp.getValue();
+    return corrections;
   }
 
   public JobResult setCorrections(final JobResultCorrections corrections) {
-    correctionsProp.getValue().wrap(corrections);
+    this.corrections.wrap(corrections);
     return this;
   }
 
   @Override
   public List<JobResultActivateElementValue> getActivateElements() {
-    return StreamSupport.stream(activateElementsProp.spliterator(), false)
-        .map(
-            activateElement -> {
-              final var copy = new JobResultActivateElement();
-              copy.copyFrom(activateElement);
-              return (JobResultActivateElementValue) copy;
-            })
-        .toList();
+    return activateElements.stream().<JobResultActivateElementValue>map(JobResult::copyOf).toList();
   }
 
   public JobResult setActivateElements(final List<JobResultActivateElementValue> elements) {
-    activateElementsProp.reset();
-    elements.forEach(
-        element -> activateElementsProp.add().copyFrom((JobResultActivateElement) element));
+    activateElements.clear();
+    elements.forEach(element -> addActivateElement((JobResultActivateElement) element));
     return this;
   }
 
   @Override
   public boolean isCompletionConditionFulfilled() {
-    return isCompletionConditionFulfilledProp.getValue();
+    return isCompletionConditionFulfilled;
   }
 
   public JobResult setCompletionConditionFulfilled(final boolean completionConditionFulfilled) {
-    isCompletionConditionFulfilledProp.setValue(completionConditionFulfilled);
+    isCompletionConditionFulfilled = completionConditionFulfilled;
     return this;
   }
 
   @Override
   public boolean isCancelRemainingInstances() {
-    return isCancelRemainingInstancesProp.getValue();
+    return isCancelRemainingInstances;
   }
 
   public JobResult setCancelRemainingInstances(final boolean cancelRemainingInstances) {
-    isCancelRemainingInstancesProp.setValue(cancelRemainingInstances);
+    isCancelRemainingInstances = cancelRemainingInstances;
     return this;
   }
 
   public JobResult addActivateElement(final JobResultActivateElement activateElement) {
-    activateElementsProp.add().copyFrom(activateElement);
+    activateElements.add(copyOf(activateElement));
     return this;
+  }
+
+  private static JobResultActivateElement copyOf(final JobResultActivateElement source) {
+    final var copy = new JobResultActivateElement();
+    copy.copyFrom(source);
+    return copy;
+  }
+
+  @Override
+  protected MsgpackCodec<JobResult> codec() {
+    return JobResultCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<JobResult> ops() {
+    return JobResultOps.INSTANCE;
   }
 }

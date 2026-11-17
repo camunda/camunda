@@ -7,151 +7,136 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.authorization;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
-
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class AuthorizationRecord extends UnifiedRecordValue
-    implements AuthorizationRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class AuthorizationRecord extends MsgpackBufferValue<AuthorizationRecord>
+    implements MsgpackRecordValue, AuthorizationRecordValue {
 
-  // Static StringValue keys for property names
-  private static final StringValue AUTHORIZATION_KEY_KEY = new StringValue("authorizationKey");
-  private static final StringValue OWNER_ID_KEY = new StringValue("ownerId");
-  private static final StringValue OWNER_TYPE_KEY = new StringValue("ownerType");
-  private static final StringValue RESOURCE_MATCHER = new StringValue("resourceMatcher");
-  private static final StringValue RESOURCE_ID_KEY = new StringValue("resourceId");
-  private static final StringValue RESOURCE_PROPERTY_NAME_KEY =
-      new StringValue("resourcePropertyName");
-  private static final StringValue RESOURCE_TYPE_KEY = new StringValue("resourceType");
-  private static final StringValue PERMISSION_TYPES_KEY = new StringValue("permissionTypes");
-
-  private final LongProperty authorizationKeyProp = new LongProperty(AUTHORIZATION_KEY_KEY, -1L);
-  private final StringProperty ownerIdProp = new StringProperty(OWNER_ID_KEY, "");
-  private final EnumProperty<AuthorizationOwnerType> ownerTypeProp =
-      new EnumProperty<>(
-          OWNER_TYPE_KEY, AuthorizationOwnerType.class, AuthorizationOwnerType.UNSPECIFIED);
-  private final EnumProperty<AuthorizationResourceMatcher> resourceMatcherProp =
-      new EnumProperty<>(RESOURCE_MATCHER, AuthorizationResourceMatcher.class);
-  private final StringProperty resourceIdProp = new StringProperty(RESOURCE_ID_KEY, "");
-  private final StringProperty resourcePropertyNameProp =
-      new StringProperty(RESOURCE_PROPERTY_NAME_KEY, "");
-  private final EnumProperty<AuthorizationResourceType> resourceTypeProp =
-      new EnumProperty<>(
-          RESOURCE_TYPE_KEY,
-          AuthorizationResourceType.class,
-          AuthorizationResourceType.UNSPECIFIED);
-  private final ArrayProperty<StringValue> permissionTypesProp =
-      new ArrayProperty<>(PERMISSION_TYPES_KEY, StringValue::new);
-
-  public AuthorizationRecord() {
-    super(8);
-    declareProperty(authorizationKeyProp)
-        .declareProperty(ownerIdProp)
-        .declareProperty(ownerTypeProp)
-        .declareProperty(resourceMatcherProp)
-        .declareProperty(resourceIdProp)
-        .declareProperty(resourcePropertyNameProp)
-        .declareProperty(resourceTypeProp)
-        .declareProperty(permissionTypesProp);
-  }
+  long authorizationKey = -1L;
+  DirectBuffer ownerId = Decoding.EMPTY;
+  AuthorizationOwnerType ownerType = AuthorizationOwnerType.UNSPECIFIED;
+  @Nullable AuthorizationResourceMatcher resourceMatcher;
+  DirectBuffer resourceId = Decoding.EMPTY;
+  DirectBuffer resourcePropertyName = Decoding.EMPTY;
+  AuthorizationResourceType resourceType = AuthorizationResourceType.UNSPECIFIED;
+  final List<DirectBuffer> permissionTypes = new ArrayList<>();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public Long getAuthorizationKey() {
-    return authorizationKeyProp.getValue();
+    return authorizationKey;
   }
 
   public AuthorizationRecord setAuthorizationKey(final Long authenticationKey) {
-    authorizationKeyProp.setValue(authenticationKey);
+    authorizationKey = authenticationKey;
     return this;
   }
 
   @Override
   public String getOwnerId() {
-    return bufferAsString(ownerIdProp.getValue());
+    return BufferUtil.bufferAsString(ownerId);
   }
 
   public AuthorizationRecord setOwnerId(final String ownerId) {
-    ownerIdProp.setValue(ownerId);
+    this.ownerId = BufferUtil.wrapString(ownerId);
     return this;
   }
 
   @Override
   public AuthorizationOwnerType getOwnerType() {
-    return ownerTypeProp.getValue();
+    return ownerType;
   }
 
   @Override
   public AuthorizationResourceMatcher getResourceMatcher() {
-    return resourceMatcherProp.getValue();
+    return Decoding.required(resourceMatcher, "resourceMatcher");
   }
 
   public AuthorizationRecord setResourceMatcher(
       final AuthorizationResourceMatcher resourceMatcher) {
-    resourceMatcherProp.setValue(resourceMatcher);
+    this.resourceMatcher = resourceMatcher;
     return this;
   }
 
   @Override
   public String getResourceId() {
-    return bufferAsString(resourceIdProp.getValue());
+    return BufferUtil.bufferAsString(resourceId);
   }
 
   public AuthorizationRecord setResourceId(final String resourceId) {
-    resourceIdProp.setValue(resourceId);
+    this.resourceId = BufferUtil.wrapString(resourceId);
     return this;
   }
 
   @Override
   public String getResourcePropertyName() {
-    return bufferAsString(resourcePropertyNameProp.getValue());
+    return BufferUtil.bufferAsString(resourcePropertyName);
   }
 
   public AuthorizationRecord setResourcePropertyName(final String resourcePropertyName) {
-    resourcePropertyNameProp.setValue(resourcePropertyName);
+    this.resourcePropertyName = BufferUtil.wrapString(resourcePropertyName);
     return this;
   }
 
   @Override
   public AuthorizationResourceType getResourceType() {
-    return resourceTypeProp.getValue();
+    return resourceType;
   }
 
   @Override
   public Set<PermissionType> getPermissionTypes() {
-    return permissionTypesProp.stream()
-        .map(StringValue::getValue)
+    return permissionTypes.stream()
         .map(BufferUtil::bufferAsString)
         .map(PermissionType::valueOf)
         .collect(Collectors.toSet());
   }
 
   public AuthorizationRecord setPermissionTypes(final Set<PermissionType> permissions) {
-    permissionTypesProp.reset();
+    permissionTypes.clear();
     permissions.forEach(
-        permission -> permissionTypesProp.add().wrap(BufferUtil.wrapString(permission.name())));
+        permission -> permissionTypes.add(BufferUtil.wrapString(permission.name())));
     return this;
   }
 
   public AuthorizationRecord setResourceType(final AuthorizationResourceType resourceType) {
-    resourceTypeProp.setValue(resourceType);
+    this.resourceType = resourceType;
     return this;
   }
 
   public AuthorizationRecord setOwnerType(final AuthorizationOwnerType ownerType) {
-    ownerTypeProp.setValue(ownerType);
+    this.ownerType = ownerType;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<AuthorizationRecord> codec() {
+    return AuthorizationRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<AuthorizationRecord> ops() {
+    return AuthorizationRecordOps.INSTANCE;
   }
 }

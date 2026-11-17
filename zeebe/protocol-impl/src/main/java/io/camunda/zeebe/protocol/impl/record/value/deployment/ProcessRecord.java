@@ -7,20 +7,20 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
-import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.BPMN_PROCESS_ID_KEY;
-import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.PROCESS_DEFINITION_KEY_KEY;
-import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.VERSION_KEY;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredInt;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.IntegerValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -30,72 +30,66 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.IntArrayList;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class ProcessRecord extends UnifiedRecordValue implements Process {
-  private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY);
-  private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY);
-  private final LongProperty keyProp = new LongProperty(PROCESS_DEFINITION_KEY_KEY);
-  private final StringProperty resourceNameProp = new StringProperty("resourceName");
-  private final BinaryProperty checksumProp = new BinaryProperty("checksum", new UnsafeBuffer());
-  private final BinaryProperty resourceProp = new BinaryProperty("resource", new UnsafeBuffer());
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
-  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
-  private final ArrayProperty<TransformerVersion> transformerVersionsProp =
-      new ArrayProperty<>("transformerVersions", TransformerVersion::new);
-  private final BooleanProperty deleteHistoryProp = new BooleanProperty("deleteHistory", false);
-  private final ArrayProperty<IntegerValue> drainPartitionsProp =
-      new ArrayProperty<>("drainPartitions", IntegerValue::new);
+@MsgpackPojo
+@NullMarked
+public final class ProcessRecord extends MsgpackBufferValue<ProcessRecord>
+    implements MsgpackRecordValue, Process {
 
-  public ProcessRecord() {
-    super(12);
-    declareProperty(bpmnProcessIdProp)
-        .declareProperty(versionProp)
-        .declareProperty(keyProp)
-        .declareProperty(resourceNameProp)
-        .declareProperty(checksumProp)
-        .declareProperty(resourceProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(deploymentKeyProp)
-        .declareProperty(versionTagProp)
-        .declareProperty(transformerVersionsProp)
-        .declareProperty(deleteHistoryProp)
-        .declareProperty(drainPartitionsProp);
-  }
+  @Nullable DirectBuffer bpmnProcessId;
+  final RequiredInt version = new RequiredInt();
+  final RequiredLong processDefinitionKey = new RequiredLong();
+  @Nullable DirectBuffer resourceName;
+
+  @MsgpackProperty(binary = true)
+  DirectBuffer checksum = Decoding.EMPTY;
+
+  @MsgpackProperty(binary = true)
+  DirectBuffer resource = Decoding.EMPTY;
+
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long deploymentKey = -1L;
+  DirectBuffer versionTag = Decoding.EMPTY;
+  final List<TransformerVersion> transformerVersions = new ArrayList<>();
+  boolean deleteHistory = false;
+  final IntArrayList drainPartitions = new IntArrayList();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public ProcessRecord wrap(final ProcessMetadata metadata, final byte[] resource) {
-    bpmnProcessIdProp.setValue(metadata.getBpmnProcessIdBuffer());
-    versionProp.setValue(metadata.getVersion());
-    checksumProp.setValue(metadata.getChecksumBuffer());
-    keyProp.setValue(metadata.getKey());
-    resourceNameProp.setValue(metadata.getResourceNameBuffer());
-    resourceProp.setValue(BufferUtil.wrapArray(resource));
-    tenantIdProp.setValue(metadata.getTenantId());
-    deploymentKeyProp.setValue(metadata.getDeploymentKey());
-    versionTagProp.setValue(metadata.getVersionTag());
+    bpmnProcessId = metadata.getBpmnProcessIdBuffer();
+    version.set(metadata.getVersion());
+    checksum = metadata.getChecksumBuffer();
+    processDefinitionKey.set(metadata.getKey());
+    resourceName = metadata.getResourceNameBuffer();
+    this.resource = BufferUtil.wrapArray(resource);
+    tenantId = BufferUtil.wrapString(metadata.getTenantId());
+    deploymentKey = metadata.getDeploymentKey();
+    versionTag = BufferUtil.wrapString(metadata.getVersionTag());
     return this;
   }
 
   @Override
   public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+    return BufferUtil.bufferAsString(Decoding.required(bpmnProcessId, "bpmnProcessId"));
   }
 
   @Override
   public int getVersion() {
-    return versionProp.getValue();
+    return version.get();
   }
 
   public ProcessRecord setVersion(final int version) {
-    versionProp.setValue(version);
+    this.version.set(version);
     return this;
   }
 
   @Override
   public String getVersionTag() {
-    return BufferUtil.bufferAsString(versionTagProp.getValue());
+    return BufferUtil.bufferAsString(versionTag);
   }
 
   @Override
@@ -105,12 +99,12 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
 
   @Override
   public String getResourceName() {
-    return BufferUtil.bufferAsString(resourceNameProp.getValue());
+    return BufferUtil.bufferAsString(Decoding.required(resourceName, "resourceName"));
   }
 
   @Override
   public byte[] getChecksum() {
-    return BufferUtil.bufferAsArray(checksumProp.getValue());
+    return BufferUtil.bufferAsArray(checksum);
   }
 
   @Override
@@ -120,52 +114,52 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
 
   @Override
   public long getDeploymentKey() {
-    return deploymentKeyProp.getValue();
+    return deploymentKey;
   }
 
   public ProcessRecord setDeploymentKey(final long deploymentKey) {
-    deploymentKeyProp.setValue(deploymentKey);
+    this.deploymentKey = deploymentKey;
     return this;
   }
 
   public ProcessRecord setChecksum(final DirectBuffer checksumBuffer) {
-    checksumProp.setValue(checksumBuffer);
+    checksum = new UnsafeBuffer(checksumBuffer, 0, checksumBuffer.capacity());
     return this;
   }
 
   public ProcessRecord setResourceName(final String resourceName) {
-    resourceNameProp.setValue(resourceName);
+    this.resourceName = BufferUtil.wrapString(resourceName);
     return this;
   }
 
   public ProcessRecord setResourceName(final DirectBuffer resourceName) {
-    resourceNameProp.setValue(resourceName);
+    this.resourceName = new UnsafeBuffer(resourceName, 0, resourceName.capacity());
     return this;
   }
 
   public ProcessRecord setVersionTag(final String versionTag) {
-    versionTagProp.setValue(versionTag);
+    this.versionTag = BufferUtil.wrapString(versionTag);
     return this;
   }
 
   public ProcessRecord setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = BufferUtil.wrapString(bpmnProcessId);
     return this;
   }
 
   public ProcessRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = new UnsafeBuffer(bpmnProcessId, 0, bpmnProcessId.capacity());
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getChecksumBuffer() {
-    return checksumProp.getValue();
+    return checksum;
   }
 
   @Override
   public byte[] getResource() {
-    return BufferUtil.bufferAsArray(resourceProp.getValue());
+    return BufferUtil.bufferAsArray(resource);
   }
 
   public ProcessRecord setResource(final DirectBuffer resource) {
@@ -174,60 +168,48 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
 
   @JsonIgnore
   public long getKey() {
-    return keyProp.getValue();
+    return processDefinitionKey.get();
   }
 
   public ProcessRecord setKey(final long key) {
-    keyProp.setValue(key);
+    processDefinitionKey.set(key);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProp.getValue();
-  }
-
-  @Override
-  @JsonIgnore
-  public int getLength() {
-    return super.getLength();
-  }
-
-  @Override
-  @JsonIgnore
-  public int getEncodedLength() {
-    return super.getEncodedLength();
+    return Decoding.required(bpmnProcessId, "bpmnProcessId");
   }
 
   @JsonIgnore
   public DirectBuffer getResourceNameBuffer() {
-    return resourceNameProp.getValue();
+    return Decoding.required(resourceName, "resourceName");
   }
 
   public ProcessRecord setBpmnProcessId(
       final DirectBuffer bpmnProcessId, final int offset, final int length) {
-    bpmnProcessIdProp.setValue(bpmnProcessId, offset, length);
+    this.bpmnProcessId = new UnsafeBuffer(bpmnProcessId, offset, length);
     return this;
   }
 
   public ProcessRecord setResource(
       final DirectBuffer resource, final int offset, final int length) {
-    resourceProp.setValue(resource, offset, length);
+    this.resource = new UnsafeBuffer(resource, offset, length);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getResourceBuffer() {
-    return resourceProp.getValue();
+    return resource;
   }
 
   @Override
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+    return BufferUtil.bufferAsString(tenantId);
   }
 
   public ProcessRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
@@ -238,7 +220,7 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   @JsonIgnore
   public Map<Integer, Integer> getTransformerVersions() {
     final Map<Integer, Integer> result = new TreeMap<>();
-    for (final TransformerVersion entry : transformerVersionsProp) {
+    for (final TransformerVersion entry : transformerVersions) {
       result.put(entry.getSlotId(), entry.getVersion());
     }
     return result;
@@ -252,14 +234,12 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
    * omits them automatically, so callers using that method need not filter.
    */
   public ProcessRecord setTransformerVersions(final Map<Integer, Integer> versions) {
-    transformerVersionsProp.reset();
+    transformerVersions.clear();
     new TreeMap<>(versions)
         .forEach(
-            (slotId, version) -> {
-              final var entry = transformerVersionsProp.add();
-              entry.setSlotId(slotId);
-              entry.setVersion(version);
-            });
+            (slotId, version) ->
+                transformerVersions.add(
+                    new TransformerVersion().setSlotId(slotId).setVersion(version)));
     return this;
   }
 
@@ -271,11 +251,11 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
    */
   @JsonIgnore
   public boolean isDeleteHistory() {
-    return deleteHistoryProp.getValue();
+    return deleteHistory;
   }
 
   public ProcessRecord setDeleteHistory(final boolean deleteHistory) {
-    deleteHistoryProp.setValue(deleteHistory);
+    this.deleteHistory = deleteHistory;
     return this;
   }
 
@@ -283,19 +263,27 @@ public final class ProcessRecord extends UnifiedRecordValue implements Process {
   @JsonIgnore
   public List<Integer> getDrainPartitions() {
     final List<Integer> result = new ArrayList<>();
-    for (final IntegerValue partitionId : drainPartitionsProp) {
-      result.add(partitionId.getValue());
+    for (int i = 0; i < drainPartitions.size(); i++) {
+      result.add(drainPartitions.getInt(i));
     }
     return result;
   }
 
   public ProcessRecord setDrainPartitions(final Collection<Integer> partitionIds) {
-    drainPartitionsProp.reset();
+    drainPartitions.clear();
     // Sort to keep the serialized record deterministic across runs.
-    partitionIds.stream()
-        .sorted()
-        .forEach(partitionId -> drainPartitionsProp.add().setValue(partitionId));
+    partitionIds.stream().sorted().forEach(drainPartitions::addInt);
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ProcessRecord> codec() {
+    return ProcessRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ProcessRecord> ops() {
+    return ProcessRecordOps.INSTANCE;
   }
 
   /** A single (slotId, version) pair persisted inside the transformer-versions array. */

@@ -7,27 +7,29 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
+import org.jspecify.annotations.NullMarked;
 
-public final class BatchOperationItem extends ObjectValue implements BatchOperationItemValue {
+@MsgpackPojo
+@NullMarked
+@JsonIgnoreProperties("length")
+public final class BatchOperationItem extends MsgpackBufferValue<BatchOperationItem>
+    implements BatchOperationItemValue {
 
-  private final LongProperty itemKeyProperty = new LongProperty("itemKey", -1);
-  private final LongProperty processInstanceKeyProperty =
-      new LongProperty("processInstanceKey", -1);
-  private final LongProperty rootProcessInstanceKeyProperty =
-      new LongProperty("rootProcessInstanceKey", -1);
-  private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
+  long itemKey = -1;
+  long processInstanceKey = -1;
+  long rootProcessInstanceKey = -1;
+  int storageOrdinal = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
-  public BatchOperationItem() {
-    super(4);
-    declareProperty(itemKeyProperty)
-        .declareProperty(processInstanceKeyProperty)
-        .declareProperty(rootProcessInstanceKeyProperty)
-        .declareProperty(storageOrdinalProperty);
-  }
+  public BatchOperationItem() {}
 
   public BatchOperationItem(
       final long itemKey, final long processInstanceKey, final long rootProcessInstanceKey) {
@@ -48,41 +50,41 @@ public final class BatchOperationItem extends ObjectValue implements BatchOperat
 
   @Override
   public long getItemKey() {
-    return itemKeyProperty.getValue();
+    return itemKey;
   }
 
   public BatchOperationItem setItemKey(final long itemKey) {
-    itemKeyProperty.setValue(itemKey);
+    this.itemKey = itemKey;
     return this;
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProperty.getValue();
+    return processInstanceKey;
   }
 
   public BatchOperationItem setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProperty.setValue(processInstanceKey);
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
   @Override
   public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProperty.getValue();
+    return rootProcessInstanceKey;
   }
 
   public BatchOperationItem setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProperty.setValue(rootProcessInstanceKey);
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProperty.getValue();
+    return storageOrdinal;
   }
 
   public BatchOperationItem setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProperty.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 
@@ -92,5 +94,25 @@ public final class BatchOperationItem extends ObjectValue implements BatchOperat
     setRootProcessInstanceKey(value.getRootProcessInstanceKey());
     setStorageOrdinal(value.getStorageOrdinal());
     return this;
+  }
+
+  /** Kept so that the exported JSON stays unchanged. */
+  public boolean isEmpty() {
+    return false;
+  }
+
+  /** Kept so that the exported JSON stays unchanged. */
+  public int getEncodedLength() {
+    return getLength();
+  }
+
+  @Override
+  protected MsgpackCodec<BatchOperationItem> codec() {
+    return BatchOperationItemCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<BatchOperationItem> ops() {
+    return BatchOperationItemOps.INSTANCE;
   }
 }

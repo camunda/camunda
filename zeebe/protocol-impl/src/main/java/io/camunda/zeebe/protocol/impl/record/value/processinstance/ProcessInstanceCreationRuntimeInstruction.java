@@ -9,31 +9,36 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationRuntimeInstructionValue;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties({
-  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
+  /* encodedLength and empty were inherited from ObjectValue, length is inherited from
+  MsgpackBufferValue; they have no purpose in exported JSON records*/
   "encodedLength",
-  "empty"
+  "empty",
+  "length"
 })
-public class ProcessInstanceCreationRuntimeInstruction extends ObjectValue
+@MsgpackPojo
+@NullMarked
+public final class ProcessInstanceCreationRuntimeInstruction
+    extends MsgpackBufferValue<ProcessInstanceCreationRuntimeInstruction>
     implements ProcessInstanceCreationRuntimeInstructionValue {
 
-  private final EnumProperty<RuntimeInstructionType> typeProp =
-      new EnumProperty<>("type", RuntimeInstructionType.class);
-  private final StringProperty afterElementIdProp = new StringProperty("afterElementId", "");
-
-  public ProcessInstanceCreationRuntimeInstruction() {
-    super(2);
-    declareProperty(typeProp);
-    declareProperty(afterElementIdProp);
-  }
+  @Nullable RuntimeInstructionType type;
+  DirectBuffer afterElementId = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   /**
    * Gets the type of this instruction as an enum.
@@ -42,27 +47,27 @@ public class ProcessInstanceCreationRuntimeInstruction extends ObjectValue
    */
   @Override
   public RuntimeInstructionType getType() {
-    return typeProp.getValue();
+    return Decoding.required(type, "type");
   }
 
   public ProcessInstanceCreationRuntimeInstruction setType(final RuntimeInstructionType type) {
-    typeProp.setValue(type);
+    this.type = type;
     return this;
   }
 
   @Override
   public String getAfterElementId() {
-    return BufferUtil.bufferAsString(afterElementIdProp.getValue());
+    return BufferUtil.bufferAsString(afterElementId);
   }
 
   public ProcessInstanceCreationRuntimeInstruction setAfterElementId(final String afterElementId) {
-    afterElementIdProp.setValue(afterElementId);
+    this.afterElementId = BufferUtil.wrapString(afterElementId);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getAfterElementIdBuffer() {
-    return afterElementIdProp.getValue();
+    return afterElementId;
   }
 
   public static ProcessInstanceCreationRuntimeInstruction createInstruction() {
@@ -72,5 +77,15 @@ public class ProcessInstanceCreationRuntimeInstruction extends ObjectValue
   public void copy(final ProcessInstanceCreationRuntimeInstructionValue instruction) {
     setType(instruction.getType());
     setAfterElementId(instruction.getAfterElementId());
+  }
+
+  @Override
+  protected MsgpackCodec<ProcessInstanceCreationRuntimeInstruction> codec() {
+    return ProcessInstanceCreationRuntimeInstructionCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ProcessInstanceCreationRuntimeInstruction> ops() {
+    return ProcessInstanceCreationRuntimeInstructionOps.INSTANCE;
   }
 }

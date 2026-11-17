@@ -9,47 +9,61 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationStartInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties({
-  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
+  /* encodedLength and empty were inherited from ObjectValue, length is inherited from
+  MsgpackBufferValue; they have no purpose in exported JSON records*/
   "encodedLength",
-  "empty"
+  "empty",
+  "length"
 })
-public final class ProcessInstanceCreationStartInstruction extends ObjectValue
+@MsgpackPojo
+@NullMarked
+public final class ProcessInstanceCreationStartInstruction
+    extends MsgpackBufferValue<ProcessInstanceCreationStartInstruction>
     implements ProcessInstanceCreationStartInstructionValue {
 
-  // Static StringValue keys to avoid memory waste
-  private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
-
-  private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY);
-
-  public ProcessInstanceCreationStartInstruction() {
-    super(1);
-    declareProperty(elementIdProp);
-  }
+  @Nullable DirectBuffer elementId;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @JsonIgnore
   public DirectBuffer getElementIdBuffer() {
-    return elementIdProp.getValue();
+    return Decoding.required(elementId, "elementId");
   }
 
   @Override
   public String getElementId() {
-    return BufferUtil.bufferAsString(elementIdProp.getValue());
+    return BufferUtil.bufferAsString(getElementIdBuffer());
   }
 
   public ProcessInstanceCreationStartInstruction setElementId(final String elementId) {
-    elementIdProp.setValue(elementId);
+    this.elementId = BufferUtil.wrapString(elementId);
     return this;
   }
 
   public void copy(final ProcessInstanceCreationStartInstructionValue startInstruction) {
     setElementId(startInstruction.getElementId());
+  }
+
+  @Override
+  protected MsgpackCodec<ProcessInstanceCreationStartInstruction> codec() {
+    return ProcessInstanceCreationStartInstructionCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ProcessInstanceCreationStartInstruction> ops() {
+    return ProcessInstanceCreationStartInstructionOps.INSTANCE;
   }
 }

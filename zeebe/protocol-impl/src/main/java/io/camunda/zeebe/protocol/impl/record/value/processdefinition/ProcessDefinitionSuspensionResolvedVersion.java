@@ -8,63 +8,75 @@
 package io.camunda.zeebe.protocol.impl.record.value.processdefinition;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionOutcome;
 import io.camunda.zeebe.protocol.record.value.ProcessDefinitionSuspensionResolvedVersionValue;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties({
-  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
+  /* encodedLength and empty were inherited from ObjectValue, length is inherited from
+  MsgpackBufferValue; they have no purpose in exported JSON records*/
   "encodedLength",
-  "empty"
+  "empty",
+  "length"
 })
-public final class ProcessDefinitionSuspensionResolvedVersion extends ObjectValue
+@MsgpackPojo
+@NullMarked
+public final class ProcessDefinitionSuspensionResolvedVersion
+    extends MsgpackBufferValue<ProcessDefinitionSuspensionResolvedVersion>
     implements ProcessDefinitionSuspensionResolvedVersionValue {
 
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty("processDefinitionKey", -1);
-  private final IntegerProperty versionProp = new IntegerProperty("version", -1);
-  private final EnumProperty<ProcessDefinitionSuspensionOutcome> outcomeProp =
-      new EnumProperty<>("outcome", ProcessDefinitionSuspensionOutcome.class);
-
-  public ProcessDefinitionSuspensionResolvedVersion() {
-    super(3);
-    declareProperty(processDefinitionKeyProp)
-        .declareProperty(versionProp)
-        .declareProperty(outcomeProp);
-  }
+  long processDefinitionKey = -1L;
+  int version = -1;
+  @Nullable ProcessDefinitionSuspensionOutcome outcome;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey;
   }
 
   public ProcessDefinitionSuspensionResolvedVersion setProcessDefinitionKey(
       final long processDefinitionKey) {
-    processDefinitionKeyProp.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
   @Override
   public int getVersion() {
-    return versionProp.getValue();
+    return version;
   }
 
   public ProcessDefinitionSuspensionResolvedVersion setVersion(final int version) {
-    versionProp.setValue(version);
+    this.version = version;
     return this;
   }
 
   @Override
   public ProcessDefinitionSuspensionOutcome getOutcome() {
-    return outcomeProp.getValue();
+    return Decoding.required(outcome, "outcome");
   }
 
   public ProcessDefinitionSuspensionResolvedVersion setOutcome(
       final ProcessDefinitionSuspensionOutcome outcome) {
-    outcomeProp.setValue(outcome);
+    this.outcome = outcome;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ProcessDefinitionSuspensionResolvedVersion> codec() {
+    return ProcessDefinitionSuspensionResolvedVersionCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ProcessDefinitionSuspensionResolvedVersion> ops() {
+    return ProcessDefinitionSuspensionResolvedVersionOps.INSTANCE;
   }
 }

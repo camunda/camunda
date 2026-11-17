@@ -10,85 +10,93 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public class RuntimeInstructionRecord extends UnifiedRecordValue
-    implements RuntimeInstructionRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class RuntimeInstructionRecord extends MsgpackBufferValue<RuntimeInstructionRecord>
+    implements MsgpackRecordValue, RuntimeInstructionRecordValue {
 
-  private final LongProperty processInstanceKeyProperty =
-      new LongProperty("processInstanceKey", -1);
-  private final LongProperty processDefinitionKeyProperty =
-      new LongProperty("processDefinitionKey", -1);
-  private final StringProperty tenantIdProperty = new StringProperty("tenantId", "");
-  private final StringProperty elementIdProperty = new StringProperty("elementId", "");
-  private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
-
-  public RuntimeInstructionRecord() {
-    super(5);
-    declareProperty(processInstanceKeyProperty)
-        .declareProperty(processDefinitionKeyProperty)
-        .declareProperty(tenantIdProperty)
-        .declareProperty(elementIdProperty)
-        .declareProperty(storageOrdinalProperty);
-  }
+  long processInstanceKey = -1L;
+  long processDefinitionKey = -1L;
+  DirectBuffer tenantId = Decoding.EMPTY;
+  DirectBuffer elementId = Decoding.EMPTY;
+  int storageOrdinal = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getElementId() {
-    return bufferAsString(elementIdProperty.getValue());
+    return bufferAsString(elementId);
   }
 
   public RuntimeInstructionRecord setElementId(final String interruptingElementId) {
-    elementIdProperty.setValue(interruptingElementId);
+    elementId = BufferUtil.wrapString(interruptingElementId);
     return this;
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProperty.getValue();
+    return processInstanceKey;
   }
 
   public RuntimeInstructionRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProperty.setValue(processInstanceKey);
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProperty.getValue();
+    return processDefinitionKey;
   }
 
   public RuntimeInstructionRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProperty.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProperty.getValue());
+    return bufferAsString(tenantId);
   }
 
   public RuntimeInstructionRecord setTenantId(final String tenantId) {
-    tenantIdProperty.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getElementIdBuffer() {
-    return elementIdProperty.getValue();
+    return elementId;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProperty.getValue();
+    return storageOrdinal;
   }
 
   public RuntimeInstructionRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProperty.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<RuntimeInstructionRecord> codec() {
+    return RuntimeInstructionRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<RuntimeInstructionRecord> ops() {
+    return RuntimeInstructionRecordOps.INSTANCE;
   }
 }

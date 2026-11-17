@@ -7,107 +7,103 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.history;
 
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public class HistoryDeletionRecord extends UnifiedRecordValue
-    implements HistoryDeletionRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class HistoryDeletionRecord extends MsgpackBufferValue<HistoryDeletionRecord>
+    implements MsgpackRecordValue, HistoryDeletionRecordValue {
 
-  private static final StringValue RESOURCE_KEY_KEY = new StringValue("resourceKey");
-  private static final StringValue RESOURCE_TYPE_KEY = new StringValue("resourceType");
-  private static final StringValue RESOURCE_STORAGE_ORDINAL_KEY =
-      new StringValue("resourceStorageOrdinal");
-  private static final StringValue PROCESS_ID_KEY = new StringValue("processId");
-  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  private static final StringValue DECISION_DEFINITION_ID_KEY =
-      new StringValue("decisionDefinitionId");
-
-  private final LongProperty resourceKeyProp = new LongProperty(RESOURCE_KEY_KEY);
-  private final EnumProperty<HistoryDeletionType> resourceTypeProp =
-      new EnumProperty<>(RESOURCE_TYPE_KEY, HistoryDeletionType.class);
-  private final IntegerProperty resourceStorageOrdinalProp =
-      new IntegerProperty(RESOURCE_STORAGE_ORDINAL_KEY, 0);
-  private final StringProperty processIdProp = new StringProperty(PROCESS_ID_KEY, "");
-  private final StringProperty tenantIdProp =
-      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final StringProperty decisionDefinitionIdProp =
-      new StringProperty(DECISION_DEFINITION_ID_KEY, "");
-
-  public HistoryDeletionRecord() {
-    super(6);
-    declareProperty(resourceKeyProp)
-        .declareProperty(resourceTypeProp)
-        .declareProperty(resourceStorageOrdinalProp)
-        .declareProperty(processIdProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(decisionDefinitionIdProp);
-  }
+  final RequiredLong resourceKey = new RequiredLong();
+  @Nullable HistoryDeletionType resourceType;
+  int resourceStorageOrdinal = 0;
+  DirectBuffer processId = Decoding.EMPTY;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  DirectBuffer decisionDefinitionId = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getResourceKey() {
-    return resourceKeyProp.getValue();
+    return resourceKey.get();
   }
 
   public HistoryDeletionRecord setResourceKey(final long resourceKey) {
-    resourceKeyProp.setValue(resourceKey);
+    this.resourceKey.set(resourceKey);
     return this;
   }
 
   @Override
   public HistoryDeletionType getResourceType() {
-    return resourceTypeProp.getValue();
+    return Decoding.required(resourceType, "resourceType");
   }
 
   public HistoryDeletionRecord setResourceType(final HistoryDeletionType resourceType) {
-    resourceTypeProp.setValue(resourceType);
+    this.resourceType = resourceType;
     return this;
   }
 
   @Override
   public int getResourceStorageOrdinal() {
-    return resourceStorageOrdinalProp.getValue();
+    return resourceStorageOrdinal;
   }
 
   @Override
   public String getProcessId() {
-    return BufferUtil.bufferAsString(processIdProp.getValue());
+    return BufferUtil.bufferAsString(processId);
   }
 
   public HistoryDeletionRecord setProcessId(final String processId) {
-    processIdProp.setValue(processId);
+    this.processId = BufferUtil.wrapString(processId);
     return this;
   }
 
   @Override
   public String getDecisionDefinitionId() {
-    return BufferUtil.bufferAsString(decisionDefinitionIdProp.getValue());
+    return BufferUtil.bufferAsString(decisionDefinitionId);
   }
 
   public HistoryDeletionRecord setDecisionDefinitionId(final String decisionDefinitionId) {
-    decisionDefinitionIdProp.setValue(decisionDefinitionId);
+    this.decisionDefinitionId = BufferUtil.wrapString(decisionDefinitionId);
     return this;
   }
 
   public HistoryDeletionRecord setResourceStorageOrdinal(final int resourceStorageOrdinal) {
-    resourceStorageOrdinalProp.setValue(resourceStorageOrdinal);
+    this.resourceStorageOrdinal = resourceStorageOrdinal;
     return this;
   }
 
   @Override
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+    return BufferUtil.bufferAsString(tenantId);
   }
 
   public HistoryDeletionRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<HistoryDeletionRecord> codec() {
+    return HistoryDeletionRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<HistoryDeletionRecord> ops() {
+    return HistoryDeletionRecordOps.INSTANCE;
   }
 }

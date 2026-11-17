@@ -9,64 +9,69 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
 @JsonIgnoreProperties({
-  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
+  /* encodedLength and empty were inherited from ObjectValue, length is inherited from
+  MsgpackBufferValue; they have no purpose in exported JSON records*/
   "encodedLength",
-  "empty"
+  "empty",
+  "length"
 })
-public final class ProcessInstanceModificationVariableInstruction extends ObjectValue
+@MsgpackPojo
+@NullMarked
+public final class ProcessInstanceModificationVariableInstruction
+    extends MsgpackBufferValue<ProcessInstanceModificationVariableInstruction>
     implements ProcessInstanceModificationVariableInstructionValue {
 
-  // Static StringValue keys to avoid memory waste
-  private static final StringValue VARIABLES_KEY = new StringValue("variables");
-  private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
+  @MsgpackProperty(document = true)
+  DirectBuffer variables = DocumentValue.EMPTY_DOCUMENT;
 
-  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
-  private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, "");
-
-  public ProcessInstanceModificationVariableInstruction() {
-    super(2);
-    declareProperty(variablesProp).declareProperty(elementIdProp);
-  }
+  DirectBuffer elementId = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(getVariablesBuffer());
+    return MsgPackConverter.convertToMap(variables);
   }
 
   @Override
   public String getElementId() {
-    return BufferUtil.bufferAsString(getElementIdBuffer());
+    return BufferUtil.bufferAsString(elementId);
   }
 
   public ProcessInstanceModificationVariableInstruction setElementId(final String elementId) {
-    elementIdProp.setValue(elementId);
+    this.elementId = BufferUtil.wrapString(elementId);
     return this;
   }
 
   public ProcessInstanceModificationVariableInstruction setVariables(final DirectBuffer variables) {
-    variablesProp.setValue(variables);
+    this.variables = Decoding.document(variables);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getElementIdBuffer() {
-    return elementIdProp.getValue();
+    return elementId;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProp.getValue();
+    return variables;
   }
 
   public void copy(final ProcessInstanceModificationVariableInstruction object) {
@@ -74,15 +79,13 @@ public final class ProcessInstanceModificationVariableInstruction extends Object
     setElementId(object.getElementId());
   }
 
-  /** hashCode relies on implementation provided by {@link ObjectValue#hashCode()} */
   @Override
-  public int hashCode() {
-    return super.hashCode();
+  protected MsgpackCodec<ProcessInstanceModificationVariableInstruction> codec() {
+    return ProcessInstanceModificationVariableInstructionCodec.INSTANCE;
   }
 
-  /** equals relies on implementation provided by {@link ObjectValue#equals(Object)} */
   @Override
-  public boolean equals(final Object o) {
-    return super.equals(o);
+  protected MsgpackOps<ProcessInstanceModificationVariableInstruction> ops() {
+    return ProcessInstanceModificationVariableInstructionOps.INSTANCE;
   }
 }

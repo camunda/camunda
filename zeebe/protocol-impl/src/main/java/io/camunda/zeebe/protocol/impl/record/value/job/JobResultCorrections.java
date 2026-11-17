@@ -9,53 +9,40 @@ package io.camunda.zeebe.protocol.impl.record.value.job;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobResultCorrectionsValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
 @JsonIgnoreProperties({
-  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
+  /* encodedLength and empty were inherited from ObjectValue, length is inherited from
+  MsgpackBufferValue; they have no purpose in exported JSON records*/
   "empty",
   "encodedLength",
   "length"
 })
-public final class JobResultCorrections extends UnpackedObject
+@MsgpackPojo
+@NullMarked
+public final class JobResultCorrections extends MsgpackBufferValue<JobResultCorrections>
     implements JobResultCorrectionsValue {
 
-  // Static StringValue keys to avoid memory waste
-  private static final StringValue ASSIGNEE_KEY = new StringValue("assignee");
-  private static final StringValue DUE_DATE_KEY = new StringValue("dueDate");
-  private static final StringValue FOLLOW_UP_DATE_KEY = new StringValue("followUpDate");
-  private static final StringValue CANDIDATE_USERS_LIST_KEY = new StringValue("candidateUsersList");
-  private static final StringValue CANDIDATE_GROUPS_LIST_KEY =
-      new StringValue("candidateGroupsList");
-  private static final StringValue PRIORITY_KEY = new StringValue("priority");
+  DirectBuffer assignee = Decoding.EMPTY;
+  DirectBuffer dueDate = Decoding.EMPTY;
+  DirectBuffer followUpDate = Decoding.EMPTY;
+  final List<DirectBuffer> candidateUsersList = new ArrayList<>();
+  final List<DirectBuffer> candidateGroupsList = new ArrayList<>();
+  int priority = -1;
 
-  private final StringProperty assigneeProp = new StringProperty(ASSIGNEE_KEY, "");
-  private final StringProperty dueDateProp = new StringProperty(DUE_DATE_KEY, "");
-  private final StringProperty followUpDateProp = new StringProperty(FOLLOW_UP_DATE_KEY, "");
-  private final ArrayProperty<StringValue> candidateUsersListProp =
-      new ArrayProperty<>(CANDIDATE_USERS_LIST_KEY, StringValue::new);
-  private final ArrayProperty<StringValue> candidateGroupsListProp =
-      new ArrayProperty<>(CANDIDATE_GROUPS_LIST_KEY, StringValue::new);
-  private final IntegerProperty priorityProp = new IntegerProperty(PRIORITY_KEY, -1);
-
-  public JobResultCorrections() {
-    super(6);
-    declareProperty(assigneeProp)
-        .declareProperty(dueDateProp)
-        .declareProperty(followUpDateProp)
-        .declareProperty(candidateUsersListProp)
-        .declareProperty(candidateGroupsListProp)
-        .declareProperty(priorityProp);
-  }
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public void wrap(final JobResultCorrections other) {
     setAssignee(other.getAssignee());
@@ -68,90 +55,90 @@ public final class JobResultCorrections extends UnpackedObject
 
   @JsonIgnore
   public DirectBuffer getAssigneeBuffer() {
-    return assigneeProp.getValue();
+    return assignee;
   }
 
   @Override
   public String getAssignee() {
-    final var buffer = getAssigneeBuffer();
-    return BufferUtil.bufferAsString(buffer);
+    return BufferUtil.bufferAsString(assignee);
   }
 
   public JobResultCorrections setAssignee(final String assignee) {
-    assigneeProp.setValue(assignee);
+    this.assignee = BufferUtil.wrapString(assignee);
     return this;
   }
 
   @Override
   public String getDueDate() {
-    final var buffer = getDueDateBuffer();
-    return BufferUtil.bufferAsString(buffer);
+    return BufferUtil.bufferAsString(dueDate);
   }
 
   public JobResultCorrections setDueDate(final String dueDate) {
-    dueDateProp.setValue(dueDate);
+    this.dueDate = BufferUtil.wrapString(dueDate);
     return this;
   }
 
   @Override
   public String getFollowUpDate() {
-    final var buffer = getFollowUpDateBuffer();
-    return BufferUtil.bufferAsString(buffer);
+    return BufferUtil.bufferAsString(followUpDate);
   }
 
   public JobResultCorrections setFollowUpDate(final String followUpDate) {
-    followUpDateProp.setValue(followUpDate);
+    this.followUpDate = BufferUtil.wrapString(followUpDate);
     return this;
   }
 
   @Override
   public List<String> getCandidateGroupsList() {
-    return StreamSupport.stream(candidateGroupsListProp.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .toList();
+    return candidateGroupsList.stream().map(BufferUtil::bufferAsString).toList();
   }
 
   public JobResultCorrections setCandidateGroupsList(final List<String> candidateGroups) {
-    candidateGroupsListProp.reset();
+    candidateGroupsList.clear();
     candidateGroups.forEach(
-        candidateGroup ->
-            candidateGroupsListProp.add().wrap(BufferUtil.wrapString(candidateGroup)));
+        candidateGroup -> candidateGroupsList.add(BufferUtil.wrapString(candidateGroup)));
     return this;
   }
 
   @Override
   public List<String> getCandidateUsersList() {
-    return StreamSupport.stream(candidateUsersListProp.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .toList();
+    return candidateUsersList.stream().map(BufferUtil::bufferAsString).toList();
   }
 
   public JobResultCorrections setCandidateUsersList(final List<String> candidateUsers) {
-    candidateUsersListProp.reset();
+    candidateUsersList.clear();
     candidateUsers.forEach(
-        candidateUser -> candidateUsersListProp.add().wrap(BufferUtil.wrapString(candidateUser)));
+        candidateUser -> candidateUsersList.add(BufferUtil.wrapString(candidateUser)));
     return this;
   }
 
   @Override
   public int getPriority() {
-    return priorityProp.getValue();
+    return priority;
   }
 
   public JobResultCorrections setPriority(final int priority) {
-    priorityProp.setValue(priority);
+    this.priority = priority;
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getDueDateBuffer() {
-    return dueDateProp.getValue();
+    return dueDate;
   }
 
   @JsonIgnore
   public DirectBuffer getFollowUpDateBuffer() {
-    return followUpDateProp.getValue();
+    return followUpDate;
+  }
+
+  @Override
+  protected MsgpackCodec<JobResultCorrections> codec() {
+    return JobResultCorrectionsCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<JobResultCorrections> ops() {
+    return JobResultCorrectionsOps.INSTANCE;
   }
 }

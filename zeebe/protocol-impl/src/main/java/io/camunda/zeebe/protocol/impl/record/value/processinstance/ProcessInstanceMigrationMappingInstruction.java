@@ -9,74 +9,91 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
 @JsonIgnoreProperties({
-  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
+  /* encodedLength and empty were inherited from ObjectValue, length is inherited from
+  MsgpackBufferValue; they have no purpose in exported JSON records*/
   "encodedLength",
-  "empty"
+  "empty",
+  "length"
 })
-public class ProcessInstanceMigrationMappingInstruction extends ObjectValue
+@MsgpackPojo
+@NullMarked
+public final class ProcessInstanceMigrationMappingInstruction
+    extends MsgpackBufferValue<ProcessInstanceMigrationMappingInstruction>
     implements ProcessInstanceMigrationMappingInstructionValue {
 
-  private final StringProperty sourceElementIdProperty = new StringProperty("sourceElementId", "");
-  private final StringProperty targetElementIdProperty = new StringProperty("targetElementId", "");
-
-  public ProcessInstanceMigrationMappingInstruction() {
-    super(2);
-    declareProperty(sourceElementIdProperty).declareProperty(targetElementIdProperty);
-  }
+  DirectBuffer sourceElementId = Decoding.EMPTY;
+  DirectBuffer targetElementId = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getSourceElementId() {
-    return BufferUtil.bufferAsString(getSourceElementIdBuffer());
+    return BufferUtil.bufferAsString(sourceElementId);
   }
 
   public ProcessInstanceMigrationMappingInstruction setSourceElementId(
       final String sourceElementId) {
-    sourceElementIdProperty.setValue(sourceElementId);
+    this.sourceElementId = BufferUtil.wrapString(sourceElementId);
     return this;
   }
 
   public ProcessInstanceMigrationMappingInstruction setSourceElementId(
       final DirectBuffer sourceElementId) {
-    sourceElementIdProperty.setValue(sourceElementId);
+    this.sourceElementId = sourceElementId;
     return this;
   }
 
   @Override
   public String getTargetElementId() {
-    return BufferUtil.bufferAsString(getTargetElementIdBuffer());
+    return BufferUtil.bufferAsString(targetElementId);
   }
 
   public ProcessInstanceMigrationMappingInstruction setTargetElementId(
       final String targetElementId) {
-    targetElementIdProperty.setValue(targetElementId);
+    this.targetElementId = BufferUtil.wrapString(targetElementId);
     return this;
   }
 
   public ProcessInstanceMigrationMappingInstruction setTargetElementId(
       final DirectBuffer targetElementId) {
-    targetElementIdProperty.setValue(targetElementId);
+    this.targetElementId = targetElementId;
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getSourceElementIdBuffer() {
-    return sourceElementIdProperty.getValue();
+    return sourceElementId;
   }
 
   @JsonIgnore
   public DirectBuffer getTargetElementIdBuffer() {
-    return targetElementIdProperty.getValue();
+    return targetElementId;
   }
 
   public void copy(final ProcessInstanceMigrationMappingInstruction other) {
-    sourceElementIdProperty.setValue(other.getSourceElementIdBuffer());
-    targetElementIdProperty.setValue(other.getTargetElementIdBuffer());
+    sourceElementId = other.getSourceElementIdBuffer();
+    targetElementId = other.getTargetElementIdBuffer();
+  }
+
+  @Override
+  protected MsgpackCodec<ProcessInstanceMigrationMappingInstruction> codec() {
+    return ProcessInstanceMigrationMappingInstructionCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ProcessInstanceMigrationMappingInstruction> ops() {
+    return ProcessInstanceMigrationMappingInstructionOps.INSTANCE;
   }
 }

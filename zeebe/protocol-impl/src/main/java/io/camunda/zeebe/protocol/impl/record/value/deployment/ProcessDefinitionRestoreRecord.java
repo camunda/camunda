@@ -7,54 +7,67 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessDefinitionRestoreRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class ProcessDefinitionRestoreRecord extends UnifiedRecordValue
-    implements ProcessDefinitionRestoreRecordValue {
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty("processDefinitionKey", -1L);
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
-  private final IntegerProperty restoredCountProp = new IntegerProperty("restoredCount", 0);
+@MsgpackPojo
+@NullMarked
+public final class ProcessDefinitionRestoreRecord
+    extends MsgpackBufferValue<ProcessDefinitionRestoreRecord>
+    implements MsgpackRecordValue, ProcessDefinitionRestoreRecordValue {
 
-  public ProcessDefinitionRestoreRecord() {
-    super(3);
-    declareProperty(processDefinitionKeyProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(restoredCountProp);
-  }
+  long processDefinitionKey = -1L;
+  DirectBuffer tenantId = Decoding.EMPTY;
+  int restoredCount = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey;
   }
 
   public ProcessDefinitionRestoreRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProp.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
   @Override
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+    return BufferUtil.bufferAsString(tenantId);
   }
 
   public ProcessDefinitionRestoreRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @Override
   public int getRestoredCount() {
-    return restoredCountProp.getValue();
+    return restoredCount;
   }
 
   public ProcessDefinitionRestoreRecord setRestoredCount(final int restoredCount) {
-    restoredCountProp.setValue(restoredCount);
+    this.restoredCount = restoredCount;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ProcessDefinitionRestoreRecord> codec() {
+    return ProcessDefinitionRestoreRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ProcessDefinitionRestoreRecord> ops() {
+    return ProcessDefinitionRestoreRecordOps.INSTANCE;
   }
 }

@@ -9,8 +9,8 @@ package io.camunda.zeebe.stream.util;
 
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
@@ -40,7 +40,7 @@ public final class Records {
     return readValueAs(event, JobRecord.class);
   }
 
-  protected static <T extends UnpackedObject> T readValueAs(
+  protected static <T extends MsgpackRecordValue> T readValueAs(
       final LoggedEvent event, final Class<T> valueClass) {
     final DirectBuffer copy =
         BufferUtil.cloneBuffer(
@@ -216,8 +216,8 @@ public final class Records {
         .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
   }
 
-  public static <T extends UnpackedObject & RecordValue> T cloneValue(final RecordValue value) {
-    final UnpackedObject unpackedValue = (UnpackedObject) value;
+  public static <T extends MsgpackRecordValue> T cloneValue(final RecordValue value) {
+    final MsgpackRecordValue unpackedValue = (MsgpackRecordValue) value;
     final MutableDirectBuffer buffer =
         new UnsafeBuffer(ByteBuffer.allocate(unpackedValue.getLength()));
     final T cloned = (T) ReflectUtil.newInstance(value.getClass());

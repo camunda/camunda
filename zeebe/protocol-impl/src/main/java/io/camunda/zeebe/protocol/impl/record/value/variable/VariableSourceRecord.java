@@ -7,37 +7,38 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.variable;
 
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableOperationType;
 import io.camunda.zeebe.protocol.record.value.VariableSourceValue;
+import org.jspecify.annotations.NullMarked;
 
-public class VariableSourceRecord extends UnifiedRecordValue implements VariableSourceValue {
+@MsgpackPojo
+@NullMarked
+public final class VariableSourceRecord extends MsgpackBufferValue<VariableSourceRecord>
+    implements MsgpackRecordValue, VariableSourceValue {
 
   //  public static final VariableSourceRecord API =
   //      new VariableSourceRecord().setType(VariableOperationType.API);
   //  public static final VariableSourceRecord NONE =
   //      new VariableSourceRecord().setType(VariableOperationType.UNKNOWN);
 
-  private static final StringValue TYPE_KEY = new StringValue("type");
-
   // possible enhancements documented in https://github.com/camunda/camunda/issues/46970
-  private final EnumProperty<VariableOperationType> typeProp =
-      new EnumProperty<>(TYPE_KEY, VariableOperationType.class, VariableOperationType.UNKNOWN);
-
-  public VariableSourceRecord() {
-    super(1);
-    declareProperty(typeProp);
-  }
+  VariableOperationType type = VariableOperationType.UNKNOWN;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public VariableOperationType getType() {
-    return typeProp.getValue();
+    return type;
   }
 
   public VariableSourceRecord setType(final VariableOperationType variableSourceType) {
-    typeProp.setValue(variableSourceType);
+    type = variableSourceType;
     return this;
   }
 
@@ -55,5 +56,15 @@ public class VariableSourceRecord extends UnifiedRecordValue implements Variable
 
   public static VariableSourceRecord none() {
     return new VariableSourceRecord().setType(VariableOperationType.UNKNOWN);
+  }
+
+  @Override
+  protected MsgpackCodec<VariableSourceRecord> codec() {
+    return VariableSourceRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<VariableSourceRecord> ops() {
+    return VariableSourceRecordOps.INSTANCE;
   }
 }

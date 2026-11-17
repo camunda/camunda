@@ -8,86 +8,80 @@
 package io.camunda.zeebe.protocol.impl.record.value.clustervariable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue.ClusterVariableSecretReferenceValue;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public class ClusterVariableRecord extends UnifiedRecordValue
-    implements ClusterVariableRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class ClusterVariableRecord extends MsgpackBufferValue<ClusterVariableRecord>
+    implements MsgpackRecordValue, ClusterVariableRecordValue {
 
-  private static final StringValue NAME_KEY = new StringValue("name");
-  private static final StringValue VALUE_KEY = new StringValue("value");
-  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  private static final StringValue SCOPE_KEY = new StringValue("scope");
-  private static final StringValue METADATA_KEY = new StringValue("metadata");
-  private static final StringValue KIND_KEY = new StringValue("kind");
-  private static final StringValue SECRET_REFERENCES_KEY = new StringValue("secretReferences");
+  @Nullable DirectBuffer name;
 
-  private final StringProperty nameProp = new StringProperty(NAME_KEY);
-  private final BinaryProperty valueProp =
-      new BinaryProperty(VALUE_KEY, new UnsafeBuffer(new byte[] {0}));
-  private final EnumProperty<ClusterVariableScope> scopeProp =
-      new EnumProperty<>(SCOPE_KEY, ClusterVariableScope.class, ClusterVariableScope.UNSPECIFIED);
-  private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY, "");
-  private final DocumentProperty metadataProp = new DocumentProperty(METADATA_KEY);
-  private final EnumProperty<ClusterVariableKind> kindProp =
-      new EnumProperty<>(KIND_KEY, ClusterVariableKind.class, ClusterVariableKind.JSON);
-  private final ArrayProperty<ClusterVariableSecretReference> secretReferencesProp =
-      new ArrayProperty<>(SECRET_REFERENCES_KEY, ClusterVariableSecretReference::new);
+  @MsgpackProperty(binary = true)
+  DirectBuffer value = new UnsafeBuffer(new byte[] {0});
 
-  public ClusterVariableRecord() {
-    super(7);
-    declareProperty(nameProp)
-        .declareProperty(valueProp)
-        .declareProperty(scopeProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(metadataProp)
-        .declareProperty(kindProp)
-        .declareProperty(secretReferencesProp);
-  }
+  ClusterVariableScope scope = ClusterVariableScope.UNSPECIFIED;
+  DirectBuffer tenantId = Decoding.EMPTY;
+
+  @MsgpackProperty(document = true)
+  DirectBuffer metadata = DocumentValue.EMPTY_DOCUMENT;
+
+  ClusterVariableKind kind = ClusterVariableKind.JSON;
+  final List<ClusterVariableSecretReference> secretReferences = new ArrayList<>();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getName() {
-    return BufferUtil.bufferAsString(nameProp.getValue());
+    return BufferUtil.bufferAsString(Decoding.required(name, "name"));
   }
 
   @Override
   public String getValue() {
-    return MsgPackConverter.convertToJson(valueProp.getValue());
+    return MsgPackConverter.convertToJson(value);
   }
 
   public ClusterVariableRecord setValue(final DirectBuffer value) {
-    valueProp.setValue(value);
+    this.value = value;
     return this;
   }
 
   @Override
   public ClusterVariableScope getScope() {
-    return scopeProp.getValue();
+    return scope;
   }
 
   public ClusterVariableRecord setScope(final ClusterVariableScope scope) {
-    scopeProp.setValue(scope);
+    this.scope = scope;
     return this;
   }
 
   public ClusterVariableRecord setName(final String name) {
-    nameProp.setValue(name);
+    this.name = BufferUtil.wrapString(name);
     return this;
   }
 
@@ -101,63 +95,63 @@ public class ClusterVariableRecord extends UnifiedRecordValue
 
   @JsonIgnore
   public DirectBuffer getNameBuffer() {
-    return nameProp.getValue();
+    return Decoding.required(name, "name");
   }
 
   @JsonIgnore
   public DirectBuffer getValueBuffer() {
-    return valueProp.getValue();
+    return value;
   }
 
   @Override
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+    return BufferUtil.bufferAsString(tenantId);
   }
 
   public ClusterVariableRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @Override
   public Map<String, Object> getMetadata() {
-    return MsgPackConverter.convertToMap(metadataProp.getValue());
+    return MsgPackConverter.convertToMap(metadata);
   }
 
   public ClusterVariableRecord setMetadata(final DirectBuffer metadata) {
-    metadataProp.setValue(metadata);
+    this.metadata = Decoding.document(metadata);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getMetadataBuffer() {
-    return metadataProp.getValue();
+    return metadata;
   }
 
   @Override
   public ClusterVariableKind getKind() {
-    return kindProp.getValue();
+    return kind;
   }
 
   public ClusterVariableRecord setKind(final ClusterVariableKind kind) {
-    kindProp.setValue(kind);
+    this.kind = kind;
     return this;
   }
 
   @JsonIgnore
   public boolean isTenantScoped() {
-    return ClusterVariableScope.TENANT.equals(scopeProp.getValue());
+    return ClusterVariableScope.TENANT.equals(scope);
   }
 
   @JsonIgnore
   public boolean isGloballyScoped() {
-    return ClusterVariableScope.GLOBAL.equals(scopeProp.getValue());
+    return ClusterVariableScope.GLOBAL.equals(scope);
   }
 
   @Override
   public List<ClusterVariableSecretReferenceValue> getSecretReferences() {
     // detach copies so the returned list stays valid if this record is reused or reset later
-    return secretReferencesProp.stream()
+    return secretReferences.stream()
         .map(
             element -> {
               final var copy = new ClusterVariableSecretReference();
@@ -173,21 +167,84 @@ public class ClusterVariableRecord extends UnifiedRecordValue
    */
   @JsonIgnore
   public ValueArray<ClusterVariableSecretReference> secretReferences() {
-    return secretReferencesProp;
+    return new SecretReferences(secretReferences);
   }
 
   @JsonIgnore
   public boolean hasSecretReferences() {
-    return !secretReferencesProp.isEmpty();
+    return !secretReferences.isEmpty();
   }
 
   public ClusterVariableRecord addSecretReference(
       final String storeId, final String secretReference, final String path) {
-    secretReferencesProp
-        .add()
-        .setStoreId(storeId)
-        .setSecretReference(secretReference)
-        .setPath(path);
+    secretReferences.add(
+        new ClusterVariableSecretReference()
+            .setStoreId(storeId)
+            .setSecretReference(secretReference)
+            .setPath(path));
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ClusterVariableRecord> codec() {
+    return ClusterVariableRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ClusterVariableRecord> ops() {
+    return ClusterVariableRecordOps.INSTANCE;
+  }
+
+  /**
+   * The mutable accessor of {@code secretReferences}: it adds and removes the elements of the list,
+   * so that code written against the former {@code ArrayProperty} keeps working.
+   */
+  private static final class SecretReferences
+      implements ValueArray<ClusterVariableSecretReference> {
+
+    final List<ClusterVariableSecretReference> references;
+
+    private SecretReferences(final List<ClusterVariableSecretReference> references) {
+      this.references = references;
+    }
+
+    @Override
+    public ClusterVariableSecretReference add() {
+      final var reference = new ClusterVariableSecretReference();
+      references.add(reference);
+      return reference;
+    }
+
+    @Override
+    public ClusterVariableSecretReference add(final int index) {
+      final var reference = new ClusterVariableSecretReference();
+      references.add(index, reference);
+      return reference;
+    }
+
+    @Override
+    public ClusterVariableSecretReference get(final int index) {
+      return references.get(index);
+    }
+
+    @Override
+    public ClusterVariableSecretReference remove(final int index) {
+      return references.remove(index);
+    }
+
+    @Override
+    public int size() {
+      return references.size();
+    }
+
+    @Override
+    public Stream<ClusterVariableSecretReference> stream() {
+      return references.stream();
+    }
+
+    @Override
+    public Iterator<ClusterVariableSecretReference> iterator() {
+      return references.iterator();
+    }
   }
 }

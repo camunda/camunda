@@ -10,159 +10,159 @@ package io.camunda.zeebe.protocol.impl.record.value.deployment;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class DecisionRecord extends UnifiedRecordValue implements DecisionRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class DecisionRecord extends MsgpackBufferValue<DecisionRecord>
+    implements MsgpackRecordValue, DecisionRecordValue {
 
-  private final StringProperty decisionIdProp = new StringProperty("decisionId", "");
-  private final StringProperty decisionNameProp = new StringProperty("decisionName", "");
-  private final IntegerProperty versionProp = new IntegerProperty("version", -1);
-  private final LongProperty decisionKeyProp = new LongProperty("decisionKey", -1);
-
-  private final StringProperty decisionRequirementsIdProp =
-      new StringProperty("decisionRequirementsId", "");
-  private final LongProperty decisionRequirementsKeyProp =
-      new LongProperty("decisionRequirementsKey", -1);
-
-  private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
-  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
-
-  public DecisionRecord() {
-    super(10);
-    declareProperty(decisionIdProp)
-        .declareProperty(decisionNameProp)
-        .declareProperty(versionProp)
-        .declareProperty(decisionKeyProp)
-        .declareProperty(decisionRequirementsIdProp)
-        .declareProperty(decisionRequirementsKeyProp)
-        .declareProperty(isDuplicateProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(deploymentKeyProp)
-        .declareProperty(versionTagProp);
-  }
+  DirectBuffer decisionId = Decoding.EMPTY;
+  DirectBuffer decisionName = Decoding.EMPTY;
+  int version = -1;
+  long decisionKey = -1L;
+  DirectBuffer decisionRequirementsId = Decoding.EMPTY;
+  long decisionRequirementsKey = -1L;
+  boolean isDuplicate = false;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long deploymentKey = -1L;
+  DirectBuffer versionTag = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getDecisionId() {
-    return bufferAsString(decisionIdProp.getValue());
+    return bufferAsString(decisionId);
   }
 
   @Override
   public String getDecisionName() {
-    return bufferAsString(decisionNameProp.getValue());
+    return bufferAsString(decisionName);
   }
 
   @Override
   public int getVersion() {
-    return versionProp.getValue();
+    return version;
   }
 
   @Override
   public String getVersionTag() {
-    return bufferAsString(versionTagProp.getValue());
+    return bufferAsString(versionTag);
   }
 
   @Override
   public long getDecisionKey() {
-    return decisionKeyProp.getValue();
+    return decisionKey;
   }
 
   @Override
   public String getDecisionRequirementsId() {
-    return bufferAsString(decisionRequirementsIdProp.getValue());
+    return bufferAsString(decisionRequirementsId);
   }
 
   @Override
   public long getDecisionRequirementsKey() {
-    return decisionRequirementsKeyProp.getValue();
+    return decisionRequirementsKey;
   }
 
   @Override
   public boolean isDuplicate() {
-    return isDuplicateProp.getValue();
+    return isDuplicate;
   }
 
   public DecisionRecord setDuplicate(final boolean duplicate) {
-    isDuplicateProp.setValue(duplicate);
+    isDuplicate = duplicate;
     return this;
   }
 
   @Override
   public long getDeploymentKey() {
-    return deploymentKeyProp.getValue();
+    return deploymentKey;
   }
 
   public DecisionRecord setDeploymentKey(final long deploymentKey) {
-    deploymentKeyProp.setValue(deploymentKey);
+    this.deploymentKey = deploymentKey;
     return this;
   }
 
   public DecisionRecord setDecisionRequirementsKey(final long decisionRequirementsKey) {
-    decisionRequirementsKeyProp.setValue(decisionRequirementsKey);
+    this.decisionRequirementsKey = decisionRequirementsKey;
     return this;
   }
 
   public DecisionRecord setDecisionRequirementsId(final String decisionRequirementsId) {
-    decisionRequirementsIdProp.setValue(decisionRequirementsId);
+    this.decisionRequirementsId = BufferUtil.wrapString(decisionRequirementsId);
     return this;
   }
 
   public DecisionRecord setDecisionKey(final long decisionKey) {
-    decisionKeyProp.setValue(decisionKey);
+    this.decisionKey = decisionKey;
     return this;
   }
 
   public DecisionRecord setVersionTag(final String versionTag) {
-    versionTagProp.setValue(versionTag);
+    this.versionTag = BufferUtil.wrapString(versionTag);
     return this;
   }
 
   public DecisionRecord setVersion(final int version) {
-    versionProp.setValue(version);
+    this.version = version;
     return this;
   }
 
   public DecisionRecord setDecisionName(final String decisionName) {
-    decisionNameProp.setValue(decisionName);
+    this.decisionName = BufferUtil.wrapString(decisionName);
     return this;
   }
 
   public DecisionRecord setDecisionId(final String decisionId) {
-    decisionIdProp.setValue(decisionId);
+    this.decisionId = BufferUtil.wrapString(decisionId);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getDecisionIdBuffer() {
-    return decisionIdProp.getValue();
+    return decisionId;
   }
 
   @JsonIgnore
   public DirectBuffer getDecisionNameBuffer() {
-    return decisionNameProp.getValue();
+    return decisionName;
   }
 
   @JsonIgnore
   public DirectBuffer getDecisionRequirementsIdBuffer() {
-    return decisionRequirementsIdProp.getValue();
+    return decisionRequirementsId;
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public DecisionRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<DecisionRecord> codec() {
+    return DecisionRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<DecisionRecord> ops() {
+    return DecisionRecordOps.INSTANCE;
   }
 }

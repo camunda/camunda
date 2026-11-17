@@ -8,11 +8,17 @@
 package io.camunda.zeebe.protocol.impl.record.value.message;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartCorrelationKeyLockReleaseRecordValue;
+import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Implementation of {@link MessageStartCorrelationKeyLockReleaseRecordValue}.
@@ -23,35 +29,33 @@ import java.util.List;
  * on a single partition in isolation: {@code P_K} sends a {@code QUERY} batching one {@link
  * MessageStartLockReleaseHolder holder} per lock entry to {@code P_B} (derived from each holder's
  * instance key); {@code P_B} replies {@code RELEASE} back to {@code P_K} (derived from {@link
- * #requestKeyProp the request key}) with the single gone holder. On the {@code PUSHED} path {@code
- * P_B} builds the same {@code RELEASE} itself, from the holder-origin entry, the moment the holder
+ * #requestKey the request key}) with the single gone holder. On the {@code PUSHED} path {@code P_B}
+ * builds the same {@code RELEASE} itself, from the holder-origin entry, the moment the holder
  * completes — so the release also flows without a preceding {@code QUERY}.
  *
- * <p>The {@link #requestKeyProp request key} is purely a partition-addressing envelope: the {@code
+ * <p>The {@link #requestKey request key} is purely a partition-addressing envelope: the {@code
  * RELEASE} is routed to the partition its bits encode. On the query path {@code P_K} stamps it so
  * the reply comes back to itself; on the push path {@code P_B} synthesizes it from the buffered
  * message key's partition bits to address {@code P_K}. It is never a request-correlation id and
  * never an event key.
  */
-public final class MessageStartCorrelationKeyLockReleaseRecord extends UnifiedRecordValue
-    implements MessageStartCorrelationKeyLockReleaseRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class MessageStartCorrelationKeyLockReleaseRecord
+    extends MsgpackBufferValue<MessageStartCorrelationKeyLockReleaseRecord>
+    implements MsgpackRecordValue, MessageStartCorrelationKeyLockReleaseRecordValue {
 
-  private final LongProperty requestKeyProp = new LongProperty("requestKey", -1L);
-  private final ArrayProperty<MessageStartLockReleaseHolder> holdersProp =
-      new ArrayProperty<>("holders", MessageStartLockReleaseHolder::new);
-
-  public MessageStartCorrelationKeyLockReleaseRecord() {
-    super(2);
-    declareProperty(requestKeyProp).declareProperty(holdersProp);
-  }
+  long requestKey = -1L;
+  final List<MessageStartLockReleaseHolder> holders = new ArrayList<>();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getRequestKey() {
-    return requestKeyProp.getValue();
+    return requestKey;
   }
 
   public MessageStartCorrelationKeyLockReleaseRecord setRequestKey(final long requestKey) {
-    requestKeyProp.setValue(requestKey);
+    this.requestKey = requestKey;
     return this;
   }
 
@@ -61,21 +65,19 @@ public final class MessageStartCorrelationKeyLockReleaseRecord extends UnifiedRe
    */
   @Override
   public List<MessageStartLockReleaseHolderValue> getHolders() {
-    // copy each element while iterating: the inner value is reused across iteration steps
-    return holdersProp.stream()
-        .map(
-            element -> {
-              final var copy = new MessageStartLockReleaseHolder();
-              copy.copy(element);
-              return (MessageStartLockReleaseHolderValue) copy;
-            })
-        .toList();
+    final var result = new ArrayList<MessageStartLockReleaseHolderValue>(holders.size());
+    for (final var element : holders) {
+      final var copy = new MessageStartLockReleaseHolder();
+      copy.copy(element);
+      result.add(copy);
+    }
+    return result;
   }
 
   /** Returns {@code true} if this record carries at least one holder. */
   @JsonIgnore
   public boolean hasHolders() {
-    return !holdersProp.isEmpty();
+    return !holders.isEmpty();
   }
 
   /**
@@ -83,6 +85,18 @@ public final class MessageStartCorrelationKeyLockReleaseRecord extends UnifiedRe
    * add()}-then-set pattern used by other array-backed records.
    */
   public MessageStartLockReleaseHolder addHolder() {
-    return holdersProp.add();
+    final var holder = new MessageStartLockReleaseHolder();
+    holders.add(holder);
+    return holder;
+  }
+
+  @Override
+  protected MsgpackCodec<MessageStartCorrelationKeyLockReleaseRecord> codec() {
+    return MessageStartCorrelationKeyLockReleaseRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<MessageStartCorrelationKeyLockReleaseRecord> ops() {
+    return MessageStartCorrelationKeyLockReleaseRecordOps.INSTANCE;
   }
 }

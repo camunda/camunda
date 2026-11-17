@@ -8,208 +8,199 @@
 package io.camunda.zeebe.protocol.impl.record.value.compensation;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public class CompensationSubscriptionRecord extends UnifiedRecordValue
-    implements CompensationSubscriptionRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class CompensationSubscriptionRecord
+    extends MsgpackBufferValue<CompensationSubscriptionRecord>
+    implements MsgpackRecordValue, CompensationSubscriptionRecordValue {
 
-  private static final String EMPTY_STRING = "";
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long processInstanceKey = -1L;
+  long processDefinitionKey = -1L;
+  DirectBuffer compensableActivityId = Decoding.EMPTY;
+  DirectBuffer throwEventId = Decoding.EMPTY;
+  long throwEventInstanceKey = -1L;
+  DirectBuffer compensationHandlerId = Decoding.EMPTY;
+  long compensationHandlerInstanceKey = -1L;
+  long compensableActivityScopeKey = -1L;
+  long compensableActivityInstanceKey = -1L;
+  int storageOrdinal = 0;
 
-  private final StringProperty tenantIdProperty =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty processInstanceKeyProperty =
-      new LongProperty("processInstanceKey", -1);
-  private final LongProperty processDefinitionKeyProperty =
-      new LongProperty("processDefinitionKey", -1);
-  private final StringProperty compensableActivityIdProperty =
-      new StringProperty("compensableActivityId", EMPTY_STRING);
-  private final StringProperty throwEventIdProperty =
-      new StringProperty("throwEventId", EMPTY_STRING);
-  private final LongProperty throwEventInstanceKeyProperty =
-      new LongProperty("throwEventInstanceKey", -1);
-  private final StringProperty compensationHandlerIdProperty =
-      new StringProperty("compensationHandlerId", EMPTY_STRING);
-  private final LongProperty compensationHandlerInstanceKeyProperty =
-      new LongProperty("compensationHandlerInstanceKey", -1L);
+  @MsgpackProperty(document = true)
+  DirectBuffer variables = DocumentValue.EMPTY_DOCUMENT;
 
-  private final LongProperty compensableActivityScopeKeyProperty =
-      new LongProperty("compensableActivityScopeKey", -1);
-
-  private final LongProperty compensableActivityInstanceKeyProperty =
-      new LongProperty("compensableActivityInstanceKey", -1);
-
-  private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
-
-  private final DocumentProperty variablesProperty = new DocumentProperty("variables");
-
-  public CompensationSubscriptionRecord() {
-    super(12);
-    declareProperty(tenantIdProperty)
-        .declareProperty(processInstanceKeyProperty)
-        .declareProperty(processDefinitionKeyProperty)
-        .declareProperty(compensableActivityIdProperty)
-        .declareProperty(throwEventIdProperty)
-        .declareProperty(throwEventInstanceKeyProperty)
-        .declareProperty(compensationHandlerIdProperty)
-        .declareProperty(compensationHandlerInstanceKeyProperty)
-        .declareProperty(compensableActivityScopeKeyProperty)
-        .declareProperty(compensableActivityInstanceKeyProperty)
-        .declareProperty(storageOrdinalProperty)
-        .declareProperty(variablesProperty);
-  }
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public void wrap(final CompensationSubscriptionRecord record) {
-    tenantIdProperty.setValue(record.getTenantId());
-    processInstanceKeyProperty.setValue(record.getProcessInstanceKey());
-    processDefinitionKeyProperty.setValue(record.getProcessDefinitionKey());
-    compensableActivityIdProperty.setValue(record.getCompensableActivityId());
-    throwEventIdProperty.setValue(record.getThrowEventId());
-    throwEventInstanceKeyProperty.setValue(record.getThrowEventInstanceKey());
-    compensationHandlerIdProperty.setValue(record.getCompensationHandlerId());
-    compensationHandlerInstanceKeyProperty.setValue(record.getCompensationHandlerInstanceKey());
-    compensableActivityScopeKeyProperty.setValue(record.getCompensableActivityScopeKey());
-    compensableActivityInstanceKeyProperty.setValue(record.getCompensableActivityInstanceKey());
-    storageOrdinalProperty.setValue(record.getStorageOrdinal());
-    variablesProperty.setValue(record.getVariablesBuffer());
+    tenantId = BufferUtil.wrapString(record.getTenantId());
+    processInstanceKey = record.getProcessInstanceKey();
+    processDefinitionKey = record.getProcessDefinitionKey();
+    compensableActivityId = BufferUtil.wrapString(record.getCompensableActivityId());
+    throwEventId = BufferUtil.wrapString(record.getThrowEventId());
+    throwEventInstanceKey = record.getThrowEventInstanceKey();
+    compensationHandlerId = BufferUtil.wrapString(record.getCompensationHandlerId());
+    compensationHandlerInstanceKey = record.getCompensationHandlerInstanceKey();
+    compensableActivityScopeKey = record.getCompensableActivityScopeKey();
+    compensableActivityInstanceKey = record.getCompensableActivityInstanceKey();
+    storageOrdinal = record.getStorageOrdinal();
+    variables = Decoding.document(record.getVariablesBuffer());
   }
 
   @Override
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProperty.getValue());
+    return BufferUtil.bufferAsString(tenantId);
   }
 
   public CompensationSubscriptionRecord setTenantId(final String tenantId) {
-    tenantIdProperty.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProperty.getValue();
+    return processInstanceKey;
   }
 
   public CompensationSubscriptionRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProperty.setValue(processInstanceKey);
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProperty.getValue();
+    return processDefinitionKey;
   }
 
   public CompensationSubscriptionRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProperty.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
   @Override
   public String getCompensableActivityId() {
-    return BufferUtil.bufferAsString(compensableActivityIdProperty.getValue());
+    return BufferUtil.bufferAsString(compensableActivityId);
   }
 
   @Override
   public String getThrowEventId() {
-    return BufferUtil.bufferAsString(throwEventIdProperty.getValue());
+    return BufferUtil.bufferAsString(throwEventId);
   }
 
   @Override
   public long getThrowEventInstanceKey() {
-    return throwEventInstanceKeyProperty.getValue();
+    return throwEventInstanceKey;
   }
 
   @Override
   public String getCompensationHandlerId() {
-    return BufferUtil.bufferAsString(compensationHandlerIdProperty.getValue());
+    return BufferUtil.bufferAsString(compensationHandlerId);
   }
 
   @Override
   public long getCompensationHandlerInstanceKey() {
-    return compensationHandlerInstanceKeyProperty.getValue();
+    return compensationHandlerInstanceKey;
   }
 
   @Override
   public long getCompensableActivityScopeKey() {
-    return compensableActivityScopeKeyProperty.getValue();
+    return compensableActivityScopeKey;
   }
 
   @Override
   public long getCompensableActivityInstanceKey() {
-    return compensableActivityInstanceKeyProperty.getValue();
+    return compensableActivityInstanceKey;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProperty.getValue();
+    return storageOrdinal;
   }
 
   public CompensationSubscriptionRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProperty.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProperty.getValue());
+    return MsgPackConverter.convertToMap(variables);
   }
 
   public CompensationSubscriptionRecord setVariables(final DirectBuffer variables) {
-    variablesProperty.setValue(variables);
+    this.variables = Decoding.document(variables);
     return this;
   }
 
   public CompensationSubscriptionRecord setCompensableActivityInstanceKey(
       final long compensableActivityInstanceKey) {
-    compensableActivityInstanceKeyProperty.setValue(compensableActivityInstanceKey);
+    this.compensableActivityInstanceKey = compensableActivityInstanceKey;
     return this;
   }
 
   public CompensationSubscriptionRecord setCompensableActivityScopeKey(
       final long scopeInstanceKey) {
-    compensableActivityScopeKeyProperty.setValue(scopeInstanceKey);
+    compensableActivityScopeKey = scopeInstanceKey;
     return this;
   }
 
   public CompensationSubscriptionRecord setCompensationHandlerInstanceKey(
       final long compensationHandlerInstanceKey) {
-    compensationHandlerInstanceKeyProperty.setValue(compensationHandlerInstanceKey);
+    this.compensationHandlerInstanceKey = compensationHandlerInstanceKey;
     return this;
   }
 
   public CompensationSubscriptionRecord setCompensationHandlerId(
       final String compensationHandlerId) {
-    compensationHandlerIdProperty.setValue(compensationHandlerId);
+    this.compensationHandlerId = BufferUtil.wrapString(compensationHandlerId);
     return this;
   }
 
   public CompensationSubscriptionRecord setThrowEventInstanceKey(final long throwEventInstanceKey) {
-    throwEventInstanceKeyProperty.setValue(throwEventInstanceKey);
+    this.throwEventInstanceKey = throwEventInstanceKey;
     return this;
   }
 
   public CompensationSubscriptionRecord setThrowEventId(final String throwEventId) {
-    throwEventIdProperty.setValue(throwEventId);
+    this.throwEventId = BufferUtil.wrapString(throwEventId);
     return this;
   }
 
   public CompensationSubscriptionRecord setCompensableActivityId(
       final String compensableActivityId) {
-    compensableActivityIdProperty.setValue(compensableActivityId);
+    this.compensableActivityId = BufferUtil.wrapString(compensableActivityId);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProperty.getValue();
+    return variables;
+  }
+
+  @Override
+  protected MsgpackCodec<CompensationSubscriptionRecord> codec() {
+    return CompensationSubscriptionRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<CompensationSubscriptionRecord> ops() {
+    return CompensationSubscriptionRecordOps.INSTANCE;
   }
 }

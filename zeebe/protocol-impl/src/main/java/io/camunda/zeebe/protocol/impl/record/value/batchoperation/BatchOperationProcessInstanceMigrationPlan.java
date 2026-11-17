@@ -8,38 +8,39 @@
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationProcessInstanceMigrationPlanValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue.ProcessInstanceMigrationMappingInstructionValue;
+import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.NullMarked;
 
-public final class BatchOperationProcessInstanceMigrationPlan extends ObjectValue
+@MsgpackPojo
+@NullMarked
+@JsonIgnoreProperties("length")
+public final class BatchOperationProcessInstanceMigrationPlan
+    extends MsgpackBufferValue<BatchOperationProcessInstanceMigrationPlan>
     implements BatchOperationProcessInstanceMigrationPlanValue {
 
-  private final LongProperty targetProcessDefinitionKeyProperty =
-      new LongProperty("targetProcessDefinitionKey", -1);
-  private final ArrayProperty<ProcessInstanceMigrationMappingInstruction>
-      mappingInstructionsProperty =
-          new ArrayProperty<>(
-              "mappingInstructions", ProcessInstanceMigrationMappingInstruction::new);
-
-  public BatchOperationProcessInstanceMigrationPlan() {
-    super(2);
-    declareProperty(targetProcessDefinitionKeyProperty)
-        .declareProperty(mappingInstructionsProperty);
-  }
+  long targetProcessDefinitionKey = -1;
+  final List<ProcessInstanceMigrationMappingInstruction> mappingInstructions = new ArrayList<>();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getTargetProcessDefinitionKey() {
-    return targetProcessDefinitionKeyProperty.getValue();
+    return targetProcessDefinitionKey;
   }
 
   public BatchOperationProcessInstanceMigrationPlan setTargetProcessDefinitionKey(
       final long targetProcessDefinitionKey) {
-    targetProcessDefinitionKeyProperty.setValue(targetProcessDefinitionKey);
+    this.targetProcessDefinitionKey = targetProcessDefinitionKey;
     return this;
   }
 
@@ -51,7 +52,7 @@ public final class BatchOperationProcessInstanceMigrationPlan extends ObjectValu
    */
   @Override
   public List<ProcessInstanceMigrationMappingInstructionValue> getMappingInstructions() {
-    return mappingInstructionsProperty.stream()
+    return mappingInstructions.stream()
         .map(
             element -> {
               final var elementCopy = new ProcessInstanceMigrationMappingInstruction();
@@ -64,12 +65,14 @@ public final class BatchOperationProcessInstanceMigrationPlan extends ObjectValu
   /** Returns true if this record has mapping instructions, otherwise false. */
   @JsonIgnore
   public boolean hasMappingInstructions() {
-    return !mappingInstructionsProperty.isEmpty();
+    return !mappingInstructions.isEmpty();
   }
 
   public BatchOperationProcessInstanceMigrationPlan addMappingInstruction(
       final ProcessInstanceMigrationMappingInstruction mappingInstruction) {
-    mappingInstructionsProperty.add().copy(mappingInstruction);
+    final var copy = new ProcessInstanceMigrationMappingInstruction();
+    copy.copy(mappingInstruction);
+    mappingInstructions.add(copy);
     return this;
   }
 
@@ -80,5 +83,25 @@ public final class BatchOperationProcessInstanceMigrationPlan extends ObjectValu
         .getMappingInstructions()
         .forEach(inst -> addMappingInstruction((ProcessInstanceMigrationMappingInstruction) inst));
     return this;
+  }
+
+  /** Kept so that the exported JSON stays unchanged. */
+  public boolean isEmpty() {
+    return false;
+  }
+
+  /** Kept so that the exported JSON stays unchanged. */
+  public int getEncodedLength() {
+    return getLength();
+  }
+
+  @Override
+  protected MsgpackCodec<BatchOperationProcessInstanceMigrationPlan> codec() {
+    return BatchOperationProcessInstanceMigrationPlanCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<BatchOperationProcessInstanceMigrationPlan> ops() {
+    return BatchOperationProcessInstanceMigrationPlanOps.INSTANCE;
   }
 }

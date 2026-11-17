@@ -11,57 +11,74 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobResultActivateElementValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties({
-  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
-  "empty",
+  /* encodedLength and empty were inherited from ObjectValue, length is inherited from
+  MsgpackBufferValue; they have no purpose in exported JSON records*/
   "encodedLength",
+  "empty",
   "length"
 })
-public final class JobResultActivateElement extends UnpackedObject
+@MsgpackPojo
+@NullMarked
+public final class JobResultActivateElement extends MsgpackBufferValue<JobResultActivateElement>
     implements JobResultActivateElementValue {
 
-  private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
-  private static final StringValue VARIABLES_KEY = new StringValue("variables");
+  @Nullable DirectBuffer elementId;
 
-  private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY);
-  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
+  @MsgpackProperty(document = true)
+  DirectBuffer variables = DocumentValue.EMPTY_DOCUMENT;
 
-  public JobResultActivateElement() {
-    super(2);
-    declareProperty(elementIdProp).declareProperty(variablesProp);
-  }
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getElementId() {
-    return bufferAsString(elementIdProp.getValue());
+    return bufferAsString(Decoding.required(elementId, "elementId"));
   }
 
   public JobResultActivateElement setElementId(final String elementId) {
-    elementIdProp.setValue(elementId);
+    this.elementId = BufferUtil.wrapString(elementId);
     return this;
   }
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProp.getValue());
+    return MsgPackConverter.convertToMap(variables);
   }
 
   public JobResultActivateElement setVariables(final DirectBuffer variables) {
-    variablesProp.setValue(variables);
+    this.variables = Decoding.document(variables);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProp.getValue();
+    return variables;
+  }
+
+  @Override
+  protected MsgpackCodec<JobResultActivateElement> codec() {
+    return JobResultActivateElementCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<JobResultActivateElement> ops() {
+    return JobResultActivateElementOps.INSTANCE;
   }
 }

@@ -7,44 +7,68 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.jobmetrics;
 
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.StatusMetricsValue;
+import org.jspecify.annotations.NullMarked;
 
-public final class StatusMetrics extends ObjectValue implements StatusMetricsValue {
+@MsgpackPojo
+@NullMarked
+@JsonIgnoreProperties("length")
+public final class StatusMetrics extends MsgpackBufferValue<StatusMetrics>
+    implements StatusMetricsValue {
 
-  private final IntegerProperty countProperty = new IntegerProperty("count", -1);
-  private final LongProperty lastUpdatedAtProperty = new LongProperty("lastUpdatedAt", -1L);
-
-  public StatusMetrics() {
-    super(2);
-    declareProperty(countProperty);
-    declareProperty(lastUpdatedAtProperty);
-  }
+  int count = -1;
+  long lastUpdatedAt = -1L;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public int getCount() {
-    return countProperty.getValue();
+    return count;
   }
 
   @Override
   public long getLastUpdatedAt() {
-    return lastUpdatedAtProperty.getValue();
+    return lastUpdatedAt;
   }
 
   public StatusMetrics setLastUpdatedAt(final long lastUpdatedAt) {
-    lastUpdatedAtProperty.setValue(lastUpdatedAt);
+    this.lastUpdatedAt = lastUpdatedAt;
     return this;
   }
 
   public StatusMetrics setCount(final int count) {
-    countProperty.setValue(count);
+    this.count = count;
     return this;
   }
 
   public void wrap(final StatusMetricsValue statusMetricsValue) {
     setCount(statusMetricsValue.getCount());
     setLastUpdatedAt(statusMetricsValue.getLastUpdatedAt());
+  }
+
+  /** Kept so that the exported JSON stays unchanged. */
+  public boolean isEmpty() {
+    return false;
+  }
+
+  /** Kept so that the exported JSON stays unchanged. */
+  public int getEncodedLength() {
+    return getLength();
+  }
+
+  @Override
+  protected MsgpackCodec<StatusMetrics> codec() {
+    return StatusMetricsCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<StatusMetrics> ops() {
+    return StatusMetricsOps.INSTANCE;
   }
 }

@@ -8,67 +8,61 @@
 package io.camunda.zeebe.protocol.impl.record.value.conditional;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.ConditionalStartedProcessInstanceValue;
+import org.jspecify.annotations.NullMarked;
 
 @JsonIgnoreProperties({
-  /* These fields are inherited from ObjectValue; they have no purpose in exported JSON records*/
+  /* encodedLength and empty were inherited from ObjectValue, length is inherited from
+  MsgpackBufferValue; they have no purpose in exported JSON records*/
   "encodedLength",
-  "empty"
+  "empty",
+  "length"
 })
-public final class ConditionalStartedProcessInstance extends ObjectValue
+@MsgpackPojo
+@NullMarked
+public final class ConditionalStartedProcessInstance
+    extends MsgpackBufferValue<ConditionalStartedProcessInstance>
     implements ConditionalStartedProcessInstanceValue {
 
-  // Static StringValue keys to avoid memory waste
-  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
-      new StringValue("processDefinitionKey");
-  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
-  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
-
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
-  private final LongProperty processInstanceKeyProp =
-      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
-
-  public ConditionalStartedProcessInstance() {
-    super(3);
-    declareProperty(processDefinitionKeyProp)
-        .declareProperty(processInstanceKeyProp)
-        .declareProperty(storageOrdinalProp);
-  }
+  long processDefinitionKey = -1L;
+  long processInstanceKey = -1L;
+  int storageOrdinal = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey;
   }
 
   public ConditionalStartedProcessInstance setProcessDefinitionKey(
       final long processDefinitionKey) {
-    processDefinitionKeyProp.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey;
   }
 
   public ConditionalStartedProcessInstance setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public ConditionalStartedProcessInstance setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 
@@ -81,5 +75,15 @@ public final class ConditionalStartedProcessInstance extends ObjectValue
     setProcessDefinitionKey(other.getProcessDefinitionKey());
     setProcessInstanceKey(other.getProcessInstanceKey());
     setStorageOrdinal(other.getStorageOrdinal());
+  }
+
+  @Override
+  protected MsgpackCodec<ConditionalStartedProcessInstance> codec() {
+    return ConditionalStartedProcessInstanceCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ConditionalStartedProcessInstance> ops() {
+    return ConditionalStartedProcessInstanceOps.INSTANCE;
   }
 }

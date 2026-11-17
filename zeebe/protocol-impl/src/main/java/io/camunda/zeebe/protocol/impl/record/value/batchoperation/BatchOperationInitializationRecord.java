@@ -9,76 +9,74 @@ package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationInitializationRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class BatchOperationInitializationRecord extends UnifiedRecordValue
-    implements BatchOperationInitializationRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class BatchOperationInitializationRecord
+    extends MsgpackBufferValue<BatchOperationInitializationRecord>
+    implements MsgpackRecordValue, BatchOperationInitializationRecordValue {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String PROP_STORAGE_ORDINAL = "storageOrdinal";
   public static final String PROP_SEARCH_RESULT_CURSOR_KEY = "searchResultCursor";
   public static final String PROP_SEARCH_QUERY_PAGE_SIZE = "searchQueryPageSize";
 
-  private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(PROP_STORAGE_ORDINAL, 0);
-
-  private final StringProperty searchResultCursorProp =
-      new StringProperty(PROP_SEARCH_RESULT_CURSOR_KEY, "");
-  private final IntegerProperty searchQueryPageSize =
-      new IntegerProperty(PROP_SEARCH_QUERY_PAGE_SIZE, 0);
-
-  public BatchOperationInitializationRecord() {
-    super(4);
-    declareProperty(batchOperationKeyProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(searchResultCursorProp)
-        .declareProperty(searchQueryPageSize);
-  }
+  final RequiredLong batchOperationKey = new RequiredLong();
+  int storageOrdinal = 0;
+  DirectBuffer searchResultCursor = Decoding.EMPTY;
+  int searchQueryPageSize = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getBatchOperationKey() {
-    return batchOperationKeyProp.getValue();
+    return batchOperationKey.get();
   }
 
   public BatchOperationInitializationRecord setBatchOperationKey(final Long batchOperationKey) {
-    batchOperationKeyProp.reset();
-    batchOperationKeyProp.setValue(batchOperationKey);
+    this.batchOperationKey.set(batchOperationKey);
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public BatchOperationInitializationRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 
   @Override
   public String getSearchResultCursor() {
-    return bufferAsString(searchResultCursorProp.getValue());
+    return bufferAsString(searchResultCursor);
   }
 
   public BatchOperationInitializationRecord setSearchResultCursor(final String cursor) {
-    searchResultCursorProp.reset();
-    searchResultCursorProp.setValue(cursor);
+    this.searchResultCursor = BufferUtil.wrapString(cursor);
     return this;
   }
 
   @Override
   public int getSearchQueryPageSize() {
-    return searchQueryPageSize.getValue();
+    return searchQueryPageSize;
   }
 
   public BatchOperationInitializationRecord setSearchQueryPageSize(final int pageSize) {
-    searchQueryPageSize.reset();
-    searchQueryPageSize.setValue(pageSize);
+    this.searchQueryPageSize = pageSize;
     return this;
   }
 
@@ -87,5 +85,15 @@ public final class BatchOperationInitializationRecord extends UnifiedRecordValue
     setStorageOrdinal(record.getStorageOrdinal());
     setSearchResultCursor(record.getSearchResultCursor());
     setSearchQueryPageSize(record.getSearchQueryPageSize());
+  }
+
+  @Override
+  protected MsgpackCodec<BatchOperationInitializationRecord> codec() {
+    return BatchOperationInitializationRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<BatchOperationInitializationRecord> ops() {
+    return BatchOperationInitializationRecordOps.INSTANCE;
   }
 }

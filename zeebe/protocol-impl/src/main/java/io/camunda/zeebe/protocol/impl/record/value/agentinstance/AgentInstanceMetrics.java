@@ -8,112 +8,107 @@
 package io.camunda.zeebe.protocol.impl.record.value.agentinstance;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
+import org.jspecify.annotations.NullMarked;
 
-@JsonIgnoreProperties({"encodedLength", "empty"})
-public final class AgentInstanceMetrics extends ObjectValue
+@MsgpackPojo
+@NullMarked
+@JsonIgnoreProperties({"encodedLength", "empty", "length"})
+public final class AgentInstanceMetrics extends MsgpackBufferValue<AgentInstanceMetrics>
     implements AgentInstanceRecordValue.AgentInstanceMetricsValue {
 
-  private final LongProperty inputTokensProp = new LongProperty("inputTokens", 0L);
-  private final LongProperty outputTokensProp = new LongProperty("outputTokens", 0L);
-  private final LongProperty reasoningTokenCountProp = new LongProperty("reasoningTokenCount", 0L);
-  private final LongProperty cacheCreationTokenCountProp =
-      new LongProperty("cacheCreationTokenCount", 0L);
-  private final LongProperty cacheReadTokenCountProp = new LongProperty("cacheReadTokenCount", 0L);
-  private final IntegerProperty modelCallsProp = new IntegerProperty("modelCalls", 0);
-  private final IntegerProperty toolCallsProp = new IntegerProperty("toolCalls", 0);
-
-  public AgentInstanceMetrics() {
-    super(7);
-    declareProperty(inputTokensProp)
-        .declareProperty(outputTokensProp)
-        .declareProperty(reasoningTokenCountProp)
-        .declareProperty(cacheCreationTokenCountProp)
-        .declareProperty(cacheReadTokenCountProp)
-        .declareProperty(modelCallsProp)
-        .declareProperty(toolCallsProp);
-  }
+  long inputTokens = 0L;
+  long outputTokens = 0L;
+  long reasoningTokenCount = 0L;
+  long cacheCreationTokenCount = 0L;
+  long cacheReadTokenCount = 0L;
+  int modelCalls = 0;
+  int toolCalls = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getInputTokens() {
-    return inputTokensProp.getValue();
+    return inputTokens;
   }
 
   public AgentInstanceMetrics setInputTokens(final long inputTokens) {
-    inputTokensProp.setValue(inputTokens);
+    this.inputTokens = inputTokens;
     return this;
   }
 
   @Override
   public long getOutputTokens() {
-    return outputTokensProp.getValue();
+    return outputTokens;
   }
 
   public AgentInstanceMetrics setOutputTokens(final long outputTokens) {
-    outputTokensProp.setValue(outputTokens);
+    this.outputTokens = outputTokens;
     return this;
   }
 
   @Override
   public long getReasoningTokenCount() {
-    return reasoningTokenCountProp.getValue();
+    return reasoningTokenCount;
   }
 
   public AgentInstanceMetrics setReasoningTokenCount(final long reasoningTokenCount) {
-    reasoningTokenCountProp.setValue(reasoningTokenCount);
+    this.reasoningTokenCount = reasoningTokenCount;
     return this;
   }
 
   @Override
   public long getCacheCreationTokenCount() {
-    return cacheCreationTokenCountProp.getValue();
+    return cacheCreationTokenCount;
   }
 
   public AgentInstanceMetrics setCacheCreationTokenCount(final long cacheCreationTokenCount) {
-    cacheCreationTokenCountProp.setValue(cacheCreationTokenCount);
+    this.cacheCreationTokenCount = cacheCreationTokenCount;
     return this;
   }
 
   @Override
   public long getCacheReadTokenCount() {
-    return cacheReadTokenCountProp.getValue();
+    return cacheReadTokenCount;
   }
 
   public AgentInstanceMetrics setCacheReadTokenCount(final long cacheReadTokenCount) {
-    cacheReadTokenCountProp.setValue(cacheReadTokenCount);
+    this.cacheReadTokenCount = cacheReadTokenCount;
     return this;
   }
 
   @Override
   public int getModelCalls() {
-    return modelCallsProp.getValue();
+    return modelCalls;
   }
 
   public AgentInstanceMetrics setModelCalls(final int modelCalls) {
-    modelCallsProp.setValue(modelCalls);
+    this.modelCalls = modelCalls;
     return this;
   }
 
   @Override
   public int getToolCalls() {
-    return toolCallsProp.getValue();
+    return toolCalls;
   }
 
   public AgentInstanceMetrics setToolCalls(final int toolCalls) {
-    toolCallsProp.setValue(toolCalls);
+    this.toolCalls = toolCalls;
     return this;
   }
 
   @Override
-  public int hashCode() {
-    return super.hashCode();
+  protected MsgpackCodec<AgentInstanceMetrics> codec() {
+    return AgentInstanceMetricsCodec.INSTANCE;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return super.equals(o);
+  protected MsgpackOps<AgentInstanceMetrics> ops() {
+    return AgentInstanceMetricsOps.INSTANCE;
   }
 }

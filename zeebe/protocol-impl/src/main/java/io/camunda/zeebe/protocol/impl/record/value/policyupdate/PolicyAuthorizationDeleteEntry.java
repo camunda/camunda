@@ -8,108 +8,106 @@
 package io.camunda.zeebe.protocol.impl.record.value.policyupdate;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PolicyAuthorizationDeleteEntryValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-@JsonIgnoreProperties({
-  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
-  "encodedLength",
-  "empty"
-})
-public final class PolicyAuthorizationDeleteEntry extends ObjectValue
+@JsonIgnoreProperties({"encodedLength", "empty", "length"})
+@MsgpackPojo
+@NullMarked
+public final class PolicyAuthorizationDeleteEntry
+    extends MsgpackBufferValue<PolicyAuthorizationDeleteEntry>
     implements PolicyAuthorizationDeleteEntryValue {
 
-  private final EnumProperty<AuthorizationOwnerType> ownerTypeProp =
-      new EnumProperty<>(
-          "ownerType", AuthorizationOwnerType.class, AuthorizationOwnerType.UNSPECIFIED);
-  private final StringProperty ownerIdProp = new StringProperty("ownerId", "");
-  private final EnumProperty<AuthorizationResourceType> resourceTypeProp =
-      new EnumProperty<>(
-          "resourceType", AuthorizationResourceType.class, AuthorizationResourceType.UNSPECIFIED);
-  private final EnumProperty<AuthorizationResourceMatcher> resourceMatcherProp =
-      new EnumProperty<>(
-          "resourceMatcher",
-          AuthorizationResourceMatcher.class,
-          AuthorizationResourceMatcher.UNSPECIFIED);
-  private final StringProperty resourceIdProp = new StringProperty("resourceId", "");
-  private final StringProperty resourcePropertyNameProp =
-      new StringProperty("resourcePropertyName", "");
+  AuthorizationOwnerType ownerType = AuthorizationOwnerType.UNSPECIFIED;
+  DirectBuffer ownerId = Decoding.EMPTY;
+  AuthorizationResourceType resourceType = AuthorizationResourceType.UNSPECIFIED;
+  AuthorizationResourceMatcher resourceMatcher = AuthorizationResourceMatcher.UNSPECIFIED;
+  DirectBuffer resourceId = Decoding.EMPTY;
+  DirectBuffer resourcePropertyName = Decoding.EMPTY;
 
-  public PolicyAuthorizationDeleteEntry() {
-    super(6);
-    declareProperty(ownerTypeProp)
-        .declareProperty(ownerIdProp)
-        .declareProperty(resourceTypeProp)
-        .declareProperty(resourceMatcherProp)
-        .declareProperty(resourceIdProp)
-        .declareProperty(resourcePropertyNameProp);
-  }
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public AuthorizationOwnerType getOwnerType() {
-    return ownerTypeProp.getValue();
+    return ownerType;
   }
 
   public PolicyAuthorizationDeleteEntry setOwnerType(final AuthorizationOwnerType ownerType) {
-    ownerTypeProp.setValue(ownerType);
+    this.ownerType = ownerType;
     return this;
   }
 
   @Override
   public String getOwnerId() {
-    return BufferUtil.bufferAsString(ownerIdProp.getValue());
+    return BufferUtil.bufferAsString(ownerId);
   }
 
   public PolicyAuthorizationDeleteEntry setOwnerId(final String ownerId) {
-    ownerIdProp.setValue(ownerId);
+    this.ownerId = BufferUtil.wrapString(ownerId);
     return this;
   }
 
   @Override
   public AuthorizationResourceType getResourceType() {
-    return resourceTypeProp.getValue();
+    return resourceType;
   }
 
   public PolicyAuthorizationDeleteEntry setResourceType(
       final AuthorizationResourceType resourceType) {
-    resourceTypeProp.setValue(resourceType);
+    this.resourceType = resourceType;
     return this;
   }
 
   @Override
   public AuthorizationResourceMatcher getResourceMatcher() {
-    return resourceMatcherProp.getValue();
+    return resourceMatcher;
   }
 
   public PolicyAuthorizationDeleteEntry setResourceMatcher(
       final AuthorizationResourceMatcher resourceMatcher) {
-    resourceMatcherProp.setValue(resourceMatcher);
+    this.resourceMatcher = resourceMatcher;
     return this;
   }
 
   @Override
   public String getResourceId() {
-    return BufferUtil.bufferAsString(resourceIdProp.getValue());
+    return BufferUtil.bufferAsString(resourceId);
   }
 
   public PolicyAuthorizationDeleteEntry setResourceId(final String resourceId) {
-    resourceIdProp.setValue(resourceId);
+    this.resourceId = BufferUtil.wrapString(resourceId);
     return this;
   }
 
   @Override
   public String getResourcePropertyName() {
-    return BufferUtil.bufferAsString(resourcePropertyNameProp.getValue());
+    return BufferUtil.bufferAsString(resourcePropertyName);
   }
 
   public PolicyAuthorizationDeleteEntry setResourcePropertyName(final String resourcePropertyName) {
-    resourcePropertyNameProp.setValue(resourcePropertyName);
+    this.resourcePropertyName = BufferUtil.wrapString(resourcePropertyName);
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<PolicyAuthorizationDeleteEntry> codec() {
+    return PolicyAuthorizationDeleteEntryCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PolicyAuthorizationDeleteEntry> ops() {
+    return PolicyAuthorizationDeleteEntryOps.INSTANCE;
   }
 }

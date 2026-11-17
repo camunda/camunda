@@ -7,25 +7,21 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.job;
 
-import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.BPMN_PROCESS_ID_KEY;
-import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.PROCESS_INSTANCE_KEY_KEY;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.msgpack.property.PackedProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
@@ -33,15 +29,20 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobSecretReferenceValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class JobRecord extends UnifiedRecordValue implements JobRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class JobRecord extends MsgpackBufferValue<JobRecord>
+    implements MsgpackRecordValue, JobRecordValue {
 
   /**
    * The worker type prefix for Camunda Agentic AI jobs that are set in Camunda Connectors.
@@ -66,388 +67,298 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   public static final String RETRIES = "retries";
   public static final String TIMEOUT = "timeout";
   public static final String PRIORITY = "priority";
-  private static final String EMPTY_STRING = "";
-  private static final String TYPE = "type";
-  private static final String CUSTOM_HEADERS = "customHeaders";
-  private static final String VARIABLES = "variables";
-  private static final String ERROR_MESSAGE = "errorMessage";
-  // Static StringValue keys to avoid memory waste
-  private static final StringValue TYPE_KEY = new StringValue(TYPE);
-  private static final StringValue WORKER_KEY = new StringValue("worker");
-  private static final StringValue DEADLINE_KEY = new StringValue("deadline");
-  private static final StringValue TIMEOUT_KEY = new StringValue(TIMEOUT);
-  private static final StringValue RETRIES_KEY = new StringValue(RETRIES);
-  private static final StringValue RETRY_BACKOFF_KEY = new StringValue("retryBackoff");
-  private static final StringValue RECURRING_TIME_KEY = new StringValue("recurringTime");
-  private static final StringValue CUSTOM_HEADERS_KEY = new StringValue(CUSTOM_HEADERS);
-  private static final StringValue VARIABLES_KEY = new StringValue(VARIABLES);
-  private static final StringValue ERROR_MESSAGE_KEY = new StringValue(ERROR_MESSAGE);
-  private static final StringValue ERROR_CODE_KEY = new StringValue("errorCode");
-  private static final StringValue PROCESS_DEFINITION_VERSION_KEY =
-      new StringValue("processDefinitionVersion");
-  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
-      new StringValue("processDefinitionKey");
-  private static final StringValue JOB_KIND_KEY = new StringValue("jobKind");
-  private static final StringValue JOB_LISTENER_EVENT_TYPE_KEY =
-      new StringValue("jobListenerEventType");
-  private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
-  private static final StringValue ELEMENT_INSTANCE_KEY_KEY = new StringValue("elementInstanceKey");
-  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  private static final StringValue CHANGED_ATTRIBUTES_KEY = new StringValue("changedAttributes");
-  private static final StringValue RESULT_KEY = new StringValue("result");
-  private static final StringValue TAGS = new StringValue("tags");
-  private static final StringValue IS_JOB_TO_USERTASK_MIGRATION_KEY =
-      new StringValue("isUserTaskMigration");
-  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
-      new StringValue("rootProcessInstanceKey");
-  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
-  private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
-  private static final StringValue PRIORITY_KEY = new StringValue(PRIORITY);
-  private static final StringValue JOB_LEASE_TOKEN_KEY = new StringValue("jobLeaseToken");
-  private static final StringValue SECRET_REFERENCES_KEY = new StringValue("secretReferences");
-  private final StringProperty typeProp = new StringProperty(TYPE_KEY, EMPTY_STRING);
-  private final StringProperty workerProp = new StringProperty(WORKER_KEY, EMPTY_STRING);
-  private final LongProperty deadlineProp = new LongProperty(DEADLINE_KEY, -1);
-  private final LongProperty timeoutProp = new LongProperty(TIMEOUT_KEY, -1);
-  private final IntegerProperty retriesProp = new IntegerProperty(RETRIES_KEY, -1);
-  private final LongProperty retryBackoffProp = new LongProperty(RETRY_BACKOFF_KEY, 0);
-  private final LongProperty recurringTimeProp = new LongProperty(RECURRING_TIME_KEY, -1);
-  private final PackedProperty customHeadersProp =
-      new PackedProperty(CUSTOM_HEADERS_KEY, NO_HEADERS);
-  private final DocumentProperty variableProp = new DocumentProperty(VARIABLES_KEY);
-  private final StringProperty errorMessageProp =
-      new StringProperty(ERROR_MESSAGE_KEY, EMPTY_STRING);
-  private final StringProperty errorCodeProp = new StringProperty(ERROR_CODE_KEY, EMPTY_STRING);
-  private final LongProperty processInstanceKeyProp =
-      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final StringProperty bpmnProcessIdProp =
-      new StringProperty(BPMN_PROCESS_ID_KEY, EMPTY_STRING);
-  private final IntegerProperty processDefinitionVersionProp =
-      new IntegerProperty(PROCESS_DEFINITION_VERSION_KEY, -1);
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
-  private final EnumProperty<JobKind> jobKindProp =
-      new EnumProperty<>(JOB_KIND_KEY, JobKind.class, JobKind.BPMN_ELEMENT);
-  private final EnumProperty<JobListenerEventType> jobListenerEventTypeProp =
-      new EnumProperty<>(
-          JOB_LISTENER_EVENT_TYPE_KEY,
-          JobListenerEventType.class,
-          JobListenerEventType.UNSPECIFIED);
-  private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, EMPTY_STRING);
-  private final EnumProperty<BpmnElementType> elementTypeProp =
-      new EnumProperty<>(
-          new StringValue("elementType"), BpmnElementType.class, BpmnElementType.UNSPECIFIED);
-  private final LongProperty elementInstanceKeyProp =
-      new LongProperty(ELEMENT_INSTANCE_KEY_KEY, -1L);
-  private final StringProperty tenantIdProp =
-      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final ArrayProperty<StringValue> changedAttributesProp =
-      new ArrayProperty<>(CHANGED_ATTRIBUTES_KEY, StringValue::new);
-  private final ObjectProperty<JobResult> resultProp =
-      new ObjectProperty<>(RESULT_KEY, new JobResult());
-  private final ArrayProperty<StringValue> tagsProp = new ArrayProperty<>(TAGS, StringValue::new);
-  private final BooleanProperty isJobToUserTaskMigrationProp =
-      new BooleanProperty(IS_JOB_TO_USERTASK_MIGRATION_KEY, false);
-  private final LongProperty rootProcessInstanceKeyProp =
-      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
-  private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, EMPTY_STRING);
-  private final IntegerProperty priorityProp = new IntegerProperty(PRIORITY_KEY, 0);
-  private final StringProperty jobLeaseTokenProp =
-      new StringProperty(JOB_LEASE_TOKEN_KEY, EMPTY_STRING);
-  private final ArrayProperty<JobSecretReference> secretReferencesProp =
-      new ArrayProperty<>(SECRET_REFERENCES_KEY, JobSecretReference::new);
 
-  public JobRecord() {
-    super(31);
-    declareProperty(deadlineProp)
-        .declareProperty(timeoutProp)
-        .declareProperty(workerProp)
-        .declareProperty(retriesProp)
-        .declareProperty(retryBackoffProp)
-        .declareProperty(recurringTimeProp)
-        .declareProperty(typeProp)
-        .declareProperty(customHeadersProp)
-        .declareProperty(variableProp)
-        .declareProperty(errorMessageProp)
-        .declareProperty(errorCodeProp)
-        .declareProperty(bpmnProcessIdProp)
-        .declareProperty(processDefinitionVersionProp)
-        .declareProperty(processDefinitionKeyProp)
-        .declareProperty(processInstanceKeyProp)
-        .declareProperty(jobKindProp)
-        .declareProperty(jobListenerEventTypeProp)
-        .declareProperty(elementIdProp)
-        .declareProperty(elementTypeProp)
-        .declareProperty(elementInstanceKeyProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(changedAttributesProp)
-        .declareProperty(resultProp)
-        .declareProperty(tagsProp)
-        .declareProperty(isJobToUserTaskMigrationProp)
-        .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(priorityProp)
-        .declareProperty(businessIdProp)
-        .declareProperty(jobLeaseTokenProp)
-        .declareProperty(secretReferencesProp);
-  }
+  long deadline = -1;
+  long timeout = -1;
+  DirectBuffer worker = Decoding.EMPTY;
+  int retries = -1;
+  long retryBackoff = 0;
+  long recurringTime = -1;
+  DirectBuffer type = Decoding.EMPTY;
+
+  @MsgpackProperty(raw = true)
+  DirectBuffer customHeaders = NO_HEADERS;
+
+  @MsgpackProperty(document = true)
+  DirectBuffer variables = DocumentValue.EMPTY_DOCUMENT;
+
+  DirectBuffer errorMessage = Decoding.EMPTY;
+  DirectBuffer errorCode = Decoding.EMPTY;
+  DirectBuffer bpmnProcessId = Decoding.EMPTY;
+  int processDefinitionVersion = -1;
+  long processDefinitionKey = -1L;
+  long processInstanceKey = -1L;
+  JobKind jobKind = JobKind.BPMN_ELEMENT;
+  JobListenerEventType jobListenerEventType = JobListenerEventType.UNSPECIFIED;
+  DirectBuffer elementId = Decoding.EMPTY;
+  BpmnElementType elementType = BpmnElementType.UNSPECIFIED;
+  long elementInstanceKey = -1L;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  final List<DirectBuffer> changedAttributes = new ArrayList<>();
+  final JobResult result = new JobResult();
+  final List<DirectBuffer> tags = new ArrayList<>();
+  boolean isUserTaskMigration = false;
+  long rootProcessInstanceKey = -1L;
+  int storageOrdinal = 0;
+  int priority = 0;
+  DirectBuffer businessId = Decoding.EMPTY;
+  DirectBuffer jobLeaseToken = Decoding.EMPTY;
+  final List<JobSecretReference> secretReferences = new ArrayList<>();
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public void wrapWithoutVariables(final JobRecord record) {
-    deadlineProp.setValue(record.getDeadline());
-    timeoutProp.setValue(record.getTimeout());
-    workerProp.setValue(record.getWorkerBuffer());
-    retriesProp.setValue(record.getRetries());
-    retryBackoffProp.setValue(record.getRetryBackoff());
-    recurringTimeProp.setValue(record.getRecurringTime());
-    typeProp.setValue(record.getTypeBuffer());
-    final DirectBuffer customHeaders = record.getCustomHeadersBuffer();
-    customHeadersProp.setValue(customHeaders, 0, customHeaders.capacity());
-    errorMessageProp.setValue(record.getErrorMessageBuffer());
-    errorCodeProp.setValue(record.getErrorCodeBuffer());
-    bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
-    processDefinitionVersionProp.setValue(record.getProcessDefinitionVersion());
-    processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
-    processInstanceKeyProp.setValue(record.getProcessInstanceKey());
-    jobKindProp.setValue(record.getJobKind());
-    jobListenerEventTypeProp.setValue(record.getJobListenerEventType());
-    elementIdProp.setValue(record.getElementIdBuffer());
-    elementTypeProp.setValue(record.getElementType());
-    elementInstanceKeyProp.setValue(record.getElementInstanceKey());
-    tenantIdProp.setValue(record.getTenantId());
+    deadline = record.getDeadline();
+    timeout = record.getTimeout();
+    worker = copy(record.worker);
+    retries = record.getRetries();
+    retryBackoff = record.getRetryBackoff();
+    recurringTime = record.getRecurringTime();
+    type = copy(record.type);
+    customHeaders = copy(record.customHeaders);
+    errorMessage = copy(record.errorMessage);
+    errorCode = copy(record.errorCode);
+    bpmnProcessId = copy(record.bpmnProcessId);
+    processDefinitionVersion = record.getProcessDefinitionVersion();
+    processDefinitionKey = record.getProcessDefinitionKey();
+    processInstanceKey = record.getProcessInstanceKey();
+    jobKind = record.getJobKind();
+    jobListenerEventType = record.getJobListenerEventType();
+    elementId = copy(record.elementId);
+    elementType = record.getElementType();
+    elementInstanceKey = record.getElementInstanceKey();
+    tenantId = copy(record.tenantId);
     setChangedAttributes(record.getChangedAttributes());
-    resultProp.getValue().wrap(record.getResult());
-    isJobToUserTaskMigrationProp.setValue(record.isJobToUserTaskMigration());
+    result.wrap(record.getResult());
+    isUserTaskMigration = record.isJobToUserTaskMigration();
 
     setTags(record.getTags());
-    rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
-    storageOrdinalProp.setValue(record.getStorageOrdinal());
-    priorityProp.setValue(record.getPriority());
-    businessIdProp.setValue(record.getBusinessIdBuffer());
-    jobLeaseTokenProp.setValue(record.getJobLeaseTokenBuffer());
+    rootProcessInstanceKey = record.getRootProcessInstanceKey();
+    storageOrdinal = record.getStorageOrdinal();
+    priority = record.getPriority();
+    businessId = copy(record.businessId);
+    jobLeaseToken = copy(record.jobLeaseToken);
     copySecretReferencesFrom(record);
   }
 
   private void copySecretReferencesFrom(final JobRecord record) {
     // same-class buffer copy avoids the String round-trip of
     // setSecretReferences(getSecretReferences())
-    secretReferencesProp.reset();
-    record.secretReferencesProp.forEach(
-        reference -> secretReferencesProp.add().copyFrom(reference));
+    secretReferences.clear();
+    record.secretReferences.forEach(
+        reference -> {
+          final var copy = new JobSecretReference();
+          copy.copyFrom(reference);
+          secretReferences.add(copy);
+        });
   }
 
   public void wrap(final JobRecord record) {
     wrapWithoutVariables(record);
-    variableProp.setValue(record.getVariablesBuffer());
+    variables = copy(record.variables);
   }
 
   public JobRecord resetVariables() {
-    variableProp.reset();
+    variables = DocumentValue.EMPTY_DOCUMENT;
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getCustomHeadersBuffer() {
-    return customHeadersProp.getValue();
+    return customHeaders;
   }
 
   @JsonIgnore
   public DirectBuffer getErrorMessageBuffer() {
-    return errorMessageProp.getValue();
+    return errorMessage;
   }
 
   @JsonIgnore
   public DirectBuffer getErrorCodeBuffer() {
-    return errorCodeProp.getValue();
+    return errorCode;
   }
 
   @Override
   public String getType() {
-    return bufferAsString(typeProp.getValue());
+    return bufferAsString(type);
   }
 
   @Override
   public Map<String, String> getCustomHeaders() {
-    return MsgPackConverter.convertToStringMap(customHeadersProp.getValue());
+    return MsgPackConverter.convertToStringMap(customHeaders);
   }
 
   @Override
   public String getWorker() {
-    return bufferAsString(workerProp.getValue());
+    return bufferAsString(worker);
   }
 
   @Override
   public int getRetries() {
-    return retriesProp.getValue();
+    return retries;
   }
 
   @Override
   public int getPriority() {
-    return priorityProp.getValue();
+    return priority;
   }
 
   @Override
   public long getRetryBackoff() {
-    return retryBackoffProp.getValue();
+    return retryBackoff;
   }
 
   @Override
   public long getRecurringTime() {
-    return recurringTimeProp.getValue();
+    return recurringTime;
   }
 
   @Override
   public long getDeadline() {
-    return deadlineProp.getValue();
+    return deadline;
   }
 
   @Override
   public long getTimeout() {
-    return timeoutProp.getValue();
+    return timeout;
   }
 
   @Override
   public String getErrorMessage() {
-    return bufferAsString(errorMessageProp.getValue());
+    return bufferAsString(errorMessage);
   }
 
   @Override
   public String getErrorCode() {
-    return bufferAsString(errorCodeProp.getValue());
+    return bufferAsString(errorCode);
   }
 
   @Override
   public String getElementId() {
-    return bufferAsString(elementIdProp.getValue());
+    return bufferAsString(elementId);
   }
 
   @Override
   public BpmnElementType getElementType() {
-    return elementTypeProp.getValue();
+    return elementType;
   }
 
   @Override
   public long getElementInstanceKey() {
-    return elementInstanceKeyProp.getValue();
+    return elementInstanceKey;
   }
 
   @Override
   public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
+    return rootProcessInstanceKey;
   }
 
   public JobRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
   }
 
   @Override
   public String getBusinessId() {
-    return bufferAsString(businessIdProp.getValue());
+    return bufferAsString(businessId);
   }
 
   public JobRecord setBusinessId(final String businessId) {
-    businessIdProp.setValue(businessId);
+    this.businessId = BufferUtil.wrapString(businessId);
     return this;
   }
 
   public JobRecord setBusinessId(final DirectBuffer businessId) {
-    businessIdProp.setValue(businessId);
+    this.businessId = copy(businessId);
     return this;
   }
 
   @Override
   public String getJobLeaseToken() {
-    return bufferAsString(jobLeaseTokenProp.getValue());
+    return bufferAsString(jobLeaseToken);
   }
 
   @Override
   public String getBpmnProcessId() {
-    return bufferAsString(bpmnProcessIdProp.getValue());
+    return bufferAsString(bpmnProcessId);
   }
 
   @Override
   public int getProcessDefinitionVersion() {
-    return processDefinitionVersionProp.getValue();
+    return processDefinitionVersion;
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey;
   }
 
   public JobRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProp.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
   @Override
   public JobKind getJobKind() {
-    return jobKindProp.getValue();
+    return jobKind;
   }
 
   public JobRecord setJobKind(final JobKind jobKind) {
-    jobKindProp.setValue(jobKind);
+    this.jobKind = jobKind;
     return this;
   }
 
   @Override
   public JobListenerEventType getJobListenerEventType() {
-    return jobListenerEventTypeProp.getValue();
+    return jobListenerEventType;
   }
 
   @Override
   public Set<String> getChangedAttributes() {
-    return StreamSupport.stream(changedAttributesProp.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .collect(Collectors.toSet());
+    return changedAttributes.stream().map(BufferUtil::bufferAsString).collect(Collectors.toSet());
   }
 
   public JobRecord setChangedAttributes(final Set<String> changedAttributes) {
-    changedAttributesProp.reset();
+    this.changedAttributes.clear();
     changedAttributes.forEach(
-        attribute -> changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute)));
+        attribute -> this.changedAttributes.add(BufferUtil.wrapString(attribute)));
     return this;
   }
 
   @Override
   public JobResult getResult() {
-    return resultProp.getValue();
+    return result;
   }
 
   public JobRecord setResult(final JobResult result) {
     if (result != null) {
-      resultProp.getValue().wrap(result);
+      this.result.wrap(result);
     }
     return this;
   }
 
   @Override
   public Set<String> getTags() {
-    return StreamSupport.stream(tagsProp.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .collect(Collectors.toSet());
+    return tags.stream().map(BufferUtil::bufferAsString).collect(Collectors.toSet());
   }
 
   public JobRecord setTags(final Set<String> tags) {
-    tagsProp.reset();
+    this.tags.clear();
     if (tags != null) {
-      tags.forEach(tag -> tagsProp.add().wrap(BufferUtil.wrapString(tag)));
+      tags.forEach(tag -> this.tags.add(BufferUtil.wrapString(tag)));
     }
     return this;
   }
 
   @Override
   public boolean isJobToUserTaskMigration() {
-    return isJobToUserTaskMigrationProp.getValue();
+    return isUserTaskMigration;
   }
 
   @Override
   public List<JobSecretReferenceValue> getSecretReferences() {
     // detach copies so the returned list stays valid if this record is reused or reset later
-    return secretReferencesProp.stream()
+    return secretReferences.stream()
         .map(
             element -> {
               final var copy = new JobSecretReference();
@@ -459,7 +370,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setSecretReferences(
       final List<? extends JobSecretReferenceValue> secretReferences) {
-    secretReferencesProp.reset();
+    this.secretReferences.clear();
     if (secretReferences != null) {
       secretReferences.forEach(
           reference ->
@@ -470,37 +381,37 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   public JobRecord setProcessDefinitionVersion(final int version) {
-    processDefinitionVersionProp.setValue(version);
+    processDefinitionVersion = version;
     return this;
   }
 
   public JobRecord setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = BufferUtil.wrapString(bpmnProcessId);
     return this;
   }
 
   public JobRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = copy(bpmnProcessId);
     return this;
   }
 
   public JobRecord setJobLeaseToken(final String jobLeaseToken) {
-    jobLeaseTokenProp.setValue(jobLeaseToken);
+    this.jobLeaseToken = BufferUtil.wrapString(jobLeaseToken);
     return this;
   }
 
   public JobRecord setElementInstanceKey(final long elementInstanceKey) {
-    elementInstanceKeyProp.setValue(elementInstanceKey);
+    this.elementInstanceKey = elementInstanceKey;
     return this;
   }
 
   public JobRecord setElementType(final BpmnElementType elementType) {
-    elementTypeProp.setValue(elementType);
+    this.elementType = elementType;
     return this;
   }
 
   public JobRecord setElementId(final String elementId) {
-    elementIdProp.setValue(elementId);
+    this.elementId = BufferUtil.wrapString(elementId);
     return this;
   }
 
@@ -509,12 +420,12 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   public JobRecord setErrorCode(final DirectBuffer errorCode) {
-    errorCodeProp.setValue(errorCode);
+    this.errorCode = copy(errorCode);
     return this;
   }
 
   public JobRecord setErrorMessage(final String errorMessage) {
-    errorMessageProp.setValue(errorMessage);
+    this.errorMessage = BufferUtil.wrapString(errorMessage);
     return this;
   }
 
@@ -523,37 +434,37 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   public JobRecord setTimeout(final long val) {
-    timeoutProp.setValue(val);
+    timeout = val;
     return this;
   }
 
   public JobRecord setDeadline(final long val) {
-    deadlineProp.setValue(val);
+    deadline = val;
     return this;
   }
 
   public JobRecord setRecurringTime(final long recurringTime) {
-    recurringTimeProp.setValue(recurringTime);
+    this.recurringTime = recurringTime;
     return this;
   }
 
   public JobRecord setRetryBackoff(final long retryBackoff) {
-    retryBackoffProp.setValue(retryBackoff);
+    this.retryBackoff = retryBackoff;
     return this;
   }
 
   public JobRecord setPriority(final int priority) {
-    priorityProp.setValue(priority);
+    this.priority = priority;
     return this;
   }
 
   public JobRecord setRetries(final int retries) {
-    retriesProp.setValue(retries);
+    this.retries = retries;
     return this;
   }
 
   public JobRecord setWorker(final String worker) {
-    workerProp.setValue(worker);
+    this.worker = BufferUtil.wrapString(worker);
     return this;
   }
 
@@ -562,12 +473,12 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   public JobRecord setCustomHeaders(final DirectBuffer buffer) {
-    customHeadersProp.setValue(buffer, 0, buffer.capacity());
+    customHeaders = copy(buffer);
     return this;
   }
 
   public JobRecord setType(final String type) {
-    typeProp.setValue(type);
+    this.type = BufferUtil.wrapString(type);
     return this;
   }
 
@@ -580,33 +491,33 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
    * #getSecretReferences()}. The elements stay owned by this record; do not hold on to them.
    */
   @JsonIgnore
-  public ValueArray<JobSecretReference> secretReferences() {
-    return secretReferencesProp;
+  public List<JobSecretReference> secretReferences() {
+    return Collections.unmodifiableList(secretReferences);
   }
 
   @JsonIgnore
   public boolean hasSecretReferences() {
-    return !secretReferencesProp.isEmpty();
+    return !secretReferences.isEmpty();
   }
 
   public JobRecord addSecretReference(
       final String storeId, final String secretReference, final String path) {
-    secretReferencesProp
-        .add()
-        .setStoreId(storeId)
-        .setSecretReference(secretReference)
-        .setPath(path);
+    secretReferences.add(
+        new JobSecretReference()
+            .setStoreId(storeId)
+            .setSecretReference(secretReference)
+            .setPath(path));
     return this;
   }
 
   public JobRecord resetSecretReferences() {
-    secretReferencesProp.reset();
+    secretReferences.clear();
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getBusinessIdBuffer() {
-    return businessIdProp.getValue();
+    return businessId;
   }
 
   @JsonIgnore
@@ -616,106 +527,106 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   @JsonIgnore
   public DirectBuffer getJobLeaseTokenBuffer() {
-    return jobLeaseTokenProp.getValue();
+    return jobLeaseToken;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public JobRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 
   public JobRecord setListenerEventType(final JobListenerEventType jobListenerEventType) {
-    jobListenerEventTypeProp.setValue(jobListenerEventType);
+    this.jobListenerEventType = jobListenerEventType;
     return this;
   }
 
   public JobRecord setIsJobToUserTaskMigration(final boolean isJobToUserTaskMigration) {
-    isJobToUserTaskMigrationProp.setValue(isJobToUserTaskMigration);
+    isUserTaskMigration = isJobToUserTaskMigration;
     return this;
   }
 
   @JsonIgnore
   public Map<String, Object> getCustomHeadersObjectMap() {
-    return MsgPackConverter.convertToMap(customHeadersProp.getValue());
+    return MsgPackConverter.convertToMap(customHeaders);
   }
 
   @JsonIgnore
   public DirectBuffer getTypeBuffer() {
-    return typeProp.getValue();
+    return type;
   }
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variableProp.getValue());
+    return MsgPackConverter.convertToMap(variables);
   }
 
   public JobRecord setVariables(final DirectBuffer variables) {
-    variableProp.setValue(variables);
+    this.variables = copy(Decoding.document(variables));
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variableProp.getValue();
+    return variables;
   }
 
   @JsonIgnore
   public DirectBuffer getWorkerBuffer() {
-    return workerProp.getValue();
+    return worker;
   }
 
   @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProp.getValue();
+    return bpmnProcessId;
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey;
   }
 
   public JobRecord setProcessInstanceKey(final long key) {
-    processInstanceKeyProp.setValue(key);
+    processInstanceKey = key;
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getElementIdBuffer() {
-    return elementIdProp.getValue();
+    return elementId;
   }
 
   public JobRecord setElementId(final DirectBuffer activityId, final int offset, final int length) {
-    elementIdProp.setValue(activityId, offset, length);
+    elementId = copy(activityId, offset, length);
     return this;
   }
 
   public JobRecord setErrorMessage(final DirectBuffer buf, final int offset, final int length) {
-    errorMessageProp.setValue(buf, offset, length);
+    errorMessage = copy(buf, offset, length);
     return this;
   }
 
   public JobRecord setType(final DirectBuffer buf, final int offset, final int length) {
-    typeProp.setValue(buf, offset, length);
+    type = copy(buf, offset, length);
     return this;
   }
 
   public JobRecord setWorker(final DirectBuffer worker, final int offset, final int length) {
-    workerProp.setValue(worker, offset, length);
+    this.worker = copy(worker, offset, length);
     return this;
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public JobRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
@@ -731,5 +642,26 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   @JsonIgnore
   public boolean hasAgenticPrefix() {
     return getType().startsWith(IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX);
+  }
+
+  // setters detach the value: callers hand in buffers they reuse afterwards
+  private static DirectBuffer copy(final DirectBuffer source) {
+    return copy(source, 0, source.capacity());
+  }
+
+  private static DirectBuffer copy(final DirectBuffer source, final int offset, final int length) {
+    final var bytes = new byte[length];
+    source.getBytes(offset, bytes);
+    return new UnsafeBuffer(bytes);
+  }
+
+  @Override
+  protected MsgpackCodec<JobRecord> codec() {
+    return JobRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<JobRecord> ops() {
+    return JobRecordOps.INSTANCE;
   }
 }

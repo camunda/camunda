@@ -9,118 +9,119 @@ package io.camunda.zeebe.protocol.impl.record.value.document;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.DocumentReferenceValue.DocumentReferenceMetadataValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-@JsonIgnoreProperties({"encodedLength", "empty"})
-public final class DocumentReferenceMetadata extends ObjectValue
+@JsonIgnoreProperties({"encodedLength", "empty", "length"})
+@MsgpackPojo
+@NullMarked
+public final class DocumentReferenceMetadata extends MsgpackBufferValue<DocumentReferenceMetadata>
     implements DocumentReferenceMetadataValue {
 
-  private final StringProperty contentTypeProp = new StringProperty("contentType", "");
-  private final StringProperty fileNameProp = new StringProperty("fileName", "");
-  private final LongProperty expiresAtProp = new LongProperty("expiresAt", -1L);
-  private final LongProperty sizeProp = new LongProperty("size", -1L);
-  private final StringProperty processDefinitionIdProp =
-      new StringProperty("processDefinitionId", "");
-  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
-  private final DocumentProperty customPropertiesProp = new DocumentProperty("customProperties");
+  DirectBuffer contentType = Decoding.EMPTY;
+  DirectBuffer fileName = Decoding.EMPTY;
+  long expiresAt = -1L;
+  long size = -1L;
+  DirectBuffer processDefinitionId = Decoding.EMPTY;
+  long processInstanceKey = -1L;
 
-  public DocumentReferenceMetadata() {
-    super(7);
-    declareProperty(contentTypeProp)
-        .declareProperty(fileNameProp)
-        .declareProperty(expiresAtProp)
-        .declareProperty(sizeProp)
-        .declareProperty(processDefinitionIdProp)
-        .declareProperty(processInstanceKeyProp)
-        .declareProperty(customPropertiesProp);
-  }
+  @MsgpackProperty(document = true)
+  DirectBuffer customProperties = DocumentValue.EMPTY_DOCUMENT;
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getContentType() {
-    return BufferUtil.bufferAsString(contentTypeProp.getValue());
+    return BufferUtil.bufferAsString(contentType);
   }
 
   public DocumentReferenceMetadata setContentType(final String contentType) {
-    contentTypeProp.setValue(contentType);
+    this.contentType = BufferUtil.wrapString(contentType);
     return this;
   }
 
   @Override
   public String getFileName() {
-    return BufferUtil.bufferAsString(fileNameProp.getValue());
+    return BufferUtil.bufferAsString(fileName);
   }
 
   public DocumentReferenceMetadata setFileName(final String fileName) {
-    fileNameProp.setValue(fileName);
+    this.fileName = BufferUtil.wrapString(fileName);
     return this;
   }
 
   @Override
   public long getExpiresAt() {
-    return expiresAtProp.getValue();
+    return expiresAt;
   }
 
   public DocumentReferenceMetadata setExpiresAt(final long expiresAt) {
-    expiresAtProp.setValue(expiresAt);
+    this.expiresAt = expiresAt;
     return this;
   }
 
   @Override
   public long getSize() {
-    return sizeProp.getValue();
+    return size;
   }
 
   public DocumentReferenceMetadata setSize(final long size) {
-    sizeProp.setValue(size);
+    this.size = size;
     return this;
   }
 
   @Override
   public String getProcessDefinitionId() {
-    return BufferUtil.bufferAsString(processDefinitionIdProp.getValue());
+    return BufferUtil.bufferAsString(processDefinitionId);
   }
 
   public DocumentReferenceMetadata setProcessDefinitionId(final String processDefinitionId) {
-    processDefinitionIdProp.setValue(processDefinitionId);
+    this.processDefinitionId = BufferUtil.wrapString(processDefinitionId);
     return this;
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey;
   }
 
   public DocumentReferenceMetadata setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
   @Override
   public Map<String, Object> getCustomProperties() {
-    return MsgPackConverter.convertToMap(customPropertiesProp.getValue());
+    return MsgPackConverter.convertToMap(customProperties);
   }
 
   @JsonIgnore
   public DirectBuffer getCustomPropertiesBuffer() {
-    return customPropertiesProp.getValue();
+    return customProperties;
   }
 
   public DocumentReferenceMetadata setCustomProperties(final DirectBuffer customProperties) {
-    customPropertiesProp.setValue(customProperties);
+    this.customProperties = Decoding.document(customProperties);
     return this;
   }
 
   public DocumentReferenceMetadata setCustomProperties(final Map<String, Object> customProperties) {
-    customPropertiesProp.setValue(
-        BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(customProperties)));
+    this.customProperties =
+        Decoding.document(
+            BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(customProperties)));
     return this;
   }
 
@@ -132,5 +133,15 @@ public final class DocumentReferenceMetadata extends ObjectValue
     setProcessDefinitionId(other.getProcessDefinitionId());
     setProcessInstanceKey(other.getProcessInstanceKey());
     setCustomProperties(other.getCustomProperties());
+  }
+
+  @Override
+  protected MsgpackCodec<DocumentReferenceMetadata> codec() {
+    return DocumentReferenceMetadataCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<DocumentReferenceMetadata> ops() {
+    return DocumentReferenceMetadataOps.INSTANCE;
   }
 }

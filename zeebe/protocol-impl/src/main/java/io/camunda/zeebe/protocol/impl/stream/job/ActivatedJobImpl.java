@@ -7,39 +7,56 @@
  */
 package io.camunda.zeebe.protocol.impl.stream.job;
 
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import org.jspecify.annotations.NullMarked;
 
-public class ActivatedJobImpl extends UnpackedObject implements ActivatedJob {
+@MsgpackPojo
+@NullMarked
+public final class ActivatedJobImpl extends MsgpackBufferValue<ActivatedJobImpl>
+    implements ActivatedJob {
 
-  private final LongProperty jobKey = new LongProperty("key", -1);
-  private final ObjectProperty<JobRecord> jobRecord =
-      new ObjectProperty<>("record", new JobRecord());
+  @MsgpackProperty("key")
+  long jobKey = -1;
 
-  public ActivatedJobImpl() {
-    super(2);
-    declareProperty(jobKey).declareProperty(jobRecord);
-  }
+  @MsgpackProperty("record")
+  final JobRecord jobRecord = new JobRecord();
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long jobKey() {
-    return jobKey.getValue();
+    return jobKey;
   }
 
   @Override
   public JobRecord jobRecord() {
-    return jobRecord.getValue();
+    return jobRecord;
   }
 
   public ActivatedJobImpl setJobKey(final long jobKey) {
-    this.jobKey.setValue(jobKey);
+    this.jobKey = jobKey;
     return this;
   }
 
   public ActivatedJobImpl setRecord(final JobRecord jobRecord) {
-    this.jobRecord.getValue().wrap(jobRecord);
+    this.jobRecord.copyFrom(jobRecord);
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ActivatedJobImpl> codec() {
+    return ActivatedJobImplCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ActivatedJobImpl> ops() {
+    return ActivatedJobImplOps.INSTANCE;
   }
 }

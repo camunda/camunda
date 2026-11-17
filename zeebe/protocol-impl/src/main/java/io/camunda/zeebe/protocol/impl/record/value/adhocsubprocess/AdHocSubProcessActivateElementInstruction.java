@@ -9,54 +9,75 @@ package io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue.AdHocSubProcessActivateElementInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @JsonIgnoreProperties({
-  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
+  /* encodedLength and empty were inherited from ObjectValue, length is inherited from
+  MsgpackBufferValue; they have no purpose in exported JSON records*/
   "encodedLength",
-  "empty"
+  "empty",
+  "length"
 })
-public final class AdHocSubProcessActivateElementInstruction extends ObjectValue
+@MsgpackPojo
+@NullMarked
+public final class AdHocSubProcessActivateElementInstruction
+    extends MsgpackBufferValue<AdHocSubProcessActivateElementInstruction>
     implements AdHocSubProcessActivateElementInstructionValue {
 
-  private final StringProperty elementId = new StringProperty("elementId");
-  private final DocumentProperty variables = new DocumentProperty("variables");
+  @Nullable DirectBuffer elementId;
 
-  public AdHocSubProcessActivateElementInstruction() {
-    super(2);
-    declareProperty(elementId);
-    declareProperty(variables);
-  }
+  @MsgpackProperty(document = true)
+  DirectBuffer variables = DocumentValue.EMPTY_DOCUMENT;
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getElementId() {
-    return BufferUtil.bufferAsString(elementId.getValue());
+    return BufferUtil.bufferAsString(Decoding.required(elementId, "elementId"));
   }
 
   public AdHocSubProcessActivateElementInstruction setElementId(final String elementId) {
-    this.elementId.setValue(elementId);
+    this.elementId = BufferUtil.wrapString(elementId);
     return this;
   }
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variables.getValue());
+    return MsgPackConverter.convertToMap(variables);
   }
 
   public AdHocSubProcessActivateElementInstruction setVariables(final DirectBuffer variables) {
-    this.variables.setValue(variables);
+    this.variables = Decoding.document(variables);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variables.getValue();
+    return variables;
+  }
+
+  @Override
+  protected MsgpackCodec<AdHocSubProcessActivateElementInstruction> codec() {
+    return AdHocSubProcessActivateElementInstructionCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<AdHocSubProcessActivateElementInstruction> ops() {
+    return AdHocSubProcessActivateElementInstructionOps.INSTANCE;
   }
 }

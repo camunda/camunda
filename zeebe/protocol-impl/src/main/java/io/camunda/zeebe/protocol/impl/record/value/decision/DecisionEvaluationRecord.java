@@ -10,373 +10,413 @@ package io.camunda.zeebe.protocol.impl.record.value.decision;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class DecisionEvaluationRecord extends UnifiedRecordValue
-    implements DecisionEvaluationRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class DecisionEvaluationRecord extends MsgpackBufferValue<DecisionEvaluationRecord>
+    implements MsgpackRecordValue, DecisionEvaluationRecordValue {
 
   private static final DirectBuffer NIL_VALUE = BufferUtil.wrapArray(MsgPackHelper.NIL);
 
-  private final LongProperty decisionKeyProp = new LongProperty("decisionKey", -1L);
-  private final StringProperty decisionIdProp = new StringProperty("decisionId", "");
-  private final StringProperty decisionNameProp = new StringProperty("decisionName", "");
-  private final IntegerProperty decisionVersionProp = new IntegerProperty("decisionVersion", -1);
-  private final StringProperty decisionRequirementsIdProp =
-      new StringProperty("decisionRequirementsId", "");
-  private final LongProperty decisionRequirementsKeyProp =
-      new LongProperty("decisionRequirementsKey", -1L);
-  private final BinaryProperty decisionOutputProp = new BinaryProperty("decisionOutput", NIL_VALUE);
-  private final DocumentProperty variablesProp = new DocumentProperty("variables");
+  long decisionKey = -1L;
+  DirectBuffer decisionId = Decoding.EMPTY;
+  DirectBuffer decisionName = Decoding.EMPTY;
+  int decisionVersion = -1;
+  DirectBuffer decisionRequirementsId = Decoding.EMPTY;
+  long decisionRequirementsKey = -1L;
 
-  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty("processDefinitionKey", -1L);
-  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
-  private final StringProperty elementIdProp = new StringProperty("elementId", "");
-  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
+  @MsgpackProperty(binary = true)
+  DirectBuffer decisionOutput = NIL_VALUE;
 
-  private final ArrayProperty<EvaluatedDecisionRecord> evaluatedDecisionsProp =
-      new ArrayProperty<>("evaluatedDecisions", EvaluatedDecisionRecord::new);
+  @MsgpackProperty(document = true)
+  DirectBuffer variables = DocumentValue.EMPTY_DOCUMENT;
 
-  private final StringProperty evaluationFailureMessageProp =
-      new StringProperty("evaluationFailureMessage", "");
-  private final StringProperty failedDecisionIdProp = new StringProperty("failedDecisionId", "");
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty rootProcessInstanceKeyProp =
-      new LongProperty("rootProcessInstanceKey", -1L);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty("storageOrdinal", 0);
-  private final StringProperty businessIdProp = new StringProperty("businessId", "");
-
-  public DecisionEvaluationRecord() {
-    super(20);
-    declareProperty(decisionKeyProp)
-        .declareProperty(decisionIdProp)
-        .declareProperty(decisionNameProp)
-        .declareProperty(decisionVersionProp)
-        .declareProperty(decisionRequirementsIdProp)
-        .declareProperty(decisionRequirementsKeyProp)
-        .declareProperty(decisionOutputProp)
-        .declareProperty(variablesProp)
-        .declareProperty(bpmnProcessIdProp)
-        .declareProperty(processDefinitionKeyProp)
-        .declareProperty(processInstanceKeyProp)
-        .declareProperty(elementIdProp)
-        .declareProperty(elementInstanceKeyProp)
-        .declareProperty(evaluatedDecisionsProp)
-        .declareProperty(evaluationFailureMessageProp)
-        .declareProperty(failedDecisionIdProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(businessIdProp);
-  }
+  DirectBuffer bpmnProcessId = Decoding.EMPTY;
+  long processDefinitionKey = -1L;
+  long processInstanceKey = -1L;
+  DirectBuffer elementId = Decoding.EMPTY;
+  long elementInstanceKey = -1L;
+  final List<EvaluatedDecisionRecord> evaluatedDecisions = new ArrayList<>();
+  DirectBuffer evaluationFailureMessage = Decoding.EMPTY;
+  DirectBuffer failedDecisionId = Decoding.EMPTY;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long rootProcessInstanceKey = -1L;
+  int storageOrdinal = 0;
+  DirectBuffer businessId = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getDecisionKey() {
-    return decisionKeyProp.getValue();
+    return decisionKey;
   }
 
   public DecisionEvaluationRecord setDecisionKey(final long decisionKey) {
-    decisionKeyProp.setValue(decisionKey);
+    this.decisionKey = decisionKey;
     return this;
   }
 
   @Override
   public String getDecisionId() {
-    return bufferAsString(decisionIdProp.getValue());
+    return bufferAsString(decisionId);
   }
 
   public DecisionEvaluationRecord setDecisionId(final String decisionId) {
-    decisionIdProp.setValue(decisionId);
+    this.decisionId = BufferUtil.wrapString(decisionId);
     return this;
   }
 
   public DecisionEvaluationRecord setDecisionId(final DirectBuffer decisionId) {
-    decisionIdProp.setValue(decisionId);
+    this.decisionId = decisionId;
     return this;
   }
 
   @Override
   public String getDecisionName() {
-    return bufferAsString(decisionNameProp.getValue());
+    return bufferAsString(decisionName);
   }
 
   public DecisionEvaluationRecord setDecisionName(final String decisionName) {
-    decisionNameProp.setValue(decisionName);
+    this.decisionName = BufferUtil.wrapString(decisionName);
     return this;
   }
 
   public DecisionEvaluationRecord setDecisionName(final DirectBuffer decisionName) {
-    decisionNameProp.setValue(decisionName);
+    this.decisionName = decisionName;
     return this;
   }
 
   @Override
   public int getDecisionVersion() {
-    return decisionVersionProp.getValue();
+    return decisionVersion;
   }
 
   public DecisionEvaluationRecord setDecisionVersion(final int decisionVersion) {
-    decisionVersionProp.setValue(decisionVersion);
+    this.decisionVersion = decisionVersion;
     return this;
   }
 
   @Override
   public String getDecisionRequirementsId() {
-    return bufferAsString(decisionRequirementsIdProp.getValue());
+    return bufferAsString(decisionRequirementsId);
   }
 
   public DecisionEvaluationRecord setDecisionRequirementsId(final String decisionRequirementsId) {
-    decisionRequirementsIdProp.setValue(decisionRequirementsId);
+    this.decisionRequirementsId = BufferUtil.wrapString(decisionRequirementsId);
     return this;
   }
 
   public DecisionEvaluationRecord setDecisionRequirementsId(
       final DirectBuffer decisionRequirementsId) {
-    decisionRequirementsIdProp.setValue(decisionRequirementsId);
+    this.decisionRequirementsId = decisionRequirementsId;
     return this;
   }
 
   @Override
   public long getDecisionRequirementsKey() {
-    return decisionRequirementsKeyProp.getValue();
+    return decisionRequirementsKey;
   }
 
   public DecisionEvaluationRecord setDecisionRequirementsKey(final long decisionRequirementsKey) {
-    decisionRequirementsKeyProp.setValue(decisionRequirementsKey);
+    this.decisionRequirementsKey = decisionRequirementsKey;
     return this;
   }
 
   @Override
   public String getDecisionOutput() {
-    return MsgPackConverter.convertToJson(decisionOutputProp.getValue());
+    return MsgPackConverter.convertToJson(decisionOutput);
   }
 
   public DecisionEvaluationRecord setDecisionOutput(final DirectBuffer decisionOutput) {
-    decisionOutputProp.setValue(decisionOutput);
+    this.decisionOutput = decisionOutput;
     return this;
   }
 
   @Override
   public String getBpmnProcessId() {
-    return bufferAsString(bpmnProcessIdProp.getValue());
+    return bufferAsString(bpmnProcessId);
   }
 
   public DecisionEvaluationRecord setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = BufferUtil.wrapString(bpmnProcessId);
     return this;
   }
 
   public DecisionEvaluationRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey;
   }
 
   public DecisionEvaluationRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProp.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey;
   }
 
   public DecisionEvaluationRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
   @Override
   public String getElementId() {
-    return bufferAsString(elementIdProp.getValue());
+    return bufferAsString(elementId);
   }
 
   public DecisionEvaluationRecord setElementId(final String elementId) {
-    elementIdProp.setValue(elementId);
+    this.elementId = BufferUtil.wrapString(elementId);
     return this;
   }
 
   public DecisionEvaluationRecord setElementId(final DirectBuffer elementId) {
-    elementIdProp.setValue(elementId);
+    this.elementId = elementId;
     return this;
   }
 
   @Override
   public long getElementInstanceKey() {
-    return elementInstanceKeyProp.getValue();
+    return elementInstanceKey;
   }
 
   public DecisionEvaluationRecord setElementInstanceKey(final long elementInstanceKey) {
-    elementInstanceKeyProp.setValue(elementInstanceKey);
+    this.elementInstanceKey = elementInstanceKey;
     return this;
   }
 
   @Override
   public List<EvaluatedDecisionValue> getEvaluatedDecisions() {
-    final List<EvaluatedDecisionValue> evaluatedDecisions = new ArrayList<>();
-
-    for (final EvaluatedDecisionRecord evaluatedDecision : evaluatedDecisionsProp) {
+    final List<EvaluatedDecisionValue> copies = new ArrayList<>();
+    for (final EvaluatedDecisionRecord evaluatedDecision : evaluatedDecisions) {
       final var copyRecord = new EvaluatedDecisionRecord();
       final var copyBuffer = BufferUtil.createCopy(evaluatedDecision);
       copyRecord.wrap(copyBuffer);
-      evaluatedDecisions.add(copyRecord);
+      copies.add(copyRecord);
     }
-
-    return evaluatedDecisions;
+    return copies;
   }
 
   @Override
   public String getEvaluationFailureMessage() {
-    return bufferAsString(evaluationFailureMessageProp.getValue());
+    return bufferAsString(evaluationFailureMessage);
   }
 
   @Override
   public String getFailedDecisionId() {
-    return bufferAsString(failedDecisionIdProp.getValue());
+    return bufferAsString(failedDecisionId);
   }
 
   public DecisionEvaluationRecord setFailedDecisionId(final String failedDecisionId) {
-    failedDecisionIdProp.setValue(failedDecisionId);
+    this.failedDecisionId = BufferUtil.wrapString(failedDecisionId);
     return this;
   }
 
   @Override
   public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
+    return rootProcessInstanceKey;
   }
 
   public DecisionEvaluationRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
   }
 
   @Override
   public String getBusinessId() {
-    return bufferAsString(businessIdProp.getValue());
+    return bufferAsString(businessId);
   }
 
   public DecisionEvaluationRecord setBusinessId(final String businessId) {
-    businessIdProp.setValue(businessId);
+    this.businessId = BufferUtil.wrapString(businessId);
     return this;
   }
 
   public DecisionEvaluationRecord setBusinessId(final DirectBuffer businessId) {
-    businessIdProp.setValue(businessId);
+    this.businessId = businessId;
     return this;
   }
 
   public DecisionEvaluationRecord setEvaluationFailureMessage(
       final String evaluationFailureMessage) {
-    evaluationFailureMessageProp.setValue(evaluationFailureMessage);
+    this.evaluationFailureMessage = BufferUtil.wrapString(evaluationFailureMessage);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getBusinessIdBuffer() {
-    return businessIdProp.getValue();
+    return businessId;
   }
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProp.getValue());
+    return MsgPackConverter.convertToMap(variables);
   }
 
   public DecisionEvaluationRecord setVariables(final DirectBuffer variables) {
-    variablesProp.setValue(variables);
+    this.variables = Decoding.document(variables);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getEvaluationFailureMessageBuffer() {
-    return evaluationFailureMessageProp.getValue();
+    return evaluationFailureMessage;
   }
 
   @JsonIgnore
   public DirectBuffer getFailedDecisionIdBuffer() {
-    return failedDecisionIdProp.getValue();
+    return failedDecisionId;
   }
 
   @JsonIgnore
   public DirectBuffer getDecisionOutputBuffer() {
-    return decisionOutputProp.getValue();
+    return decisionOutput;
   }
 
   @JsonIgnore
   public ValueArray<EvaluatedDecisionRecord> evaluatedDecisions() {
-    return evaluatedDecisionsProp;
+    return new EvaluatedDecisions(evaluatedDecisions);
   }
 
   @JsonIgnore
   public DirectBuffer getDecisionRequirementsIdBuffer() {
-    return decisionRequirementsIdProp.getValue();
+    return decisionRequirementsId;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProp.getValue();
+    return variables;
   }
 
   @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProp.getValue();
+    return bpmnProcessId;
   }
 
   @JsonIgnore
   public DirectBuffer getElementIdBuffer() {
-    return elementIdProp.getValue();
+    return elementId;
   }
 
   @JsonIgnore
   public DirectBuffer getDecisionIdBuffer() {
-    return decisionIdProp.getValue();
+    return decisionId;
   }
 
   @JsonIgnore
   public DirectBuffer getDecisionNameBuffer() {
-    return decisionNameProp.getValue();
+    return decisionName;
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public DecisionEvaluationRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public DecisionEvaluationRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<DecisionEvaluationRecord> codec() {
+    return DecisionEvaluationRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<DecisionEvaluationRecord> ops() {
+    return DecisionEvaluationRecordOps.INSTANCE;
+  }
+
+  /**
+   * The mutable accessor of {@code evaluatedDecisions}: it adds and removes the elements of the
+   * list, so that code written against the former {@code ArrayProperty} keeps working.
+   */
+  private static final class EvaluatedDecisions implements ValueArray<EvaluatedDecisionRecord> {
+
+    final List<EvaluatedDecisionRecord> decisions;
+
+    private EvaluatedDecisions(final List<EvaluatedDecisionRecord> decisions) {
+      this.decisions = decisions;
+    }
+
+    @Override
+    public EvaluatedDecisionRecord add() {
+      final var decision = new EvaluatedDecisionRecord();
+      decisions.add(decision);
+      return decision;
+    }
+
+    @Override
+    public EvaluatedDecisionRecord add(final int index) {
+      final var decision = new EvaluatedDecisionRecord();
+      decisions.add(index, decision);
+      return decision;
+    }
+
+    @Override
+    public EvaluatedDecisionRecord get(final int index) {
+      return decisions.get(index);
+    }
+
+    @Override
+    public EvaluatedDecisionRecord remove(final int index) {
+      return decisions.remove(index);
+    }
+
+    @Override
+    public int size() {
+      return decisions.size();
+    }
+
+    @Override
+    public Stream<EvaluatedDecisionRecord> stream() {
+      return decisions.stream();
+    }
+
+    @Override
+    public Iterator<EvaluatedDecisionRecord> iterator() {
+      return decisions.iterator();
+    }
   }
 }

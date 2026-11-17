@@ -10,157 +10,128 @@ package io.camunda.zeebe.protocol.impl.record.value.signal;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class SignalSubscriptionRecord extends UnifiedRecordValue
-    implements SignalSubscriptionRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class SignalSubscriptionRecord extends MsgpackBufferValue<SignalSubscriptionRecord>
+    implements MsgpackRecordValue, SignalSubscriptionRecordValue {
 
-  // Static StringValue keys for property names
-  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
-      new StringValue("processDefinitionKey");
-  private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
-  private static final StringValue SIGNAL_NAME_KEY = new StringValue("signalName");
-  private static final StringValue CATCH_EVENT_ID_KEY = new StringValue("catchEventId");
-  private static final StringValue CATCH_EVENT_INSTANCE_KEY_KEY =
-      new StringValue("catchEventInstanceKey");
-  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
-  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
-      new StringValue("rootProcessInstanceKey");
-  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
-  private static final StringValue BPMN_ELEMENT_TYPE_KEY = new StringValue("bpmnElementType");
-
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
-  private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
-  private final StringProperty signalNameProp = new StringProperty(SIGNAL_NAME_KEY, "");
-  private final StringProperty catchEventIdProp = new StringProperty(CATCH_EVENT_ID_KEY, "");
-  private final LongProperty catchEventInstanceKeyProp =
-      new LongProperty(CATCH_EVENT_INSTANCE_KEY_KEY, -1L);
-  private final StringProperty tenantIdProp =
-      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty processInstanceKeyProp =
-      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final LongProperty rootProcessInstanceKeyProp =
-      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
-  private final EnumProperty<BpmnElementType> bpmnElementTypeProp =
-      new EnumProperty<>(BPMN_ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
-
-  public SignalSubscriptionRecord() {
-    super(10);
-    declareProperty(processDefinitionKeyProp)
-        .declareProperty(signalNameProp)
-        .declareProperty(catchEventIdProp)
-        .declareProperty(bpmnProcessIdProp)
-        .declareProperty(catchEventInstanceKeyProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(processInstanceKeyProp)
-        .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(bpmnElementTypeProp);
-  }
+  long processDefinitionKey = -1L;
+  DirectBuffer signalName = Decoding.EMPTY;
+  DirectBuffer catchEventId = Decoding.EMPTY;
+  DirectBuffer bpmnProcessId = Decoding.EMPTY;
+  long catchEventInstanceKey = -1L;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long processInstanceKey = -1L;
+  long rootProcessInstanceKey = -1L;
+  int storageOrdinal = 0;
+  BpmnElementType bpmnElementType = BpmnElementType.UNSPECIFIED;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public void wrap(final SignalSubscriptionRecord record) {
-    processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
-    bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
-    signalNameProp.setValue(record.getSignalNameBuffer());
-    catchEventIdProp.setValue(record.getCatchEventId());
-    catchEventInstanceKeyProp.setValue(record.getCatchEventInstanceKey());
-    tenantIdProp.setValue(record.getTenantId());
-    processInstanceKeyProp.setValue(record.getProcessInstanceKey());
-    rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
-    storageOrdinalProp.setValue(record.getStorageOrdinal());
-    bpmnElementTypeProp.setValue(record.getBpmnElementType());
+    processDefinitionKey = record.getProcessDefinitionKey();
+    bpmnProcessId = record.getBpmnProcessIdBuffer();
+    signalName = record.getSignalNameBuffer();
+    catchEventId = BufferUtil.wrapString(record.getCatchEventId());
+    catchEventInstanceKey = record.getCatchEventInstanceKey();
+    tenantId = BufferUtil.wrapString(record.getTenantId());
+    processInstanceKey = record.getProcessInstanceKey();
+    rootProcessInstanceKey = record.getRootProcessInstanceKey();
+    storageOrdinal = record.getStorageOrdinal();
+    bpmnElementType = record.getBpmnElementType();
   }
 
   @JsonIgnore
   public DirectBuffer getSignalNameBuffer() {
-    return signalNameProp.getValue();
+    return signalName;
   }
 
   @JsonIgnore
   public DirectBuffer getCatchEventIdBuffer() {
-    return catchEventIdProp.getValue();
+    return catchEventId;
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey;
   }
 
   @Override
   public String getBpmnProcessId() {
-    return bufferAsString(bpmnProcessIdProp.getValue());
+    return bufferAsString(bpmnProcessId);
   }
 
   @Override
   public String getCatchEventId() {
-    return bufferAsString(catchEventIdProp.getValue());
+    return bufferAsString(catchEventId);
   }
 
   @Override
   public long getCatchEventInstanceKey() {
-    return catchEventInstanceKeyProp.getValue();
+    return catchEventInstanceKey;
   }
 
   @Override
   public String getSignalName() {
-    return bufferAsString(signalNameProp.getValue());
+    return bufferAsString(signalName);
   }
 
   public SignalSubscriptionRecord setSignalName(final DirectBuffer signalName) {
-    signalNameProp.setValue(signalName);
+    this.signalName = signalName;
     return this;
   }
 
   public SignalSubscriptionRecord setCatchEventInstanceKey(final long catchEventInstanceKey) {
-    catchEventInstanceKeyProp.setValue(catchEventInstanceKey);
+    this.catchEventInstanceKey = catchEventInstanceKey;
     return this;
   }
 
   public SignalSubscriptionRecord setCatchEventId(final DirectBuffer catchEventId) {
-    catchEventIdProp.setValue(catchEventId);
+    this.catchEventId = catchEventId;
     return this;
   }
 
   public SignalSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
   public SignalSubscriptionRecord setProcessDefinitionKey(final long key) {
-    processDefinitionKeyProp.setValue(key);
+    processDefinitionKey = key;
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProp.getValue();
+    return bpmnProcessId;
   }
 
   @JsonIgnore
   public long getSubscriptionKey() {
-    final long catchEventInstanceKey = catchEventInstanceKeyProp.getValue();
-    return catchEventInstanceKey > -1 ? catchEventInstanceKey : processDefinitionKeyProp.getValue();
+    return catchEventInstanceKey > -1 ? catchEventInstanceKey : processDefinitionKey;
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public SignalSubscriptionRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
@@ -178,41 +149,51 @@ public final class SignalSubscriptionRecord extends UnifiedRecordValue
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey;
   }
 
   public SignalSubscriptionRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
   @Override
   public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
+    return rootProcessInstanceKey;
   }
 
   public SignalSubscriptionRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public SignalSubscriptionRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 
   @Override
   public BpmnElementType getBpmnElementType() {
-    return bpmnElementTypeProp.getValue();
+    return bpmnElementType;
   }
 
   public SignalSubscriptionRecord setBpmnElementType(final BpmnElementType bpmnElementType) {
-    bpmnElementTypeProp.setValue(bpmnElementType);
+    this.bpmnElementType = bpmnElementType;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<SignalSubscriptionRecord> codec() {
+    return SignalSubscriptionRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<SignalSubscriptionRecord> ops() {
+    return SignalSubscriptionRecordOps.INSTANCE;
   }
 }

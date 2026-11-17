@@ -8,74 +8,80 @@
 package io.camunda.zeebe.protocol.impl.record.value.policyupdate;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PolicyMembershipEntryValue;
 import io.camunda.zeebe.protocol.record.value.PolicyUpdateEntityType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-@JsonIgnoreProperties({
-  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
-  "encodedLength",
-  "empty"
-})
-public final class PolicyMembershipEntry extends ObjectValue implements PolicyMembershipEntryValue {
+@JsonIgnoreProperties({"encodedLength", "empty", "length"})
+@MsgpackPojo
+@NullMarked
+public final class PolicyMembershipEntry extends MsgpackBufferValue<PolicyMembershipEntry>
+    implements PolicyMembershipEntryValue {
 
-  private final EnumProperty<PolicyUpdateEntityType> targetTypeProp =
-      new EnumProperty<>(
-          "targetType", PolicyUpdateEntityType.class, PolicyUpdateEntityType.UNSPECIFIED);
-  private final StringProperty targetIdProp = new StringProperty("targetId", "");
-  private final EnumProperty<EntityType> memberTypeProp =
-      new EnumProperty<>("memberType", EntityType.class, EntityType.UNSPECIFIED);
-  private final StringProperty memberIdProp = new StringProperty("memberId", "");
+  PolicyUpdateEntityType targetType = PolicyUpdateEntityType.UNSPECIFIED;
+  DirectBuffer targetId = Decoding.EMPTY;
+  EntityType memberType = EntityType.UNSPECIFIED;
+  DirectBuffer memberId = Decoding.EMPTY;
 
-  public PolicyMembershipEntry() {
-    super(4);
-    declareProperty(targetTypeProp)
-        .declareProperty(targetIdProp)
-        .declareProperty(memberTypeProp)
-        .declareProperty(memberIdProp);
-  }
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public PolicyUpdateEntityType getTargetType() {
-    return targetTypeProp.getValue();
+    return targetType;
   }
 
   public PolicyMembershipEntry setTargetType(final PolicyUpdateEntityType targetType) {
-    targetTypeProp.setValue(targetType);
+    this.targetType = targetType;
     return this;
   }
 
   @Override
   public String getTargetId() {
-    return BufferUtil.bufferAsString(targetIdProp.getValue());
+    return BufferUtil.bufferAsString(targetId);
   }
 
   public PolicyMembershipEntry setTargetId(final String targetId) {
-    targetIdProp.setValue(targetId);
+    this.targetId = BufferUtil.wrapString(targetId);
     return this;
   }
 
   @Override
   public EntityType getMemberType() {
-    return memberTypeProp.getValue();
+    return memberType;
   }
 
   public PolicyMembershipEntry setMemberType(final EntityType memberType) {
-    memberTypeProp.setValue(memberType);
+    this.memberType = memberType;
     return this;
   }
 
   @Override
   public String getMemberId() {
-    return BufferUtil.bufferAsString(memberIdProp.getValue());
+    return BufferUtil.bufferAsString(memberId);
   }
 
   public PolicyMembershipEntry setMemberId(final String memberId) {
-    memberIdProp.setValue(memberId);
+    this.memberId = BufferUtil.wrapString(memberId);
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<PolicyMembershipEntry> codec() {
+    return PolicyMembershipEntryCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<PolicyMembershipEntry> ops() {
+    return PolicyMembershipEntryOps.INSTANCE;
   }
 }

@@ -7,105 +7,102 @@
  */
 package io.camunda.zeebe.protocol.impl.stream.job;
 
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public class JobActivationPropertiesImpl extends UnpackedObject implements JobActivationProperties {
-  private final StringProperty workerProp = new StringProperty("worker", "");
-  private final LongProperty timeoutProp = new LongProperty("timeout", -1);
-  private final ArrayProperty<StringValue> fetchVariablesProp =
-      new ArrayProperty<>("variables", StringValue::new);
-  private final ArrayProperty<StringValue> tenantIdsProp =
-      new ArrayProperty<>(
-          "tenantIds", () -> new StringValue(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
-  private final DocumentProperty claimsProp = new DocumentProperty("claims");
-  private final EnumProperty<TenantFilter> tenantFilterProp =
-      new EnumProperty<>("tenantFilter", TenantFilter.class, TenantFilter.PROVIDED);
-  private final BooleanProperty withLeaseProp = new BooleanProperty("withLease", false);
+@MsgpackPojo
+@NullMarked
+public final class JobActivationPropertiesImpl
+    extends MsgpackBufferValue<JobActivationPropertiesImpl> implements JobActivationProperties {
 
-  public JobActivationPropertiesImpl() {
-    super(7);
-    declareProperty(workerProp)
-        .declareProperty(timeoutProp)
-        .declareProperty(fetchVariablesProp)
-        .declareProperty(tenantIdsProp)
-        .declareProperty(claimsProp)
-        .declareProperty(tenantFilterProp)
-        .declareProperty(withLeaseProp);
-  }
+  DirectBuffer worker = Decoding.EMPTY;
+  long timeout = -1L;
+  final List<DirectBuffer> variables = new ArrayList<>();
+  final List<DirectBuffer> tenantIds = new ArrayList<>();
+
+  @MsgpackProperty(document = true)
+  DirectBuffer claims = DocumentValue.EMPTY_DOCUMENT;
+
+  TenantFilter tenantFilter = TenantFilter.PROVIDED;
+  boolean withLease = false;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public JobActivationPropertiesImpl setWorker(
       final DirectBuffer worker, final int offset, final int length) {
-    workerProp.setValue(worker, offset, length);
+    this.worker = new UnsafeBuffer(worker, offset, length);
     return this;
   }
 
   public JobActivationPropertiesImpl setTimeout(final long val) {
-    timeoutProp.setValue(val);
+    timeout = val;
     return this;
   }
 
   public JobActivationPropertiesImpl setFetchVariables(final Set<StringValue> variables) {
-    fetchVariablesProp.reset();
-    variables.forEach(variable -> fetchVariablesProp.add().wrap(variable));
+    this.variables.clear();
+    variables.forEach(variable -> this.variables.add(variable.getValue()));
     return this;
   }
 
   public JobActivationPropertiesImpl setTenantIds(final Collection<String> tenantIds) {
-    tenantIdsProp.reset();
-    tenantIds.forEach(tenantId -> tenantIdsProp.add().wrap(BufferUtil.wrapString(tenantId)));
+    this.tenantIds.clear();
+    tenantIds.forEach(tenantId -> this.tenantIds.add(BufferUtil.wrapString(tenantId)));
     return this;
   }
 
   public JobActivationPropertiesImpl setWithLease(final boolean withLease) {
-    withLeaseProp.setValue(withLease);
+    this.withLease = withLease;
     return this;
   }
 
   @Override
   public DirectBuffer worker() {
-    return workerProp.getValue();
+    return worker;
   }
 
   @Override
   public Collection<DirectBuffer> fetchVariables() {
-    return fetchVariablesProp.stream().map(StringValue::getValue).toList();
+    return List.copyOf(variables);
   }
 
   @Override
   public long timeout() {
-    return timeoutProp.getValue();
+    return timeout;
   }
 
   @Override
   public Collection<String> tenantIds() {
-    return tenantIdsProp.stream().map(StringValue::toString).toList();
+    return tenantIds.stream().map(BufferUtil::bufferAsString).toList();
   }
 
   @Override
   public TenantFilter tenantFilter() {
-    return tenantFilterProp.getValue();
+    return tenantFilter;
   }
 
   public Map<String, Object> claims() {
-    return MsgPackConverter.convertToMap(claimsProp.getValue());
+    return MsgPackConverter.convertToMap(claims);
   }
 
   @Override
@@ -115,22 +112,32 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
 
   @Override
   public boolean withLease() {
-    return withLeaseProp.getValue();
+    return withLease;
   }
 
   public JobActivationPropertiesImpl setTenantFilter(final TenantFilter tenantFilter) {
-    tenantFilterProp.setValue(tenantFilter);
+    this.tenantFilter = tenantFilter;
     return this;
   }
 
-  public JobActivationPropertiesImpl setClaims(final Map<String, Object> authorizations) {
-    claimsProp.setValue(getDocumentOrEmpty(authorizations));
+  public JobActivationPropertiesImpl setClaims(final @Nullable Map<String, Object> authorizations) {
+    claims = Decoding.document(getDocumentOrEmpty(authorizations));
     return this;
   }
 
-  protected DirectBuffer getDocumentOrEmpty(final Map<String, Object> value) {
+  protected DirectBuffer getDocumentOrEmpty(final @Nullable Map<String, Object> value) {
     return value == null || value.isEmpty()
         ? DocumentValue.EMPTY_DOCUMENT
         : new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value));
+  }
+
+  @Override
+  protected MsgpackCodec<JobActivationPropertiesImpl> codec() {
+    return JobActivationPropertiesImplCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<JobActivationPropertiesImpl> ops() {
+    return JobActivationPropertiesImplOps.INSTANCE;
   }
 }

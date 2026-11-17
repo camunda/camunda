@@ -7,63 +7,63 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.NullMarked;
 
-public final class BatchOperationChunkRecord extends UnifiedRecordValue
-    implements BatchOperationChunkRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class BatchOperationChunkRecord extends MsgpackBufferValue<BatchOperationChunkRecord>
+    implements MsgpackRecordValue, BatchOperationChunkRecordValue {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String PROP_STORAGE_ORDINAL = "storageOrdinal";
   public static final String PROP_ITEMS_LIST = "items";
 
-  private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(PROP_STORAGE_ORDINAL, 0);
-  private final ArrayProperty<BatchOperationItem> itemsProp =
-      new ArrayProperty<>(PROP_ITEMS_LIST, BatchOperationItem::new);
-
-  public BatchOperationChunkRecord() {
-    super(3);
-    declareProperty(batchOperationKeyProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(itemsProp);
-  }
+  final RequiredLong batchOperationKey = new RequiredLong();
+  int storageOrdinal = 0;
+  final List<BatchOperationItem> items = new ArrayList<>();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getBatchOperationKey() {
-    return batchOperationKeyProp.getValue();
+    return batchOperationKey.get();
   }
 
   public BatchOperationChunkRecord setBatchOperationKey(final Long batchOperationKey) {
-    batchOperationKeyProp.reset();
-    batchOperationKeyProp.setValue(batchOperationKey);
+    this.batchOperationKey.set(batchOperationKey);
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public BatchOperationChunkRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 
   @Override
   public List<BatchOperationItemValue> getItems() {
-    return itemsProp.stream().collect(Collectors.toList());
+    return items.stream().collect(Collectors.toList());
   }
 
   public BatchOperationChunkRecord setItems(final Collection<BatchOperationItemValue> items) {
-    itemsProp.reset();
-    items.forEach(item -> itemsProp.add().wrap(item));
+    this.items.clear();
+    items.forEach(item -> this.items.add(new BatchOperationItem().wrap(item)));
     return this;
   }
 
@@ -71,5 +71,15 @@ public final class BatchOperationChunkRecord extends UnifiedRecordValue
     setBatchOperationKey(record.getBatchOperationKey());
     setStorageOrdinal(record.getStorageOrdinal());
     setItems(record.getItems());
+  }
+
+  @Override
+  protected MsgpackCodec<BatchOperationChunkRecord> codec() {
+    return BatchOperationChunkRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<BatchOperationChunkRecord> ops() {
+    return BatchOperationChunkRecordOps.INSTANCE;
   }
 }

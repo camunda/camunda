@@ -7,78 +7,88 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.secretreference;
 
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.LongValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import org.agrona.DirectBuffer;
+import org.agrona.collections.LongArrayList;
+import org.jspecify.annotations.NullMarked;
 
-public final class SecretReferenceRecord extends UnifiedRecordValue
-    implements SecretReferenceRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class SecretReferenceRecord extends MsgpackBufferValue<SecretReferenceRecord>
+    implements MsgpackRecordValue, SecretReferenceRecordValue {
 
   // mirrors io.camunda.secretstore.SecretStoreRegistry#DEFAULT_STORE_ID: the record layer stays
   // free of the secret store API, so the value is repeated here and pinned against the constant
   // by DefaultStoreIdTest. An unset store ID names the default store, not no store at all.
-  private final StringProperty storeIdProp = new StringProperty("storeId", "default");
-  private final StringProperty secretReferenceProp = new StringProperty("secretReference", "");
-  private final EnumProperty<ResolutionState> resolutionStateProp =
-      new EnumProperty<>("resolutionState", ResolutionState.class, ResolutionState.UNSPECIFIED);
-  private final ArrayProperty<LongValue> jobKeysProp =
-      new ArrayProperty<>("jobKeys", LongValue::new);
-
-  public SecretReferenceRecord() {
-    super(4);
-    declareProperty(storeIdProp)
-        .declareProperty(secretReferenceProp)
-        .declareProperty(resolutionStateProp)
-        .declareProperty(jobKeysProp);
-  }
+  DirectBuffer storeId = BufferUtil.wrapString("default");
+  DirectBuffer secretReference = Decoding.EMPTY;
+  ResolutionState resolutionState = ResolutionState.UNSPECIFIED;
+  final LongArrayList jobKeys = new LongArrayList();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getStoreId() {
-    return BufferUtil.bufferAsString(storeIdProp.getValue());
+    return BufferUtil.bufferAsString(storeId);
   }
 
   public SecretReferenceRecord setStoreId(final String storeId) {
-    storeIdProp.setValue(storeId);
+    this.storeId = BufferUtil.wrapString(storeId);
     return this;
   }
 
   @Override
   public String getSecretReference() {
-    return BufferUtil.bufferAsString(secretReferenceProp.getValue());
+    return BufferUtil.bufferAsString(secretReference);
   }
 
   public SecretReferenceRecord setSecretReference(final String secretReference) {
-    secretReferenceProp.setValue(secretReference);
+    this.secretReference = BufferUtil.wrapString(secretReference);
     return this;
   }
 
   @Override
   public ResolutionState getResolutionState() {
-    return resolutionStateProp.getValue();
+    return resolutionState;
   }
 
   public SecretReferenceRecord setResolutionState(final ResolutionState resolutionState) {
-    resolutionStateProp.setValue(resolutionState);
+    this.resolutionState = resolutionState;
     return this;
   }
 
   @Override
   public List<Long> getJobKeys() {
-    return StreamSupport.stream(jobKeysProp.spliterator(), false)
-        .map(LongValue::getValue)
-        .collect(Collectors.toList());
+    final var keys = new ArrayList<Long>(jobKeys.size());
+    for (int i = 0; i < jobKeys.size(); i++) {
+      keys.add(jobKeys.getLong(i));
+    }
+    return keys;
   }
 
   public SecretReferenceRecord addJobKey(final long jobKey) {
-    jobKeysProp.add().setValue(jobKey);
+    jobKeys.addLong(jobKey);
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<SecretReferenceRecord> codec() {
+    return SecretReferenceRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<SecretReferenceRecord> ops() {
+    return SecretReferenceRecordOps.INSTANCE;
   }
 }

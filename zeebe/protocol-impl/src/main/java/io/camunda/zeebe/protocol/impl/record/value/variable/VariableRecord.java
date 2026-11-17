@@ -10,69 +10,52 @@ package io.camunda.zeebe.protocol.impl.record.value.variable;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.ObjectProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackIgnore;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class VariableRecord extends UnifiedRecordValue implements VariableRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class VariableRecord extends MsgpackBufferValue<VariableRecord>
+    implements MsgpackRecordValue, VariableRecordValue {
 
-  // Static StringValue keys for property names
-  private static final StringValue NAME_KEY = new StringValue("name");
-  private static final StringValue VALUE_KEY = new StringValue("value");
-  private static final StringValue SCOPE_KEY_KEY = new StringValue("scopeKey");
-  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
-  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
-      new StringValue("processDefinitionKey");
-  private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
-  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
-      new StringValue("rootProcessInstanceKey");
-  private static final StringValue SOURCE_KEY = new StringValue("source");
-  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
+  @Nullable DirectBuffer name;
 
-  private final StringProperty nameProp = new StringProperty(NAME_KEY);
-  private final BinaryProperty valueProp = new BinaryProperty(VALUE_KEY);
-  private final LongProperty scopeKeyProp = new LongProperty(SCOPE_KEY_KEY);
-  private final LongProperty processInstanceKeyProp = new LongProperty(PROCESS_INSTANCE_KEY_KEY);
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty(PROCESS_DEFINITION_KEY_KEY);
-  private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
-  private final StringProperty tenantIdProp =
-      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty rootProcessInstanceKeyProp =
-      new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
-  private final ObjectProperty<VariableSourceRecord> sourceProp =
-      new ObjectProperty<>(SOURCE_KEY, new VariableSourceRecord());
+  @MsgpackProperty(binary = true)
+  @Nullable DirectBuffer value;
+
+  final RequiredLong scopeKey = new RequiredLong();
+  final RequiredLong processInstanceKey = new RequiredLong();
+  final RequiredLong processDefinitionKey = new RequiredLong();
+  DirectBuffer bpmnProcessId = Decoding.EMPTY;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long rootProcessInstanceKey = -1L;
+  int storageOrdinal = 0;
+  final VariableSourceRecord source = new VariableSourceRecord();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   /**
    * Cached JSON representation of the value. Lazily computed on first call to {@link #getValue()}
-   * and invalidated when the underlying value changes via {@link #setValue} or {@link #wrap}.
+   * and invalidated when the underlying value changes via {@link #setValue}, {@link #wrap} or
+   * {@link #copyFrom}.
    */
-  private String cachedJsonValue;
-
-  public VariableRecord() {
-    super(10);
-    declareProperty(nameProp)
-        .declareProperty(valueProp)
-        .declareProperty(scopeKeyProp)
-        .declareProperty(processInstanceKeyProp)
-        .declareProperty(processDefinitionKeyProp)
-        .declareProperty(bpmnProcessIdProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(rootProcessInstanceKeyProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(sourceProp);
-  }
+  @MsgpackIgnore @Nullable String cachedJsonValue;
 
   @Override
   public void reset() {
@@ -81,134 +64,152 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   }
 
   @Override
+  public void copyFrom(final VariableRecord other) {
+    super.copyFrom(other);
+    cachedJsonValue = null;
+  }
+
+  @Override
   public String getName() {
-    return BufferUtil.bufferAsString(nameProp.getValue());
+    return BufferUtil.bufferAsString(Decoding.required(name, "name"));
   }
 
   @Override
   public String getValue() {
-    if (cachedJsonValue == null) {
-      cachedJsonValue = MsgPackConverter.convertToJson(valueProp.getValue());
+    String json = cachedJsonValue;
+    if (json == null) {
+      json = MsgPackConverter.convertToJson(Decoding.required(value, "value"));
+      cachedJsonValue = json;
     }
-    return cachedJsonValue;
+    return json;
   }
 
   // Internal accessor used by MetricsExporter for size-based metrics; not part of
   // VariableRecordValue and excluded from JSON serialization.
   @JsonIgnore
   public int getValueLength() {
-    return valueProp.getValue().capacity();
+    return Decoding.required(value, "value").capacity();
   }
 
   @Override
   public long getScopeKey() {
-    return scopeKeyProp.getValue();
+    return scopeKey.get();
   }
 
   public VariableRecord setScopeKey(final long scopeKey) {
-    scopeKeyProp.setValue(scopeKey);
+    this.scopeKey.set(scopeKey);
     return this;
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey.get();
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey.get();
   }
 
   public VariableRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProp.setValue(processDefinitionKey);
+    this.processDefinitionKey.set(processDefinitionKey);
     return this;
   }
 
   @Override
   public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
+    return rootProcessInstanceKey;
   }
 
   @Override
   public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+    return BufferUtil.bufferAsString(bpmnProcessId);
   }
 
   public VariableRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
   @Override
   public VariableSourceRecord getSource() {
-    return sourceProp.getValue();
+    return source;
   }
 
   public VariableRecord setSource(final VariableSourceRecord source) {
-    sourceProp.getValue().wrap(source);
+    this.source.wrap(source);
     return this;
   }
 
   public VariableRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
   }
 
   public VariableRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
+    this.processInstanceKey.set(processInstanceKey);
     return this;
   }
 
   public VariableRecord setValue(final DirectBuffer value) {
-    valueProp.setValue(value);
+    this.value = value;
     cachedJsonValue = null;
     return this;
   }
 
   public VariableRecord setName(final DirectBuffer name) {
-    nameProp.setValue(name);
+    this.name = name;
     return this;
   }
 
   public VariableRecord setValue(final DirectBuffer value, final int offset, final int length) {
-    valueProp.setValue(value, offset, length);
+    this.value = new UnsafeBuffer(value, offset, length);
     cachedJsonValue = null;
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getNameBuffer() {
-    return nameProp.getValue();
+    return Decoding.required(name, "name");
   }
 
   @JsonIgnore
   public DirectBuffer getValueBuffer() {
-    return valueProp.getValue();
+    return Decoding.required(value, "value");
   }
 
   @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProp.getValue();
+    return bpmnProcessId;
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public VariableRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public VariableRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<VariableRecord> codec() {
+    return VariableRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<VariableRecord> ops() {
+    return VariableRecordOps.INSTANCE;
   }
 }

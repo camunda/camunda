@@ -340,6 +340,7 @@ public class RecordGoldenFilesTest {
                       : "StringProperty";
       case "List<DirectBuffer>" -> "ArrayProperty<StringValue>";
       case "List<Long>", "LongArrayList" -> "ArrayProperty<LongValue>";
+      case "List<List<Long>>" -> "ArrayProperty<ArrayValue<LongValue>>";
       case "IntArrayList" -> "ArrayProperty<IntegerValue>";
       default ->
           type.startsWith("List<") && type.endsWith(">")

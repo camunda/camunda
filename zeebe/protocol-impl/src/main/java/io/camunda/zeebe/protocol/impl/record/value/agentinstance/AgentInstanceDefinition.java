@@ -8,52 +8,56 @@
 package io.camunda.zeebe.protocol.impl.record.value.agentinstance;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryMessageContent;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRecordValue.AgentHistoryMessageContentValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.List;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-@JsonIgnoreProperties({"encodedLength", "empty"})
-public final class AgentInstanceDefinition extends ObjectValue
+@MsgpackPojo
+@NullMarked
+@JsonIgnoreProperties({"encodedLength", "empty", "length"})
+public final class AgentInstanceDefinition extends MsgpackBufferValue<AgentInstanceDefinition>
     implements AgentInstanceRecordValue.AgentInstanceDefinitionValue {
 
-  private final StringProperty modelProp = new StringProperty("model", "");
-  private final StringProperty providerProp = new StringProperty("provider", "");
-  private final ArrayProperty<AgentHistoryMessageContent> systemPromptProp =
-      new ArrayProperty<>("systemPrompt", AgentHistoryMessageContent::new);
-
-  public AgentInstanceDefinition() {
-    super(3);
-    declareProperty(modelProp).declareProperty(providerProp).declareProperty(systemPromptProp);
-  }
+  DirectBuffer model = Decoding.EMPTY;
+  DirectBuffer provider = Decoding.EMPTY;
+  final List<AgentHistoryMessageContent> systemPrompt = new ArrayList<>();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getModel() {
-    return BufferUtil.bufferAsString(modelProp.getValue());
+    return BufferUtil.bufferAsString(model);
   }
 
   public AgentInstanceDefinition setModel(final String model) {
-    modelProp.setValue(model);
+    this.model = BufferUtil.wrapString(model);
     return this;
   }
 
   @Override
   public String getProvider() {
-    return BufferUtil.bufferAsString(providerProp.getValue());
+    return BufferUtil.bufferAsString(provider);
   }
 
   public AgentInstanceDefinition setProvider(final String provider) {
-    providerProp.setValue(provider);
+    this.provider = BufferUtil.wrapString(provider);
     return this;
   }
 
   @Override
   public List<AgentHistoryMessageContentValue> getSystemPrompt() {
-    return systemPromptProp.stream()
+    return systemPrompt.stream()
         .map(
             element -> {
               final var copy = new AgentHistoryMessageContent();
@@ -65,17 +69,33 @@ public final class AgentInstanceDefinition extends ObjectValue
 
   public AgentInstanceDefinition setSystemPrompt(
       final List<? extends AgentHistoryMessageContentValue> systemPrompt) {
-    systemPromptProp.reset();
+    this.systemPrompt.clear();
     if (systemPrompt != null) {
       for (final var item : systemPrompt) {
-        systemPromptProp.add().copy(item);
+        copyIntoSystemPrompt(item);
       }
     }
     return this;
   }
 
   public AgentInstanceDefinition addSystemPrompt(final AgentHistoryMessageContent block) {
-    systemPromptProp.add().copy(block);
+    copyIntoSystemPrompt(block);
     return this;
+  }
+
+  private void copyIntoSystemPrompt(final AgentHistoryMessageContentValue block) {
+    final var copy = new AgentHistoryMessageContent();
+    copy.copy(block);
+    systemPrompt.add(copy);
+  }
+
+  @Override
+  protected MsgpackCodec<AgentInstanceDefinition> codec() {
+    return AgentInstanceDefinitionCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<AgentInstanceDefinition> ops() {
+    return AgentInstanceDefinitionOps.INSTANCE;
   }
 }

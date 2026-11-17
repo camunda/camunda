@@ -8,16 +8,14 @@
 package io.camunda.zeebe.protocol.impl.record.value.incident;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.ArrayValue;
-import io.camunda.zeebe.msgpack.value.IntegerValue;
-import io.camunda.zeebe.msgpack.value.LongValue;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -25,80 +23,42 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.IntArrayList;
+import org.jspecify.annotations.NullMarked;
 
-public final class IncidentRecord extends UnifiedRecordValue implements IncidentRecordValue {
-  // Static StringValue keys to avoid memory waste
-  private static final StringValue ERROR_TYPE_KEY = new StringValue("errorType");
-  private static final StringValue ERROR_MESSAGE_KEY = new StringValue("errorMessage");
-  private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
-  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
-      new StringValue("processDefinitionKey");
-  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
-  private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
-  private static final StringValue ELEMENT_INSTANCE_KEY_KEY = new StringValue("elementInstanceKey");
-  private static final StringValue JOB_KEY_KEY = new StringValue("jobKey");
-  private static final StringValue VARIABLE_SCOPE_KEY_KEY = new StringValue("variableScopeKey");
-  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  private static final StringValue ELEMENT_INSTANCE_PATH_KEY =
-      new StringValue("elementInstancePath");
-  private static final StringValue PROCESS_DEFINITION_PATH_KEY =
-      new StringValue("processDefinitionPath");
-  private static final StringValue CALLING_ELEMENT_PATH_KEY = new StringValue("callingElementPath");
-  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
+@MsgpackPojo
+@NullMarked
+public final class IncidentRecord extends MsgpackBufferValue<IncidentRecord>
+    implements MsgpackRecordValue, IncidentRecordValue {
 
-  private final EnumProperty<ErrorType> errorTypeProp =
-      new EnumProperty<>(ERROR_TYPE_KEY, ErrorType.class, ErrorType.UNKNOWN);
-  private final StringProperty errorMessageProp = new StringProperty(ERROR_MESSAGE_KEY, "");
-  private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
-  private final LongProperty processInstanceKeyProp =
-      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
-  private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, "");
-  private final LongProperty elementInstanceKeyProp =
-      new LongProperty(ELEMENT_INSTANCE_KEY_KEY, -1L);
-  private final LongProperty jobKeyProp = new LongProperty(JOB_KEY_KEY, -1L);
-  private final LongProperty variableScopeKeyProp = new LongProperty(VARIABLE_SCOPE_KEY_KEY, -1L);
-  private final StringProperty tenantIdProp =
-      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final ArrayProperty<ArrayValue<LongValue>> elementInstancePathProp =
-      new ArrayProperty<>(ELEMENT_INSTANCE_PATH_KEY, () -> new ArrayValue<>(LongValue::new));
-  private final ArrayProperty<LongValue> processDefinitionPathProp =
-      new ArrayProperty<>(PROCESS_DEFINITION_PATH_KEY, LongValue::new);
-  private final ArrayProperty<IntegerValue> callingElementPathProp =
-      new ArrayProperty<>(CALLING_ELEMENT_PATH_KEY, IntegerValue::new);
-
-  public IncidentRecord() {
-    super(14);
-    declareProperty(errorTypeProp)
-        .declareProperty(errorMessageProp)
-        .declareProperty(bpmnProcessIdProp)
-        .declareProperty(processDefinitionKeyProp)
-        .declareProperty(processInstanceKeyProp)
-        .declareProperty(storageOrdinalProp)
-        .declareProperty(elementIdProp)
-        .declareProperty(elementInstanceKeyProp)
-        .declareProperty(jobKeyProp)
-        .declareProperty(variableScopeKeyProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(elementInstancePathProp)
-        .declareProperty(processDefinitionPathProp)
-        .declareProperty(callingElementPathProp);
-  }
+  ErrorType errorType = ErrorType.UNKNOWN;
+  DirectBuffer errorMessage = Decoding.EMPTY;
+  DirectBuffer bpmnProcessId = Decoding.EMPTY;
+  long processDefinitionKey = -1L;
+  long processInstanceKey = -1L;
+  int storageOrdinal = 0;
+  DirectBuffer elementId = Decoding.EMPTY;
+  long elementInstanceKey = -1L;
+  long jobKey = -1L;
+  long variableScopeKey = -1L;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  final List<List<Long>> elementInstancePath = new ArrayList<>();
+  final List<Long> processDefinitionPath = new ArrayList<>();
+  final IntArrayList callingElementPath = new IntArrayList();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public void wrap(final IncidentRecord record) {
-    errorTypeProp.setValue(record.getErrorType());
-    errorMessageProp.setValue(record.getErrorMessage());
-    bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
-    processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
-    processInstanceKeyProp.setValue(record.getProcessInstanceKey());
-    storageOrdinalProp.setValue(record.getStorageOrdinal());
-    elementIdProp.setValue(record.getElementIdBuffer());
-    elementInstanceKeyProp.setValue(record.getElementInstanceKey());
-    jobKeyProp.setValue(record.getJobKey());
-    variableScopeKeyProp.setValue(record.getVariableScopeKey());
-    tenantIdProp.setValue(record.getTenantId());
+    errorType = record.getErrorType();
+    errorMessage = record.errorMessage;
+    bpmnProcessId = record.bpmnProcessId;
+    processDefinitionKey = record.getProcessDefinitionKey();
+    processInstanceKey = record.getProcessInstanceKey();
+    storageOrdinal = record.getStorageOrdinal();
+    elementId = record.elementId;
+    elementInstanceKey = record.getElementInstanceKey();
+    jobKey = record.getJobKey();
+    variableScopeKey = record.getVariableScopeKey();
+    tenantId = record.tenantId;
     setElementInstancePath(record.getElementInstancePath());
     setProcessDefinitionPath(record.getProcessDefinitionPath());
     setCallingElementPath(record.getCallingElementPath());
@@ -106,129 +66,124 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
 
   @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProp.getValue();
+    return bpmnProcessId;
   }
 
   @JsonIgnore
   public DirectBuffer getElementIdBuffer() {
-    return elementIdProp.getValue();
+    return elementId;
   }
 
   @JsonIgnore
   public DirectBuffer getErrorMessageBuffer() {
-    return errorMessageProp.getValue();
+    return errorMessage;
   }
 
   @Override
   public ErrorType getErrorType() {
-    return errorTypeProp.getValue();
+    return errorType;
   }
 
   @Override
   public String getErrorMessage() {
-    return BufferUtil.bufferAsString(errorMessageProp.getValue());
+    return BufferUtil.bufferAsString(errorMessage);
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey;
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey;
   }
 
   public IncidentRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProp.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
   @Override
   public String getElementId() {
-    return BufferUtil.bufferAsString(elementIdProp.getValue());
+    return BufferUtil.bufferAsString(elementId);
   }
 
   public IncidentRecord setElementId(final DirectBuffer elementId) {
-    elementIdProp.setValue(elementId, 0, elementId.capacity());
+    this.elementId = elementId;
     return this;
   }
 
   @Override
   public long getElementInstanceKey() {
-    return elementInstanceKeyProp.getValue();
+    return elementInstanceKey;
   }
 
   @Override
   public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+    return BufferUtil.bufferAsString(bpmnProcessId);
   }
 
   public IncidentRecord setBpmnProcessId(final DirectBuffer directBuffer) {
-    bpmnProcessIdProp.setValue(directBuffer, 0, directBuffer.capacity());
+    bpmnProcessId = directBuffer;
     return this;
   }
 
   @Override
   public long getJobKey() {
-    return jobKeyProp.getValue();
+    return jobKey;
   }
 
   @Override
   public long getVariableScopeKey() {
-    return variableScopeKeyProp.getValue();
+    return variableScopeKey;
   }
 
   public IncidentRecord setVariableScopeKey(final long variableScopeKey) {
-    variableScopeKeyProp.setValue(variableScopeKey);
+    this.variableScopeKey = variableScopeKey;
     return this;
   }
 
   @Override
   public List<List<Long>> getElementInstancePath() {
-    final var elementInstancePath = new ArrayList<List<Long>>();
-    elementInstancePathProp.forEach(
-        pe -> {
-          final var pathEntry = new ArrayList<Long>();
-          pe.forEach(e -> pathEntry.add(e.getValue()));
-          elementInstancePath.add(pathEntry);
-        });
-    return elementInstancePath;
+    final var copy = new ArrayList<List<Long>>(elementInstancePath.size());
+    for (final var pathEntry : elementInstancePath) {
+      copy.add(new ArrayList<>(pathEntry));
+    }
+    return copy;
   }
 
   public IncidentRecord setElementInstancePath(final List<List<Long>> elementInstancePath) {
-    elementInstancePathProp.reset();
-    elementInstancePath.forEach(
-        pathEntry -> {
-          final var entry = elementInstancePathProp.add();
-          pathEntry.forEach(element -> entry.add().setValue(element));
-        });
+    this.elementInstancePath.clear();
+    for (final var pathEntry : elementInstancePath) {
+      this.elementInstancePath.add(new ArrayList<>(pathEntry));
+    }
     return this;
   }
 
   @Override
   public List<Long> getProcessDefinitionPath() {
-    final var processDefinitionPath = new ArrayList<Long>();
-    processDefinitionPathProp.forEach(e -> processDefinitionPath.add(e.getValue()));
-    return processDefinitionPath;
+    return new ArrayList<>(processDefinitionPath);
   }
 
   public IncidentRecord setProcessDefinitionPath(final List<Long> processDefinitionPath) {
-    processDefinitionPathProp.reset();
-    processDefinitionPath.forEach(e -> processDefinitionPathProp.add().setValue(e));
+    this.processDefinitionPath.clear();
+    this.processDefinitionPath.addAll(processDefinitionPath);
     return this;
   }
 
   @Override
   public List<Integer> getCallingElementPath() {
-    final var callingElementPath = new ArrayList<Integer>();
-    callingElementPathProp.forEach(e -> callingElementPath.add(e.getValue()));
-    return callingElementPath;
+    final var path = new ArrayList<Integer>(callingElementPath.size());
+    for (int i = 0; i < callingElementPath.size(); i++) {
+      path.add(callingElementPath.getInt(i));
+    }
+    return path;
   }
 
   public IncidentRecord setCallingElementPath(final List<Integer> callingElementPath) {
-    callingElementPathProp.reset();
-    callingElementPath.forEach(e -> callingElementPathProp.add().setValue(e));
+    this.callingElementPath.clear();
+    callingElementPath.forEach(this.callingElementPath::addInt);
     return this;
   }
 
@@ -236,64 +191,69 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   public long getRootProcessInstanceKey() {
     // The root process instance key is the first element of the first list in the
     // elementInstancePath
-    final var iterator = elementInstancePathProp.iterator();
-    if (iterator.hasNext()) {
-      final var firstList = iterator.next();
-      final var listIterator = firstList.iterator();
-      if (listIterator.hasNext()) {
-        return listIterator.next().getValue();
-      }
+    if (!elementInstancePath.isEmpty() && !elementInstancePath.get(0).isEmpty()) {
+      return elementInstancePath.get(0).get(0);
     }
     return -1L;
   }
 
   public IncidentRecord setJobKey(final long jobKey) {
-    jobKeyProp.setValue(jobKey);
+    this.jobKey = jobKey;
     return this;
   }
 
   public IncidentRecord setElementInstanceKey(final long elementInstanceKey) {
-    elementInstanceKeyProp.setValue(elementInstanceKey);
+    this.elementInstanceKey = elementInstanceKey;
     return this;
   }
 
   public IncidentRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProp.setValue(processInstanceKey);
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
   public IncidentRecord setErrorMessage(final DirectBuffer errorMessage) {
-    errorMessageProp.setValue(errorMessage);
+    this.errorMessage = errorMessage;
     return this;
   }
 
   public IncidentRecord setErrorMessage(final String errorMessage) {
-    errorMessageProp.setValue(errorMessage);
+    this.errorMessage = BufferUtil.wrapString(errorMessage);
     return this;
   }
 
   public IncidentRecord setErrorType(final ErrorType errorType) {
-    errorTypeProp.setValue(errorType);
+    this.errorType = errorType;
     return this;
   }
 
   @Override
   public String getTenantId() {
-    return BufferUtil.bufferAsString(tenantIdProp.getValue());
+    return BufferUtil.bufferAsString(tenantId);
   }
 
   public IncidentRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public IncidentRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<IncidentRecord> codec() {
+    return IncidentRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<IncidentRecord> ops() {
+    return IncidentRecordOps.INSTANCE;
   }
 }

@@ -161,7 +161,7 @@ public class StreamJobsHandler extends Actor {
 
       // fail push on serialization errors, but no need to close the client stream
       try {
-        deserializedJob.wrap(payload);
+        deserializedJob.wrap(payload, 0, payload.capacity());
         activatedJob = ResponseMapper.toActivatedJob(deserializedJob, physicalTenantId);
       } catch (final Exception e) {
         result.completeExceptionally(e);

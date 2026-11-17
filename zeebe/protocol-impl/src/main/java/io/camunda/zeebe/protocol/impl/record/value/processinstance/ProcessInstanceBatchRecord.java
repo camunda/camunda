@@ -7,20 +7,26 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import org.jspecify.annotations.NullMarked;
 
-public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
-    implements ProcessInstanceBatchRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class ProcessInstanceBatchRecord extends MsgpackBufferValue<ProcessInstanceBatchRecord>
+    implements MsgpackRecordValue, ProcessInstanceBatchRecordValue {
 
-  private final LongProperty processInstanceKeyProperty = new LongProperty("processInstanceKey");
-  private final LongProperty processDefinitionKeyProperty =
-      new LongProperty("processDefinitionKey", -1L);
-  private final LongProperty batchElementInstanceKeyProperty =
-      new LongProperty("batchElementInstanceKey");
+  final RequiredLong processInstanceKey = new RequiredLong();
+  long processDefinitionKey = -1L;
+  final RequiredLong batchElementInstanceKey = new RequiredLong();
 
   /**
    * The index is used to keep track of the position in the batch. When the index is -1, there won't
@@ -35,56 +41,48 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
    *       activated.
    * </ul>
    */
-  private final LongProperty indexProperty = new LongProperty("index", -1L);
+  long index = -1L;
 
-  private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
-
-  public ProcessInstanceBatchRecord() {
-    super(5);
-    declareProperty(processInstanceKeyProperty)
-        .declareProperty(processDefinitionKeyProperty)
-        .declareProperty(batchElementInstanceKeyProperty)
-        .declareProperty(indexProperty)
-        .declareProperty(storageOrdinalProperty);
-  }
+  int storageOrdinal = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProperty.getValue();
+    return processInstanceKey.get();
   }
 
   public ProcessInstanceBatchRecord setProcessInstanceKey(final long processInstanceKey) {
-    processInstanceKeyProperty.setValue(processInstanceKey);
+    this.processInstanceKey.set(processInstanceKey);
     return this;
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProperty.getValue();
+    return processDefinitionKey;
   }
 
   public ProcessInstanceBatchRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProperty.setValue(processDefinitionKey);
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
   @Override
   public long getBatchElementInstanceKey() {
-    return batchElementInstanceKeyProperty.getValue();
+    return batchElementInstanceKey.get();
   }
 
   public ProcessInstanceBatchRecord setBatchElementInstanceKey(final long batchElementInstanceKey) {
-    batchElementInstanceKeyProperty.setValue(batchElementInstanceKey);
+    this.batchElementInstanceKey.set(batchElementInstanceKey);
     return this;
   }
 
   @Override
   public long getIndex() {
-    return indexProperty.getValue();
+    return index;
   }
 
   public ProcessInstanceBatchRecord setIndex(final long index) {
-    indexProperty.setValue(index);
+    this.index = index;
     return this;
   }
 
@@ -96,11 +94,21 @@ public final class ProcessInstanceBatchRecord extends UnifiedRecordValue
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProperty.getValue();
+    return storageOrdinal;
   }
 
   public ProcessInstanceBatchRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProperty.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ProcessInstanceBatchRecord> codec() {
+    return ProcessInstanceBatchRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ProcessInstanceBatchRecord> ops() {
+    return ProcessInstanceBatchRecordOps.INSTANCE;
   }
 }

@@ -7,42 +7,57 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.clock;
 
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
+import org.jspecify.annotations.NullMarked;
 
-public final class ClockRecord extends UnifiedRecordValue implements ClockRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class ClockRecord extends MsgpackBufferValue<ClockRecord>
+    implements MsgpackRecordValue, ClockRecordValue {
 
   // depending on the intent, the value may be a:
   // - timestamp (epoch milliseconds)
   // - offset (in milliseconds), either the duration to add (ADD) or the total offset (OFFSET)
   // - current time of the clock (epoch milliseconds), for FETCHED
-  private final LongProperty timeProperty = new LongProperty("time", 0);
-
-  public ClockRecord() {
-    super(1);
-    declareProperty(timeProperty);
-  }
+  long time = 0L;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getTime() {
-    return timeProperty.getValue();
+    return time;
   }
 
   public ClockRecord pinAt(final long pinnedEpoch) {
     reset();
-    timeProperty.setValue(pinnedEpoch);
+    time = pinnedEpoch;
     return this;
   }
 
   public ClockRecord offsetBy(final long offsetMillis) {
     reset();
-    timeProperty.setValue(offsetMillis);
+    time = offsetMillis;
     return this;
   }
 
   public ClockRecord setTime(final long epochMillis) {
-    timeProperty.setValue(epochMillis);
+    time = epochMillis;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ClockRecord> codec() {
+    return ClockRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ClockRecord> ops() {
+    return ClockRecordOps.INSTANCE;
   }
 }

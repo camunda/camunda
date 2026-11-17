@@ -10,217 +10,207 @@ package io.camunda.zeebe.protocol.impl.record.value.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValue
-    implements MessageStartEventSubscriptionRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class MessageStartEventSubscriptionRecord
+    extends MsgpackBufferValue<MessageStartEventSubscriptionRecord>
+    implements MsgpackRecordValue, MessageStartEventSubscriptionRecordValue {
 
-  // Static StringValue keys to avoid memory waste
-  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
-      new StringValue("processDefinitionKey");
-  private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
-  private static final StringValue MESSAGE_NAME_KEY = new StringValue("messageName");
-  private static final StringValue START_EVENT_ID_KEY = new StringValue("startEventId");
-  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
-  private static final StringValue MESSAGE_KEY_KEY = new StringValue("messageKey");
-  private static final StringValue CORRELATION_KEY_KEY = new StringValue("correlationKey");
-  private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
-  private static final StringValue VARIABLES_KEY = new StringValue("variables");
-  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
+  long processDefinitionKey = -1L;
+  DirectBuffer messageName = Decoding.EMPTY;
+  DirectBuffer startEventId = Decoding.EMPTY;
+  DirectBuffer bpmnProcessId = Decoding.EMPTY;
+  long processInstanceKey = -1L;
+  long messageKey = -1L;
+  DirectBuffer correlationKey = Decoding.EMPTY;
+  DirectBuffer businessId = Decoding.EMPTY;
 
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
-  private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
-  private final StringProperty messageNameProp = new StringProperty(MESSAGE_NAME_KEY, "");
-  private final StringProperty startEventIdProp = new StringProperty(START_EVENT_ID_KEY, "");
+  @MsgpackProperty(document = true)
+  DirectBuffer variables = DocumentValue.EMPTY_DOCUMENT;
 
-  private final LongProperty processInstanceKeyProp =
-      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
-  private final LongProperty messageKeyProp = new LongProperty(MESSAGE_KEY_KEY, -1L);
-  private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY, "");
-  private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
-  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
-  private final StringProperty tenantIdProp =
-      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
-
-  public MessageStartEventSubscriptionRecord() {
-    super(11);
-    declareProperty(processDefinitionKeyProp)
-        .declareProperty(messageNameProp)
-        .declareProperty(startEventIdProp)
-        .declareProperty(bpmnProcessIdProp)
-        .declareProperty(processInstanceKeyProp)
-        .declareProperty(messageKeyProp)
-        .declareProperty(correlationKeyProp)
-        .declareProperty(businessIdProp)
-        .declareProperty(variablesProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(storageOrdinalProp);
-  }
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  int storageOrdinal = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public void wrap(final MessageStartEventSubscriptionRecord record) {
-    processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
-    bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
-    messageNameProp.setValue(record.getMessageNameBuffer());
-    startEventIdProp.setValue(record.getStartEventIdBuffer());
-    processInstanceKeyProp.setValue(record.getProcessInstanceKey());
-    messageKeyProp.setValue(record.getMessageKey());
-    correlationKeyProp.setValue(record.getCorrelationKeyBuffer());
-    businessIdProp.setValue(record.getBusinessIdBuffer());
-    variablesProp.setValue(record.getVariablesBuffer());
-    tenantIdProp.setValue(record.getTenantId());
-    storageOrdinalProp.setValue(record.getStorageOrdinal());
+    processDefinitionKey = record.getProcessDefinitionKey();
+    bpmnProcessId = record.getBpmnProcessIdBuffer();
+    messageName = record.getMessageNameBuffer();
+    startEventId = record.getStartEventIdBuffer();
+    processInstanceKey = record.getProcessInstanceKey();
+    messageKey = record.getMessageKey();
+    correlationKey = record.getCorrelationKeyBuffer();
+    businessId = record.getBusinessIdBuffer();
+    variables = record.getVariablesBuffer();
+    tenantId = BufferUtil.wrapString(record.getTenantId());
+    storageOrdinal = record.getStorageOrdinal();
   }
 
   @JsonIgnore
   public DirectBuffer getMessageNameBuffer() {
-    return messageNameProp.getValue();
+    return messageName;
   }
 
   @JsonIgnore
   public DirectBuffer getStartEventIdBuffer() {
-    return startEventIdProp.getValue();
+    return startEventId;
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProp.getValue();
+    return processDefinitionKey;
   }
 
   public MessageStartEventSubscriptionRecord setProcessDefinitionKey(final long key) {
-    processDefinitionKeyProp.setValue(key);
+    processDefinitionKey = key;
     return this;
   }
 
   @Override
   public String getBpmnProcessId() {
-    return bufferAsString(bpmnProcessIdProp.getValue());
+    return bufferAsString(bpmnProcessId);
   }
 
   @Override
   public String getStartEventId() {
-    return bufferAsString(startEventIdProp.getValue());
+    return bufferAsString(startEventId);
   }
 
   @Override
   public String getMessageName() {
-    return bufferAsString(messageNameProp.getValue());
+    return bufferAsString(messageName);
   }
 
   public MessageStartEventSubscriptionRecord setMessageName(final DirectBuffer messageName) {
-    messageNameProp.setValue(messageName);
+    this.messageName = messageName;
     return this;
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
+    return processInstanceKey;
   }
 
   @Override
   public String getCorrelationKey() {
-    return bufferAsString(correlationKeyProp.getValue());
+    return bufferAsString(correlationKey);
   }
 
   public MessageStartEventSubscriptionRecord setCorrelationKey(final DirectBuffer correlationKey) {
-    correlationKeyProp.setValue(correlationKey);
+    this.correlationKey = correlationKey;
     return this;
   }
 
   @Override
   public String getBusinessId() {
-    return bufferAsString(businessIdProp.getValue());
+    return bufferAsString(businessId);
   }
 
   @JsonIgnore
   public DirectBuffer getBusinessIdBuffer() {
-    return businessIdProp.getValue();
+    return businessId;
   }
 
   public MessageStartEventSubscriptionRecord setBusinessId(final DirectBuffer businessId) {
-    businessIdProp.setValue(businessId);
+    this.businessId = businessId;
     return this;
   }
 
   @Override
   public long getMessageKey() {
-    return messageKeyProp.getValue();
+    return messageKey;
   }
 
   public MessageStartEventSubscriptionRecord setMessageKey(final long messageKey) {
-    messageKeyProp.setValue(messageKey);
+    this.messageKey = messageKey;
     return this;
   }
 
   public MessageStartEventSubscriptionRecord setProcessInstanceKey(final long key) {
-    processInstanceKeyProp.setValue(key);
+    processInstanceKey = key;
     return this;
   }
 
   public MessageStartEventSubscriptionRecord setStartEventId(final DirectBuffer startEventId) {
-    startEventIdProp.setValue(startEventId);
+    this.startEventId = startEventId;
     return this;
   }
 
   public MessageStartEventSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProp.getValue();
+    return bpmnProcessId;
   }
 
   @JsonIgnore
   public DirectBuffer getCorrelationKeyBuffer() {
-    return correlationKeyProp.getValue();
+    return correlationKey;
   }
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProp.getValue());
+    return MsgPackConverter.convertToMap(variables);
   }
 
   public MessageStartEventSubscriptionRecord setVariables(final DirectBuffer variables) {
-    variablesProp.setValue(variables);
+    this.variables = Decoding.document(variables);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProp.getValue();
+    return variables;
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public MessageStartEventSubscriptionRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public MessageStartEventSubscriptionRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<MessageStartEventSubscriptionRecord> codec() {
+    return MessageStartEventSubscriptionRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<MessageStartEventSubscriptionRecord> ops() {
+    return MessageStartEventSubscriptionRecordOps.INSTANCE;
   }
 }

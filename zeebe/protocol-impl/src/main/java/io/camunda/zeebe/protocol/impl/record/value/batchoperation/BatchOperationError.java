@@ -7,27 +7,30 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.protocol.record.value.scaling.BatchOperationErrorValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public class BatchOperationError extends ObjectValue implements BatchOperationErrorValue {
+@MsgpackPojo
+@NullMarked
+@JsonIgnoreProperties("length")
+public final class BatchOperationError extends MsgpackBufferValue<BatchOperationError>
+    implements BatchOperationErrorValue {
 
-  private final IntegerProperty partitionIdProp = new IntegerProperty("partitionId", 0);
-  private final EnumProperty<BatchOperationErrorType> typeProp =
-      new EnumProperty<>("type", BatchOperationErrorType.class, BatchOperationErrorType.UNKNOWN);
-  private final StringProperty messageProp = new StringProperty("message", "");
-
-  public BatchOperationError() {
-    super(3);
-    declareProperty(partitionIdProp);
-    declareProperty(typeProp);
-    declareProperty(messageProp);
-  }
+  int partitionId = 0;
+  BatchOperationErrorType type = BatchOperationErrorType.UNKNOWN;
+  DirectBuffer message = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public BatchOperationError wrap(final BatchOperationErrorValue record) {
     setPartitionId(record.getPartitionId());
@@ -38,31 +41,51 @@ public class BatchOperationError extends ObjectValue implements BatchOperationEr
 
   @Override
   public int getPartitionId() {
-    return partitionIdProp.getValue();
+    return partitionId;
   }
 
   public BatchOperationError setPartitionId(final int partitionId) {
-    partitionIdProp.setValue(partitionId);
+    this.partitionId = partitionId;
     return this;
   }
 
   @Override
   public BatchOperationErrorType getType() {
-    return typeProp.getValue();
+    return type;
   }
 
   public BatchOperationError setType(final BatchOperationErrorType type) {
-    typeProp.setValue(type);
+    this.type = type;
     return this;
   }
 
   @Override
   public String getMessage() {
-    return BufferUtil.bufferAsString(messageProp.getValue());
+    return BufferUtil.bufferAsString(message);
   }
 
   public BatchOperationError setMessage(final String message) {
-    messageProp.setValue(message);
+    this.message = BufferUtil.wrapString(message);
     return this;
+  }
+
+  /** Kept so that the exported JSON stays unchanged. */
+  public boolean isEmpty() {
+    return false;
+  }
+
+  /** Kept so that the exported JSON stays unchanged. */
+  public int getEncodedLength() {
+    return getLength();
+  }
+
+  @Override
+  protected MsgpackCodec<BatchOperationError> codec() {
+    return BatchOperationErrorCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<BatchOperationError> ops() {
+    return BatchOperationErrorOps.INSTANCE;
   }
 }

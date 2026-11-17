@@ -10,25 +10,34 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class ProcessInstanceResultRecord extends UnifiedRecordValue
-    implements ProcessInstanceResultRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class ProcessInstanceResultRecord
+    extends MsgpackBufferValue<ProcessInstanceResultRecord>
+    implements MsgpackRecordValue, ProcessInstanceResultRecordValue {
 
   // Static StringValue keys for property names
   public static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
@@ -42,152 +51,145 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
   public static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   public static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
 
-  private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
-  private final LongProperty processDefinitionKeyProperty =
-      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1);
-  private final IntegerProperty versionProperty = new IntegerProperty(VERSION_KEY, -1);
-  private final StringProperty tenantIdProperty =
-      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final DocumentProperty variablesProperty = new DocumentProperty(VARIABLES_KEY);
-  private final LongProperty processInstanceKeyProperty =
-      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1);
-  private final ArrayProperty<StringValue> tagsProperty =
-      new ArrayProperty<>(TAGS_KEY, StringValue::new);
-  private final StringProperty businessIdProperty = new StringProperty(BUSINESS_ID_KEY, "");
-  private final IntegerProperty storageOrdinalProperty =
-      new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
+  DirectBuffer bpmnProcessId = Decoding.EMPTY;
+  long processDefinitionKey = -1L;
+  long processInstanceKey = -1L;
+  int version = -1;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
-  public ProcessInstanceResultRecord() {
-    super(9);
-    declareProperty(bpmnProcessIdProperty)
-        .declareProperty(processDefinitionKeyProperty)
-        .declareProperty(processInstanceKeyProperty)
-        .declareProperty(versionProperty)
-        .declareProperty(tenantIdProperty)
-        .declareProperty(variablesProperty)
-        .declareProperty(tagsProperty)
-        .declareProperty(businessIdProperty)
-        .declareProperty(storageOrdinalProperty);
-  }
+  @MsgpackProperty(document = true)
+  DirectBuffer variables = DocumentValue.EMPTY_DOCUMENT;
+
+  final List<DirectBuffer> tags = new ArrayList<>();
+  DirectBuffer businessId = Decoding.EMPTY;
+  int storageOrdinal = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getBpmnProcessId() {
-    return bufferAsString(bpmnProcessIdProperty.getValue());
+    return bufferAsString(bpmnProcessId);
   }
 
   public ProcessInstanceResultRecord setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProperty.setValue(bpmnProcessId);
+    this.bpmnProcessId = BufferUtil.wrapString(bpmnProcessId);
     return this;
   }
 
   public ProcessInstanceResultRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    bpmnProcessIdProperty.setValue(bpmnProcessId);
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
   @Override
   public int getVersion() {
-    return versionProperty.getValue();
+    return version;
   }
 
   public ProcessInstanceResultRecord setVersion(final int version) {
-    versionProperty.setValue(version);
+    this.version = version;
     return this;
   }
 
   @Override
   public long getProcessInstanceKey() {
-    return processInstanceKeyProperty.getValue();
+    return processInstanceKey;
   }
 
   @Override
   public long getProcessDefinitionKey() {
-    return processDefinitionKeyProperty.getValue();
+    return processDefinitionKey;
   }
 
   public ProcessInstanceResultRecord setProcessDefinitionKey(final long key) {
-    processDefinitionKeyProperty.setValue(key);
+    processDefinitionKey = key;
     return this;
   }
 
   @Override
   public Set<String> getTags() {
-    return StreamSupport.stream(tagsProperty.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .collect(Collectors.toSet());
+    return tags.stream().map(BufferUtil::bufferAsString).collect(Collectors.toSet());
   }
 
   public ProcessInstanceResultRecord setTags(final Set<String> tags) {
-    tagsProperty.reset();
+    this.tags.clear();
     if (tags != null) {
-      tags.forEach(tag -> tagsProperty.add().wrap(BufferUtil.wrapString(tag)));
+      tags.forEach(tag -> this.tags.add(BufferUtil.wrapString(tag)));
     }
     return this;
   }
 
   @Override
   public String getBusinessId() {
-    return bufferAsString(businessIdProperty.getValue());
+    return bufferAsString(businessId);
   }
 
   public ProcessInstanceResultRecord setBusinessId(final String businessId) {
-    businessIdProperty.setValue(businessId);
+    this.businessId = BufferUtil.wrapString(businessId);
     return this;
   }
 
   public ProcessInstanceResultRecord setBusinessId(final DirectBuffer businessId) {
-    businessIdProperty.setValue(businessId);
+    this.businessId = businessId;
     return this;
   }
 
   public ProcessInstanceResultRecord setProcessInstanceKey(final long instanceKey) {
-    processInstanceKeyProperty.setValue(instanceKey);
+    processInstanceKey = instanceKey;
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getBusinessIdBuffer() {
-    return businessIdProperty.getValue();
+    return businessId;
   }
 
   @JsonIgnore
   public DirectBuffer getBpmnProcessIdBuffer() {
-    return bpmnProcessIdProperty.getValue();
+    return bpmnProcessId;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProperty.getValue();
+    return variables;
   }
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProperty.getValue());
+    return MsgPackConverter.convertToMap(variables);
   }
 
   public ProcessInstanceResultRecord setVariables(final DirectBuffer variables) {
-    variablesProperty.setValue(variables);
+    this.variables = Decoding.document(variables);
     return this;
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProperty.getValue());
+    return bufferAsString(tenantId);
   }
 
   public ProcessInstanceResultRecord setTenantId(final String tenantId) {
-    tenantIdProperty.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProperty.getValue();
+    return storageOrdinal;
   }
 
   public ProcessInstanceResultRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProperty.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ProcessInstanceResultRecord> codec() {
+    return ProcessInstanceResultRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ProcessInstanceResultRecord> ops() {
+    return ProcessInstanceResultRecordOps.INSTANCE;
   }
 }

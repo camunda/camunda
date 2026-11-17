@@ -9,25 +9,29 @@ package io.camunda.zeebe.protocol.impl.record.value.globallistener;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class GlobalListenerRecord extends UnifiedRecordValue
-    implements GlobalListenerRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class GlobalListenerRecord extends MsgpackBufferValue<GlobalListenerRecord>
+    implements MsgpackRecordValue, GlobalListenerRecordValue {
 
   public static final int DEFAULT_RETRIES = 3;
   public static final int DEFAULT_PRIORITY = 50;
@@ -44,141 +48,131 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
 
   public static final String ALL_EVENT_TYPES = "all";
 
-  private final LongProperty globalListenerKeyProp = new LongProperty("globalListenerKey", -1L);
-  private final StringProperty idProp = new StringProperty("id", "");
-  private final StringProperty typeProp = new StringProperty("type", "");
-  private final IntegerProperty retriesProp = new IntegerProperty("retries", DEFAULT_RETRIES);
-  private final ArrayProperty<StringValue> eventTypesProp =
-      new ArrayProperty<>("eventTypes", StringValue::new);
-  private final BooleanProperty afterNonGlobalProp = new BooleanProperty("afterNonGlobal", false);
-  private final IntegerProperty priorityProp = new IntegerProperty("priority", DEFAULT_PRIORITY);
-  private final EnumProperty<GlobalListenerSource> sourceProp =
-      new EnumProperty<>("source", GlobalListenerSource.class, DEFAULT_SOURCE);
-  private final EnumProperty<GlobalListenerType> listenerTypeProp =
-      new EnumProperty<>("listenerType", GlobalListenerType.class, DEFAULT_LISTENER_TYPE);
-
-  private final LongProperty configKeyProp = new LongProperty("configKey", -1L);
-
-  public GlobalListenerRecord() {
-    super(10);
-    declareProperty(globalListenerKeyProp)
-        .declareProperty(idProp)
-        .declareProperty(typeProp)
-        .declareProperty(retriesProp)
-        .declareProperty(eventTypesProp)
-        .declareProperty(afterNonGlobalProp)
-        .declareProperty(priorityProp)
-        .declareProperty(sourceProp)
-        .declareProperty(listenerTypeProp)
-        .declareProperty(configKeyProp);
-  }
+  long globalListenerKey = -1L;
+  DirectBuffer id = Decoding.EMPTY;
+  DirectBuffer type = Decoding.EMPTY;
+  int retries = DEFAULT_RETRIES;
+  final List<DirectBuffer> eventTypes = new ArrayList<>();
+  boolean afterNonGlobal = false;
+  int priority = DEFAULT_PRIORITY;
+  GlobalListenerSource source = DEFAULT_SOURCE;
+  GlobalListenerType listenerType = DEFAULT_LISTENER_TYPE;
+  long configKey = -1L;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public Long getGlobalListenerKey() {
-    return globalListenerKeyProp.getValue();
+    return globalListenerKey;
   }
 
   public GlobalListenerRecord setGlobalListenerKey(final Long key) {
-    globalListenerKeyProp.setValue(key);
+    globalListenerKey = key;
     return this;
   }
 
   @Override
   public String getId() {
-    return bufferAsString(idProp.getValue());
+    return bufferAsString(id);
   }
 
   public GlobalListenerRecord setId(final String id) {
-    idProp.setValue(id);
+    this.id = BufferUtil.wrapString(id);
     return this;
   }
 
   @Override
   public String getType() {
-    return bufferAsString(typeProp.getValue());
+    return bufferAsString(type);
   }
 
   public GlobalListenerRecord setType(final String type) {
-    typeProp.setValue(type);
+    this.type = BufferUtil.wrapString(type);
     return this;
   }
 
   @Override
   public int getRetries() {
-    return retriesProp.getValue();
+    return retries;
   }
 
   public GlobalListenerRecord setRetries(final int retries) {
-    retriesProp.setValue(retries);
+    this.retries = retries;
     return this;
   }
 
   @Override
   public List<String> getEventTypes() {
-    return StreamSupport.stream(eventTypesProp.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .collect(Collectors.toList());
+    return eventTypes.stream().map(BufferUtil::bufferAsString).collect(Collectors.toList());
   }
 
   public GlobalListenerRecord setEventTypes(final List<String> eventTypes) {
-    eventTypesProp.reset();
+    this.eventTypes.clear();
     eventTypes.forEach(this::addEventType);
     return this;
   }
 
   @Override
   public boolean isAfterNonGlobal() {
-    return afterNonGlobalProp.getValue();
+    return afterNonGlobal;
   }
 
   public GlobalListenerRecord setAfterNonGlobal(final boolean afterNonGlobal) {
-    afterNonGlobalProp.setValue(afterNonGlobal);
+    this.afterNonGlobal = afterNonGlobal;
     return this;
   }
 
   @Override
   public int getPriority() {
-    return priorityProp.getValue();
+    return priority;
   }
 
   public GlobalListenerRecord setPriority(final int priority) {
-    priorityProp.setValue(priority);
+    this.priority = priority;
     return this;
   }
 
   @Override
   public GlobalListenerSource getSource() {
-    return sourceProp.getValue();
+    return source;
   }
 
   public GlobalListenerRecord setSource(final GlobalListenerSource source) {
-    sourceProp.setValue(source);
+    this.source = source;
     return this;
   }
 
   @Override
   public GlobalListenerType getListenerType() {
-    return listenerTypeProp.getValue();
+    return listenerType;
   }
 
   public GlobalListenerRecord setListenerType(final GlobalListenerType listenerType) {
-    listenerTypeProp.setValue(listenerType);
+    this.listenerType = listenerType;
     return this;
   }
 
   @Override
   public Long getConfigKey() {
-    return configKeyProp.getValue();
+    return configKey;
   }
 
   public GlobalListenerRecord setConfigKey(final Long configKey) {
-    configKeyProp.setValue(configKey);
+    this.configKey = configKey;
     return this;
   }
 
   public GlobalListenerRecord addEventType(final String eventType) {
-    eventTypesProp.add().wrap(BufferUtil.wrapString(eventType));
+    eventTypes.add(BufferUtil.wrapString(eventType));
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<GlobalListenerRecord> codec() {
+    return GlobalListenerRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<GlobalListenerRecord> ops() {
+    return GlobalListenerRecordOps.INSTANCE;
   }
 }

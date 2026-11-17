@@ -10,27 +10,31 @@ package io.camunda.zeebe.protocol.impl.record.value.user;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackSanitized;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class UserRecord extends UnifiedRecordValue implements UserRecordValue {
-  private final LongProperty userKeyProp = new LongProperty("userKey", -1L);
-  private final StringProperty usernameProp = new StringProperty("username");
-  private final StringProperty nameProp = new StringProperty("name", "");
-  private final StringProperty emailProp = new StringProperty("email", "");
-  private final StringProperty passwordProp = new StringProperty("password", "").sanitized();
-
-  public UserRecord() {
-    super(5);
-    declareProperty(userKeyProp)
-        .declareProperty(usernameProp)
-        .declareProperty(nameProp)
-        .declareProperty(emailProp)
-        .declareProperty(passwordProp);
-  }
+@MsgpackPojo
+@NullMarked
+public final class UserRecord extends MsgpackBufferValue<UserRecord>
+    implements MsgpackRecordValue, UserRecordValue {
+  long userKey = -1L;
+  @Nullable DirectBuffer username;
+  DirectBuffer name = Decoding.EMPTY;
+  DirectBuffer email = Decoding.EMPTY;
+  @MsgpackSanitized DirectBuffer password = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public UserRecord copy() {
     final UserRecord copy = new UserRecord();
@@ -40,97 +44,107 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
 
   @Override
   public Long getUserKey() {
-    return userKeyProp.getValue();
+    return userKey;
   }
 
   public UserRecord setUserKey(final long userKey) {
-    userKeyProp.setValue(userKey);
+    this.userKey = userKey;
     return this;
   }
 
   @Override
   public String getUsername() {
-    return bufferAsString(usernameProp.getValue());
+    return bufferAsString(Decoding.required(username, "username"));
   }
 
   public UserRecord setUsername(final String username) {
-    usernameProp.setValue(username);
+    this.username = BufferUtil.wrapString(username);
     return this;
   }
 
   public UserRecord setUsername(final DirectBuffer username) {
-    usernameProp.setValue(username);
+    this.username = username;
     return this;
   }
 
   @Override
   public String getName() {
-    return bufferAsString(nameProp.getValue());
+    return bufferAsString(name);
   }
 
   public UserRecord setName(final String name) {
     if (name == null) {
       return this;
     }
-    nameProp.setValue(name);
+    this.name = BufferUtil.wrapString(name);
     return this;
   }
 
   public UserRecord setName(final DirectBuffer name) {
-    nameProp.setValue(name);
+    this.name = name;
     return this;
   }
 
   @Override
   public String getEmail() {
-    return bufferAsString(emailProp.getValue());
+    return bufferAsString(email);
   }
 
   public UserRecord setEmail(final String email) {
     if (email == null) {
       return this;
     }
-    emailProp.setValue(email);
+    this.email = BufferUtil.wrapString(email);
     return this;
   }
 
   public UserRecord setEmail(final DirectBuffer email) {
-    emailProp.setValue(email);
+    this.email = email;
     return this;
   }
 
   @Override
   public String getPassword() {
-    return bufferAsString(passwordProp.getValue());
+    return bufferAsString(password);
   }
 
   public UserRecord setPassword(final String password) {
-    passwordProp.setValue(password);
+    this.password = BufferUtil.wrapString(password);
     return this;
   }
 
   public UserRecord setPassword(final DirectBuffer password) {
-    passwordProp.setValue(password);
+    this.password = password;
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getUsernameBuffer() {
-    return usernameProp.getValue();
+    return Decoding.required(username, "username");
   }
 
   @JsonIgnore
   public DirectBuffer getNameBuffer() {
-    return nameProp.getValue();
+    return name;
   }
 
   @JsonIgnore
   public DirectBuffer getEmailBuffer() {
-    return emailProp.getValue();
+    return email;
   }
 
   @JsonIgnore
   public DirectBuffer getPasswordBuffer() {
-    return passwordProp.getValue();
+    return password;
+  }
+
+  @Override
+  protected MsgpackCodec<UserRecord> codec() {
+    return UserRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<UserRecord> ops() {
+    return UserRecordOps.INSTANCE;
   }
 }

@@ -11,46 +11,55 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@MsgpackPojo
+@NullMarked
 @JsonIgnoreProperties({
   /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
   "encodedLength",
   "length",
   "empty"
 })
-public final class DeploymentResource extends UnpackedObject
+public final class DeploymentResource extends MsgpackBufferValue<DeploymentResource>
     implements io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource {
 
-  private final BinaryProperty resourceProp = new BinaryProperty("resource");
-  private final StringProperty resourceNameProp = new StringProperty("resourceName", "resource");
+  DirectBuffer resourceName = BufferUtil.wrapString("resource");
 
-  public DeploymentResource() {
-    super(2);
-    declareProperty(resourceNameProp).declareProperty(resourceProp);
-  }
+  @MsgpackProperty(binary = true)
+  @Nullable DirectBuffer resource;
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public byte[] getResource() {
-    return BufferUtil.bufferAsArray(resourceProp.getValue());
+    return BufferUtil.bufferAsArray(Decoding.required(resource, "resource"));
   }
 
   @Override
   public String getResourceName() {
-    return BufferUtil.bufferAsString(resourceNameProp.getValue());
+    return BufferUtil.bufferAsString(resourceName);
   }
 
   public DeploymentResource setResourceName(final String resourceName) {
-    resourceNameProp.setValue(resourceName);
+    this.resourceName = BufferUtil.wrapString(resourceName);
     return this;
   }
 
   public DeploymentResource setResourceName(final DirectBuffer resourceName) {
-    resourceNameProp.setValue(resourceName);
+    this.resourceName = new UnsafeBuffer(resourceName, 0, resourceName.capacity());
     return this;
   }
 
@@ -64,17 +73,27 @@ public final class DeploymentResource extends UnpackedObject
 
   @JsonIgnore
   public DirectBuffer getResourceBuffer() {
-    return resourceProp.getValue();
+    return Decoding.required(resource, "resource");
   }
 
   @JsonIgnore
   public DirectBuffer getResourceNameBuffer() {
-    return resourceNameProp.getValue();
+    return resourceName;
   }
 
   public DeploymentResource setResource(
       final DirectBuffer resource, final int offset, final int length) {
-    resourceProp.setValue(resource, offset, length);
+    this.resource = new UnsafeBuffer(resource, offset, length);
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<DeploymentResource> codec() {
+    return DeploymentResourceCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<DeploymentResource> ops() {
+    return DeploymentResourceOps.INSTANCE;
   }
 }

@@ -10,11 +10,16 @@ package io.camunda.zeebe.protocol.impl.record.value.deployment;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackIgnore;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ValueArray;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.agentdefinition.AgentDefinitionRecord;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -25,30 +30,27 @@ import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ResourceMetadataValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class DeploymentRecord extends UnifiedRecordValue implements DeploymentRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class DeploymentRecord extends MsgpackBufferValue<DeploymentRecord>
+    implements MsgpackRecordValue, DeploymentRecordValue {
 
   public static final String RESOURCES = "resources";
   public static final String PROCESSES = "processesMetadata";
 
-  private final ArrayProperty<DeploymentResource> resourcesProp =
-      new ArrayProperty<>(RESOURCES, DeploymentResource::new);
-
-  private final ArrayProperty<ProcessMetadata> processesMetadataProp =
-      new ArrayProperty<>(PROCESSES, ProcessMetadata::new);
-
-  private final ArrayProperty<DecisionRecord> decisionMetadataProp =
-      new ArrayProperty<>("decisionsMetadata", DecisionRecord::new);
-
-  private final ArrayProperty<DecisionRequirementsMetadataRecord> decisionRequirementsMetadataProp =
-      new ArrayProperty<>("decisionRequirementsMetadata", DecisionRequirementsMetadataRecord::new);
-
-  private final ArrayProperty<FormMetadataRecord> formMetadataProp =
-      new ArrayProperty<>("formMetadata", FormMetadataRecord::new);
-
-  private final ArrayProperty<ResourceMetadataRecord> resourceMetadataProp =
-      new ArrayProperty<>("resourceMetadata", ResourceMetadataRecord::new);
+  final List<DeploymentResource> resources = new ArrayList<>();
+  final List<ProcessMetadata> processesMetadata = new ArrayList<>();
+  final List<DecisionRequirementsMetadataRecord> decisionRequirementsMetadata = new ArrayList<>();
+  final List<DecisionRecord> decisionsMetadata = new ArrayList<>();
+  final List<FormMetadataRecord> formMetadata = new ArrayList<>();
+  final List<ResourceMetadataRecord> resourceMetadata = new ArrayList<>();
 
   /**
    * Agent definitions created at deploy time for elements carrying a recognized agent marker (see
@@ -56,28 +58,17 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
    * not exposed on the public {@link DeploymentRecordValue} interface, since agent definitions are
    * a deploy-time engine concern rather than a deployment result reported to clients.
    */
-  private final ArrayProperty<AgentDefinitionRecord> agentDefinitionsMetadataProp =
-      new ArrayProperty<>("agentDefinitionsMetadata", AgentDefinitionRecord::new);
+  final List<AgentDefinitionRecord> agentDefinitionsMetadata = new ArrayList<>();
 
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long deploymentKey = -1L;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
-  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
-
+  /**
+   * Never stored: kept as a separate property only because the golden file of the record lists it.
+   */
+  @MsgpackIgnore
   private final LongProperty reconstructionKeyProp = new LongProperty("reconstructionKey", -1);
-
-  public DeploymentRecord() {
-    super(9);
-    declareProperty(resourcesProp)
-        .declareProperty(processesMetadataProp)
-        .declareProperty(decisionRequirementsMetadataProp)
-        .declareProperty(decisionMetadataProp)
-        .declareProperty(formMetadataProp)
-        .declareProperty(resourceMetadataProp)
-        .declareProperty(agentDefinitionsMetadataProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(deploymentKeyProp);
-  }
 
   /**
    * Create an empty DeploymentRecord that can be used as a starting point for reconstructing
@@ -89,27 +80,28 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   }
 
   public ValueArray<ProcessMetadata> processesMetadata() {
-    return processesMetadataProp;
+    return new ListValueArray<>(processesMetadata, ProcessMetadata::new);
   }
 
   public ValueArray<DeploymentResource> resources() {
-    return resourcesProp;
+    return new ListValueArray<>(resources, DeploymentResource::new);
   }
 
   public ValueArray<DecisionRecord> decisionsMetadata() {
-    return decisionMetadataProp;
+    return new ListValueArray<>(decisionsMetadata, DecisionRecord::new);
   }
 
   public ValueArray<DecisionRequirementsMetadataRecord> decisionRequirementsMetadata() {
-    return decisionRequirementsMetadataProp;
+    return new ListValueArray<>(
+        decisionRequirementsMetadata, DecisionRequirementsMetadataRecord::new);
   }
 
   public ValueArray<FormMetadataRecord> formMetadata() {
-    return formMetadataProp;
+    return new ListValueArray<>(formMetadata, FormMetadataRecord::new);
   }
 
   public ValueArray<ResourceMetadataRecord> resourceMetadata() {
-    return resourceMetadataProp;
+    return new ListValueArray<>(resourceMetadata, ResourceMetadataRecord::new);
   }
 
   /**
@@ -118,29 +110,29 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
    *     DeploymentRecordValue} interface.
    */
   public ValueArray<AgentDefinitionRecord> agentDefinitionsMetadata() {
-    return agentDefinitionsMetadataProp;
+    return new ListValueArray<>(agentDefinitionsMetadata, AgentDefinitionRecord::new);
   }
 
   @Override
   public List<io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource> getResources() {
-    final List<io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource> resources =
+    final List<io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource> copies =
         new ArrayList<>();
 
-    for (final DeploymentResource resource : resourcesProp) {
+    for (final DeploymentResource resource : resources) {
       final DeploymentResource copiedResource = new DeploymentResource();
       final var copyBuffer = BufferUtil.createCopy(resource);
       copiedResource.wrap(copyBuffer);
-      resources.add(copiedResource);
+      copies.add(copiedResource);
     }
 
-    return resources;
+    return copies;
   }
 
   @Override
   public List<ProcessMetadataValue> getProcessesMetadata() {
     final List<ProcessMetadataValue> processesMeta = new ArrayList<>();
 
-    for (final ProcessMetadata processRecord : processesMetadataProp) {
+    for (final ProcessMetadata processRecord : processesMetadata) {
       final ProcessMetadata copiedProcessRecord = new ProcessMetadata();
       final var copyBuffer = BufferUtil.createCopy(processRecord);
       copiedProcessRecord.wrap(copyBuffer);
@@ -154,7 +146,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   public List<DecisionRecordValue> getDecisionsMetadata() {
     final var metadataList = new ArrayList<DecisionRecordValue>();
 
-    for (final DecisionRecord metadata : decisionMetadataProp) {
+    for (final DecisionRecord metadata : decisionsMetadata) {
       final var copyRecord = new DecisionRecord();
       final var copyBuffer = BufferUtil.createCopy(metadata);
       copyRecord.wrap(copyBuffer);
@@ -168,7 +160,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   public List<DecisionRequirementsMetadataValue> getDecisionRequirementsMetadata() {
     final var metadataList = new ArrayList<DecisionRequirementsMetadataValue>();
 
-    for (final DecisionRequirementsMetadataRecord metadata : decisionRequirementsMetadataProp) {
+    for (final DecisionRequirementsMetadataRecord metadata : decisionRequirementsMetadata) {
       final var copyRecord = new DecisionRequirementsMetadataRecord();
       final var copyBuffer = BufferUtil.createCopy(metadata);
       copyRecord.wrap(copyBuffer);
@@ -182,7 +174,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   public List<FormMetadataValue> getFormMetadata() {
     final var metadataList = new ArrayList<FormMetadataValue>();
 
-    for (final FormMetadataRecord metadata : formMetadataProp) {
+    for (final FormMetadataRecord metadata : formMetadata) {
       final var copyRecord = new FormMetadataRecord();
       final var copyBuffer = BufferUtil.createCopy(metadata);
       copyRecord.wrap(copyBuffer);
@@ -196,7 +188,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   public List<ResourceMetadataValue> getResourceMetadata() {
     final var metadataList = new ArrayList<ResourceMetadataValue>();
 
-    for (final ResourceMetadataRecord metadata : resourceMetadataProp) {
+    for (final ResourceMetadataRecord metadata : resourceMetadata) {
       final var copyRecord = new ResourceMetadataRecord();
       final var copyBuffer = BufferUtil.createCopy(metadata);
       copyRecord.wrap(copyBuffer);
@@ -207,11 +199,11 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
 
   @Override
   public long getDeploymentKey() {
-    return deploymentKeyProp.getValue();
+    return deploymentKey;
   }
 
   public DeploymentRecord setDeploymentKey(final long deploymentKey) {
-    deploymentKeyProp.setValue(deploymentKey);
+    this.deploymentKey = deploymentKey;
     return this;
   }
 
@@ -229,16 +221,16 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   }
 
   public void resetResources() {
-    resourcesProp.reset();
+    resources.clear();
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public DeploymentRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
@@ -264,12 +256,77 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
    * @return the resource name of the parent DRG, or {@code null} if not found
    */
   @JsonIgnore
+  @SuppressWarnings("NullAway")
   public String getResourceNameForDecision(final DecisionRecordValue decision) {
-    for (final var drg : decisionRequirementsMetadataProp) {
+    for (final var drg : decisionRequirementsMetadata) {
       if (drg.getDecisionRequirementsKey() == decision.getDecisionRequirementsKey()) {
         return drg.getResourceName();
       }
     }
     return null;
+  }
+
+  @Override
+  protected MsgpackCodec<DeploymentRecord> codec() {
+    return DeploymentRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<DeploymentRecord> ops() {
+    return DeploymentRecordOps.INSTANCE;
+  }
+
+  /**
+   * The mutable accessor of one of the lists: it adds and removes the elements of the list, so that
+   * code written against the former {@code ArrayProperty} keeps working.
+   */
+  private static final class ListValueArray<T> implements ValueArray<T> {
+
+    final List<T> items;
+    final Supplier<T> factory;
+
+    private ListValueArray(final List<T> items, final Supplier<T> factory) {
+      this.items = items;
+      this.factory = factory;
+    }
+
+    @Override
+    public T add() {
+      final var item = factory.get();
+      items.add(item);
+      return item;
+    }
+
+    @Override
+    public T add(final int index) {
+      final var item = factory.get();
+      items.add(index, item);
+      return item;
+    }
+
+    @Override
+    public T get(final int index) {
+      return items.get(index);
+    }
+
+    @Override
+    public T remove(final int index) {
+      return items.remove(index);
+    }
+
+    @Override
+    public int size() {
+      return items.size();
+    }
+
+    @Override
+    public Stream<T> stream() {
+      return items.stream();
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+      return items.iterator();
+    }
   }
 }

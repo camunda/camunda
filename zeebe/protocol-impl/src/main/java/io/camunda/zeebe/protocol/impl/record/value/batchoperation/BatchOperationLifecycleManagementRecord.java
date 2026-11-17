@@ -7,52 +7,52 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.BatchOperationErrorValue;
+import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.NullMarked;
 
-public final class BatchOperationLifecycleManagementRecord extends UnifiedRecordValue
-    implements BatchOperationLifecycleManagementRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class BatchOperationLifecycleManagementRecord
+    extends MsgpackBufferValue<BatchOperationLifecycleManagementRecord>
+    implements MsgpackRecordValue, BatchOperationLifecycleManagementRecordValue {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
   public static final String PROP_STORAGE_ORDINAL = "storageOrdinal";
 
-  private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(PROP_STORAGE_ORDINAL, 0);
-
-  private final ArrayProperty<BatchOperationError> errorsProp =
-      new ArrayProperty<>("errors", BatchOperationError::new);
-
-  public BatchOperationLifecycleManagementRecord() {
-    super(3);
-    declareProperty(batchOperationKeyProp);
-    declareProperty(storageOrdinalProp);
-    declareProperty(errorsProp);
-  }
+  final RequiredLong batchOperationKey = new RequiredLong();
+  int storageOrdinal = 0;
+  final List<BatchOperationError> errors = new ArrayList<>();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public long getBatchOperationKey() {
-    return batchOperationKeyProp.getValue();
+    return batchOperationKey.get();
   }
 
   public BatchOperationLifecycleManagementRecord setBatchOperationKey(
       final Long batchOperationKey) {
-    batchOperationKeyProp.reset();
-    batchOperationKeyProp.setValue(batchOperationKey);
+    this.batchOperationKey.set(batchOperationKey);
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public BatchOperationLifecycleManagementRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 
@@ -66,14 +66,24 @@ public final class BatchOperationLifecycleManagementRecord extends UnifiedRecord
 
   @Override
   public List<BatchOperationErrorValue> getErrors() {
-    return errorsProp.stream().map(BatchOperationErrorValue.class::cast).toList();
+    return errors.stream().map(BatchOperationErrorValue.class::cast).toList();
   }
 
   public BatchOperationLifecycleManagementRecord setErrors(final List<BatchOperationError> errors) {
-    errorsProp.reset();
+    this.errors.clear();
     for (final var error : errors) {
-      errorsProp.add().wrap(error);
+      this.errors.add(new BatchOperationError().wrap(error));
     }
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<BatchOperationLifecycleManagementRecord> codec() {
+    return BatchOperationLifecycleManagementRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<BatchOperationLifecycleManagementRecord> ops() {
+    return BatchOperationLifecycleManagementRecordOps.INSTANCE;
   }
 }

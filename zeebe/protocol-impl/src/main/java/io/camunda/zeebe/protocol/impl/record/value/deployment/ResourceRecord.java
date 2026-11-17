@@ -10,98 +10,100 @@ package io.camunda.zeebe.protocol.impl.record.value.deployment;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.BinaryProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public class ResourceRecord extends UnifiedRecordValue implements Resource {
-  private final StringProperty resourceIdProp = new StringProperty("resourceId", "");
-  private final IntegerProperty versionProp = new IntegerProperty("version", -1);
-  private final LongProperty resourceKeyProp = new LongProperty("resourceKey", -1L);
-  private final BinaryProperty checksumProp = new BinaryProperty("checksum", new UnsafeBuffer());
-  private final StringProperty resourceNameProp = new StringProperty("resourceName", "");
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1L);
-  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
-  private final BinaryProperty resourceProp = new BinaryProperty("resource", new UnsafeBuffer());
+@MsgpackPojo
+@NullMarked
+public final class ResourceRecord extends MsgpackBufferValue<ResourceRecord>
+    implements MsgpackRecordValue, Resource {
 
-  public ResourceRecord() {
-    super(9);
-    declareProperty(resourceIdProp)
-        .declareProperty(versionProp)
-        .declareProperty(resourceKeyProp)
-        .declareProperty(checksumProp)
-        .declareProperty(resourceNameProp)
-        .declareProperty(tenantIdProp)
-        .declareProperty(deploymentKeyProp)
-        .declareProperty(versionTagProp)
-        .declareProperty(resourceProp);
-  }
+  DirectBuffer resourceId = Decoding.EMPTY;
+  int version = -1;
+  long resourceKey = -1L;
+
+  @MsgpackProperty(binary = true)
+  DirectBuffer checksum = Decoding.EMPTY;
+
+  DirectBuffer resourceName = Decoding.EMPTY;
+  DirectBuffer tenantId = BufferUtil.wrapString(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  long deploymentKey = -1L;
+  DirectBuffer versionTag = Decoding.EMPTY;
+
+  @MsgpackProperty(binary = true)
+  DirectBuffer resource = Decoding.EMPTY;
+
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public ResourceRecord wrap(final ResourceMetadataRecord metadata, final byte[] resource) {
-    resourceIdProp.setValue(metadata.getResourceId());
-    versionProp.setValue(metadata.getVersion());
-    checksumProp.setValue(metadata.getChecksumBuffer());
-    resourceKeyProp.setValue(metadata.getResourceKey());
-    resourceNameProp.setValue(metadata.getResourceNameBuffer());
-    tenantIdProp.setValue(metadata.getTenantId());
-    deploymentKeyProp.setValue(metadata.getDeploymentKey());
-    versionTagProp.setValue(metadata.getVersionTag());
-    resourceProp.setValue(BufferUtil.wrapArray(resource));
+    resourceId = BufferUtil.wrapString(metadata.getResourceId());
+    version = metadata.getVersion();
+    checksum = metadata.getChecksumBuffer();
+    resourceKey = metadata.getResourceKey();
+    resourceName = metadata.getResourceNameBuffer();
+    tenantId = BufferUtil.wrapString(metadata.getTenantId());
+    deploymentKey = metadata.getDeploymentKey();
+    versionTag = BufferUtil.wrapString(metadata.getVersionTag());
+    this.resource = BufferUtil.wrapArray(resource);
     return this;
   }
 
   @Override
   public String getResourceId() {
-    return BufferUtil.bufferAsString(resourceIdProp.getValue());
+    return bufferAsString(resourceId);
   }
 
   @Override
   public int getVersion() {
-    return versionProp.getValue();
+    return version;
   }
 
   public ResourceRecord setVersion(final int version) {
-    versionProp.setValue(version);
+    this.version = version;
     return this;
   }
 
   @Override
   public String getVersionTag() {
-    return bufferAsString(versionTagProp.getValue());
+    return bufferAsString(versionTag);
   }
 
   public ResourceRecord setVersionTag(final String versionTag) {
-    versionTagProp.setValue(versionTag);
+    this.versionTag = BufferUtil.wrapString(versionTag);
     return this;
   }
 
   @Override
   public long getResourceKey() {
-    return resourceKeyProp.getValue();
+    return resourceKey;
   }
 
   @Override
   public byte[] getChecksum() {
-    return BufferUtil.bufferAsArray(checksumProp.getValue());
+    return BufferUtil.bufferAsArray(checksum);
   }
 
   public ResourceRecord setChecksum(final DirectBuffer checksumBuffer) {
-    checksumProp.setValue(checksumBuffer);
+    checksum = new UnsafeBuffer(checksumBuffer, 0, checksumBuffer.capacity());
     return this;
   }
 
   @Override
   public String getResourceName() {
-    return BufferUtil.bufferAsString(resourceNameProp.getValue());
+    return bufferAsString(resourceName);
   }
 
   @Override
@@ -111,90 +113,78 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
 
   @Override
   public long getDeploymentKey() {
-    return deploymentKeyProp.getValue();
+    return deploymentKey;
   }
 
   public ResourceRecord setDeploymentKey(final long deploymentKey) {
-    deploymentKeyProp.setValue(deploymentKey);
+    this.deploymentKey = deploymentKey;
     return this;
   }
 
   public ResourceRecord setResourceName(final String resourceName) {
-    resourceNameProp.setValue(resourceName);
+    this.resourceName = BufferUtil.wrapString(resourceName);
     return this;
   }
 
   public ResourceRecord setResourceName(final DirectBuffer resourceName) {
-    resourceNameProp.setValue(resourceName);
+    this.resourceName = new UnsafeBuffer(resourceName, 0, resourceName.capacity());
     return this;
   }
 
   public ResourceRecord setResourceKey(final long resourceKey) {
-    resourceKeyProp.setValue(resourceKey);
+    this.resourceKey = resourceKey;
     return this;
   }
 
   public ResourceRecord setResourceId(final DirectBuffer resourceId) {
-    resourceIdProp.setValue(resourceId);
+    this.resourceId = new UnsafeBuffer(resourceId, 0, resourceId.capacity());
     return this;
   }
 
   public ResourceRecord setResourceId(final String resourceId) {
-    resourceIdProp.setValue(resourceId);
+    this.resourceId = BufferUtil.wrapString(resourceId);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getChecksumBuffer() {
-    return checksumProp.getValue();
+    return checksum;
   }
 
   @JsonIgnore
   public DirectBuffer getResourceNameBuffer() {
-    return resourceNameProp.getValue();
+    return resourceName;
   }
 
   @JsonIgnore
   public DirectBuffer getResourceIdBuffer() {
-    return resourceIdProp.getValue();
+    return resourceId;
   }
 
   @JsonIgnore
   public DirectBuffer getResourceBuffer() {
-    return resourceProp.getValue();
-  }
-
-  @Override
-  @JsonIgnore
-  public int getLength() {
-    return super.getLength();
-  }
-
-  @Override
-  @JsonIgnore
-  public int getEncodedLength() {
-    return super.getEncodedLength();
+    return resource;
   }
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return bufferAsString(tenantId);
   }
 
   public ResourceRecord setTenantId(final String tenantId) {
-    tenantIdProp.setValue(tenantId);
+    this.tenantId = BufferUtil.wrapString(tenantId);
     return this;
   }
 
   @Override
   public String getResourceProp() {
-    return bufferAsString(resourceProp.getValue());
+    return bufferAsString(resource);
   }
 
   @Override
   @JsonIgnore
   public byte[] getResourceBytes() {
-    return BufferUtil.bufferAsArray(resourceProp.getValue());
+    return BufferUtil.bufferAsArray(resource);
   }
 
   public ResourceRecord setResource(final DirectBuffer resource) {
@@ -203,7 +193,17 @@ public class ResourceRecord extends UnifiedRecordValue implements Resource {
 
   public ResourceRecord setResource(
       final DirectBuffer resource, final int offset, final int length) {
-    resourceProp.setValue(resource, offset, length);
+    this.resource = new UnsafeBuffer(resource, offset, length);
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<ResourceRecord> codec() {
+    return ResourceRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<ResourceRecord> ops() {
+    return ResourceRecordOps.INSTANCE;
   }
 }

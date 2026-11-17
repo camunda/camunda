@@ -7,71 +7,74 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.jobmetrics;
 
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.JobMetricsValue;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.StatusMetricsValue;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.NullMarked;
 
-public final class JobMetrics extends ObjectValue implements JobMetricsValue {
+@MsgpackPojo
+@NullMarked
+@JsonIgnoreProperties("length")
+public final class JobMetrics extends MsgpackBufferValue<JobMetrics> implements JobMetricsValue {
 
-  private final IntegerProperty jobTypeIndexProperty = new IntegerProperty("jobTypeIndex", -1);
-  private final IntegerProperty tenantIdIndexProperty = new IntegerProperty("tenantIdIndex", -1);
-  private final IntegerProperty workerNameIndexProperty =
-      new IntegerProperty("workerNameIndex", -1);
-
-  private final ArrayProperty<StatusMetrics> statusMetricsProperty =
-      new ArrayProperty<>("statusMetrics", StatusMetrics::new);
-
-  public JobMetrics() {
-    super(4);
-    declareProperty(jobTypeIndexProperty);
-    declareProperty(tenantIdIndexProperty);
-    declareProperty(workerNameIndexProperty);
-    declareProperty(statusMetricsProperty);
-  }
+  int jobTypeIndex = -1;
+  int tenantIdIndex = -1;
+  int workerNameIndex = -1;
+  final List<StatusMetrics> statusMetrics = new ArrayList<>();
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public int getJobTypeIndex() {
-    return jobTypeIndexProperty.getValue();
+    return jobTypeIndex;
   }
 
   public JobMetrics setJobTypeIndex(final int jobTypeIndex) {
-    jobTypeIndexProperty.setValue(jobTypeIndex);
+    this.jobTypeIndex = jobTypeIndex;
     return this;
   }
 
   @Override
   public int getTenantIdIndex() {
-    return tenantIdIndexProperty.getValue();
+    return tenantIdIndex;
   }
 
   public JobMetrics setTenantIdIndex(final int tenantIdIndex) {
-    tenantIdIndexProperty.setValue(tenantIdIndex);
+    this.tenantIdIndex = tenantIdIndex;
     return this;
   }
 
   @Override
   public int getWorkerNameIndex() {
-    return workerNameIndexProperty.getValue();
+    return workerNameIndex;
   }
 
   @Override
   public List<StatusMetricsValue> getStatusMetrics() {
-    return statusMetricsProperty.stream().collect(Collectors.toList());
+    return statusMetrics.stream().collect(Collectors.toList());
   }
 
   public JobMetrics setStatusMetrics(final List<StatusMetricsValue> statusMetrics) {
-    statusMetricsProperty.reset();
+    this.statusMetrics.clear();
     statusMetrics.forEach(
-        statusMetricsValue -> statusMetricsProperty.add().wrap(statusMetricsValue));
+        statusMetricsValue -> {
+          final var item = new StatusMetrics();
+          item.wrap(statusMetricsValue);
+          this.statusMetrics.add(item);
+        });
     return this;
   }
 
   public JobMetrics setWorkerNameIndex(final int workerNameIndex) {
-    workerNameIndexProperty.setValue(workerNameIndex);
+    this.workerNameIndex = workerNameIndex;
     return this;
   }
 
@@ -81,5 +84,25 @@ public final class JobMetrics extends ObjectValue implements JobMetricsValue {
     setWorkerNameIndex(value.getWorkerNameIndex());
     setStatusMetrics(value.getStatusMetrics());
     return this;
+  }
+
+  /** Kept so that the exported JSON stays unchanged. */
+  public boolean isEmpty() {
+    return false;
+  }
+
+  /** Kept so that the exported JSON stays unchanged. */
+  public int getEncodedLength() {
+    return getLength();
+  }
+
+  @Override
+  protected MsgpackCodec<JobMetrics> codec() {
+    return JobMetricsCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<JobMetrics> ops() {
+    return JobMetricsOps.INSTANCE;
   }
 }

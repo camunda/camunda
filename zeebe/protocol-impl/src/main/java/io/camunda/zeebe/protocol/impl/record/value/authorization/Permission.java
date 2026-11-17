@@ -8,33 +8,33 @@
 package io.camunda.zeebe.protocol.impl.record.value.authorization;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-@JsonIgnoreProperties({
-  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
-  "encodedLength",
-  "empty"
-})
-public final class Permission extends ObjectValue implements PermissionValue {
+@JsonIgnoreProperties({"encodedLength", "empty", "length"})
+@MsgpackPojo
+@NullMarked
+public final class Permission extends MsgpackBufferValue<Permission> implements PermissionValue {
 
-  private final EnumProperty<PermissionType> permissionTypeProp =
-      new EnumProperty<>("permissionType", PermissionType.class);
-  private final ArrayProperty<StringValue> resourceIdsProp =
-      new ArrayProperty<>("resourceIds", StringValue::new);
+  @Nullable PermissionType permissionType;
+  final List<DirectBuffer> resourceIds = new ArrayList<>();
 
-  public Permission() {
-    super(2);
-    declareProperty(permissionTypeProp).declareProperty(resourceIdsProp);
-  }
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public Permission copy(final PermissionValue object) {
     setPermissionType(object.getPermissionType()).addResourceIds(object.getResourceIds());
@@ -43,20 +43,17 @@ public final class Permission extends ObjectValue implements PermissionValue {
 
   @Override
   public PermissionType getPermissionType() {
-    return permissionTypeProp.getValue();
+    return Decoding.required(permissionType, "permissionType");
   }
 
   public Permission setPermissionType(final PermissionType permissionType) {
-    permissionTypeProp.setValue(permissionType);
+    this.permissionType = permissionType;
     return this;
   }
 
   @Override
   public Set<String> getResourceIds() {
-    return StreamSupport.stream(resourceIdsProp.spliterator(), false)
-        .map(StringValue::getValue)
-        .map(BufferUtil::bufferAsString)
-        .collect(Collectors.toSet());
+    return resourceIds.stream().map(BufferUtil::bufferAsString).collect(Collectors.toSet());
   }
 
   public Permission addResourceIds(final Set<String> resourceIds) {
@@ -65,7 +62,17 @@ public final class Permission extends ObjectValue implements PermissionValue {
   }
 
   public Permission addResourceId(final String resourceId) {
-    resourceIdsProp.add().wrap(BufferUtil.wrapString(resourceId));
+    resourceIds.add(BufferUtil.wrapString(resourceId));
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<Permission> codec() {
+    return PermissionCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<Permission> ops() {
+    return PermissionOps.INSTANCE;
   }
 }

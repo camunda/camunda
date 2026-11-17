@@ -8,44 +8,38 @@
 package io.camunda.zeebe.protocol.impl.record.value.variable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.DocumentProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackProperty;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.RequiredLong;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import java.util.Map;
-import java.util.Objects;
 import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-public final class VariableDocumentRecord extends UnifiedRecordValue
-    implements VariableDocumentRecordValue {
-  // Static StringValue keys for property names
-  private static final StringValue SCOPE_KEY_KEY = new StringValue("scopeKey");
-  private static final StringValue UPDATE_SEMANTICS_KEY = new StringValue("updateSemantics");
-  private static final StringValue VARIABLES_KEY = new StringValue("variables");
-  private static final StringValue STORAGE_ORDINAL_KEY = new StringValue("storageOrdinal");
+@MsgpackPojo
+@NullMarked
+public final class VariableDocumentRecord extends MsgpackBufferValue<VariableDocumentRecord>
+    implements MsgpackRecordValue, VariableDocumentRecordValue {
 
-  private final LongProperty scopeKeyProperty = new LongProperty(SCOPE_KEY_KEY);
-  private final EnumProperty<VariableDocumentUpdateSemantic> updateSemanticsProperty =
-      new EnumProperty<>(
-          UPDATE_SEMANTICS_KEY,
-          VariableDocumentUpdateSemantic.class,
-          VariableDocumentUpdateSemantic.PROPAGATE);
-  private final DocumentProperty variablesProperty = new DocumentProperty(VARIABLES_KEY);
-  private final IntegerProperty storageOrdinalProp = new IntegerProperty(STORAGE_ORDINAL_KEY, 0);
+  final RequiredLong scopeKey = new RequiredLong();
+  VariableDocumentUpdateSemantic updateSemantics = VariableDocumentUpdateSemantic.PROPAGATE;
 
-  public VariableDocumentRecord() {
-    super(4);
-    declareProperty(scopeKeyProperty)
-        .declareProperty(updateSemanticsProperty)
-        .declareProperty(variablesProperty)
-        .declareProperty(storageOrdinalProp);
-  }
+  @MsgpackProperty(document = true)
+  DirectBuffer variables = DocumentValue.EMPTY_DOCUMENT;
+
+  int storageOrdinal = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public VariableDocumentRecord wrap(final VariableDocumentRecord other) {
     setScopeKey(other.getScopeKey())
@@ -58,76 +52,63 @@ public final class VariableDocumentRecord extends UnifiedRecordValue
 
   @Override
   public long getScopeKey() {
-    return scopeKeyProperty.getValue();
+    return scopeKey.get();
   }
 
   public VariableDocumentRecord setScopeKey(final long scopeKey) {
-    scopeKeyProperty.setValue(scopeKey);
+    this.scopeKey.set(scopeKey);
     return this;
   }
 
   @Override
   public VariableDocumentUpdateSemantic getUpdateSemantics() {
-    return updateSemanticsProperty.getValue();
+    return updateSemantics;
   }
 
   public VariableDocumentRecord setUpdateSemantics(
       final VariableDocumentUpdateSemantic updateSemantics) {
-    updateSemanticsProperty.setValue(updateSemantics);
+    this.updateSemantics = updateSemantics;
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProp.getValue();
+    return storageOrdinal;
   }
 
   public VariableDocumentRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProp.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
   }
 
   @Override
   public Map<String, Object> getVariables() {
-    return MsgPackConverter.convertToMap(variablesProperty.getValue());
+    return MsgPackConverter.convertToMap(variables);
   }
 
   public VariableDocumentRecord setVariables(final DirectBuffer variables) {
-    variablesProperty.setValue(variables);
+    this.variables = Decoding.document(variables);
     return this;
   }
 
   @JsonIgnore
   public DirectBuffer getVariablesBuffer() {
-    return variablesProperty.getValue();
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        scopeKeyProperty, updateSemanticsProperty, variablesProperty, storageOrdinalProp);
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-
-    if (!(o instanceof VariableDocumentRecord)) {
-      return false;
-    }
-
-    final VariableDocumentRecord that = (VariableDocumentRecord) o;
-    return Objects.equals(scopeKeyProperty, that.scopeKeyProperty)
-        && Objects.equals(updateSemanticsProperty, that.updateSemanticsProperty)
-        && Objects.equals(variablesProperty, that.variablesProperty)
-        && Objects.equals(storageOrdinalProp, that.storageOrdinalProp);
+    return variables;
   }
 
   @Override
   public String getTenantId() {
     // todo(#13388): replace dummy implementation
     return TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+  }
+
+  @Override
+  protected MsgpackCodec<VariableDocumentRecord> codec() {
+    return VariableDocumentRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<VariableDocumentRecord> ops() {
+    return VariableDocumentRecordOps.INSTANCE;
   }
 }

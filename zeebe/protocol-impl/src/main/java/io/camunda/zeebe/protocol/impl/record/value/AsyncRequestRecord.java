@@ -7,80 +7,71 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value;
 
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
+import org.jspecify.annotations.NullMarked;
 
-public final class AsyncRequestRecord extends UnifiedRecordValue
-    implements AsyncRequestRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class AsyncRequestRecord extends MsgpackBufferValue<AsyncRequestRecord>
+    implements MsgpackRecordValue, AsyncRequestRecordValue {
 
-  private final LongProperty scopeKeyProperty = new LongProperty("scopeKey", -1);
-  private final EnumProperty<ValueType> valueTypeProperty =
-      new EnumProperty<>("valueType", ValueType.class, ValueType.NULL_VAL);
-  private final IntegerProperty intentProperty = new IntegerProperty("intent", Intent.NULL_VAL);
-  private final LongProperty requestIdProperty = new LongProperty("requestId", -1);
-  private final IntegerProperty requestStreamIdProperty =
-      new IntegerProperty("requestStreamId", -1);
-  private final LongProperty operationReferenceProperty =
-      new LongProperty("operationReference", -1);
-  private final LongProperty batchOperationReferenceProperty =
-      new LongProperty("batchOperationReference", -1);
-  private final IntegerProperty storageOrdinalProperty = new IntegerProperty("storageOrdinal", 0);
-
-  public AsyncRequestRecord() {
-    super(8);
-    declareProperty(scopeKeyProperty)
-        .declareProperty(valueTypeProperty)
-        .declareProperty(intentProperty)
-        .declareProperty(requestIdProperty)
-        .declareProperty(requestStreamIdProperty)
-        .declareProperty(operationReferenceProperty)
-        .declareProperty(batchOperationReferenceProperty)
-        .declareProperty(storageOrdinalProperty);
-  }
+  long scopeKey = -1L;
+  ValueType valueType = ValueType.NULL_VAL;
+  int intent = Intent.NULL_VAL;
+  long requestId = -1L;
+  int requestStreamId = -1;
+  long operationReference = -1L;
+  long batchOperationReference = -1L;
+  int storageOrdinal = 0;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public void wrap(final AsyncRequestRecord record) {
-    scopeKeyProperty.setValue(record.getScopeKey());
-    valueTypeProperty.setValue(record.getValueType());
-    intentProperty.setValue(record.getIntent().value());
-    requestIdProperty.setValue(record.getRequestId());
-    requestStreamIdProperty.setValue(record.getRequestStreamId());
-    operationReferenceProperty.setValue(record.getOperationReference());
-    batchOperationReferenceProperty.setValue(record.getBatchOperationReference());
-    storageOrdinalProperty.setValue(record.getStorageOrdinal());
+    scopeKey = record.getScopeKey();
+    valueType = record.getValueType();
+    intent = record.getIntent().value();
+    requestId = record.getRequestId();
+    requestStreamId = record.getRequestStreamId();
+    operationReference = record.getOperationReference();
+    batchOperationReference = record.getBatchOperationReference();
+    storageOrdinal = record.getStorageOrdinal();
   }
 
   @Override
   public long getScopeKey() {
-    return scopeKeyProperty.getValue();
+    return scopeKey;
   }
 
   public AsyncRequestRecord setScopeKey(final long scopeKey) {
-    scopeKeyProperty.setValue(scopeKey);
+    this.scopeKey = scopeKey;
     return this;
   }
 
   @Override
   public ValueType getValueType() {
-    return valueTypeProperty.getValue();
+    return valueType;
   }
 
   public AsyncRequestRecord setValueType(final ValueType valueType) {
-    valueTypeProperty.setValue(valueType);
+    this.valueType = valueType;
     return this;
   }
 
   @Override
   public Intent getIntent() {
-    return getIntent(intentProperty.getValue());
+    return getIntent(intent);
   }
 
   public AsyncRequestRecord setIntent(final Intent intent) {
-    intentProperty.setValue(intent.value());
+    this.intent = intent.value();
     return this;
   }
 
@@ -96,51 +87,61 @@ public final class AsyncRequestRecord extends UnifiedRecordValue
 
   @Override
   public long getRequestId() {
-    return requestIdProperty.getValue();
+    return requestId;
   }
 
   public AsyncRequestRecord setRequestId(final long requestId) {
-    requestIdProperty.setValue(requestId);
+    this.requestId = requestId;
     return this;
   }
 
   @Override
   public int getRequestStreamId() {
-    return requestStreamIdProperty.getValue();
+    return requestStreamId;
   }
 
   public AsyncRequestRecord setRequestStreamId(final int requestStreamId) {
-    requestStreamIdProperty.setValue(requestStreamId);
+    this.requestStreamId = requestStreamId;
     return this;
   }
 
   @Override
   public long getOperationReference() {
-    return operationReferenceProperty.getValue();
+    return operationReference;
   }
 
   public AsyncRequestRecord setOperationReference(final long operationReference) {
-    operationReferenceProperty.setValue(operationReference);
+    this.operationReference = operationReference;
     return this;
   }
 
   @Override
   public long getBatchOperationReference() {
-    return batchOperationReferenceProperty.getValue();
+    return batchOperationReference;
   }
 
   public AsyncRequestRecord setBatchOperationReference(final long batchOperationReference) {
-    batchOperationReferenceProperty.setValue(batchOperationReference);
+    this.batchOperationReference = batchOperationReference;
     return this;
   }
 
   @Override
   public int getStorageOrdinal() {
-    return storageOrdinalProperty.getValue();
+    return storageOrdinal;
   }
 
   public AsyncRequestRecord setStorageOrdinal(final int storageOrdinal) {
-    storageOrdinalProperty.setValue(storageOrdinal);
+    this.storageOrdinal = storageOrdinal;
     return this;
+  }
+
+  @Override
+  protected MsgpackCodec<AsyncRequestRecord> codec() {
+    return AsyncRequestRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<AsyncRequestRecord> ops() {
+    return AsyncRequestRecordOps.INSTANCE;
   }
 }

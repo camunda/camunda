@@ -8,156 +8,126 @@
 package io.camunda.zeebe.protocol.impl.record.value.job;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.BooleanProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.IntegerProperty;
-import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.MsgpackRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
-public final class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecordValue {
+@MsgpackPojo
+@NullMarked
+public final class JobBatchRecord extends MsgpackBufferValue<JobBatchRecord>
+    implements MsgpackRecordValue, JobBatchRecordValue {
 
-  // Static StringValue keys to avoid memory waste
-  private static final StringValue TYPE_KEY = new StringValue("type");
-  private static final StringValue WORKER_KEY = new StringValue("worker");
-  private static final StringValue TIMEOUT_KEY = new StringValue("timeout");
-  private static final StringValue MAX_JOBS_TO_ACTIVATE_KEY = new StringValue("maxJobsToActivate");
-  private static final StringValue JOB_KEYS_KEY = new StringValue("jobKeys");
-  private static final StringValue JOBS_KEY = new StringValue("jobs");
-  private static final StringValue TENANT_IDS_KEY = new StringValue("tenantIds");
-  private static final StringValue VARIABLES_KEY = new StringValue("variables");
-  private static final StringValue TRUNCATED_KEY = new StringValue("truncated");
-  private static final StringValue WITH_LEASE_KEY = new StringValue("withLease");
-  private static final StringValue TENANT_FILTER_KEY = new StringValue("tenantFilter");
-
-  private final StringProperty typeProp = new StringProperty(TYPE_KEY);
-  private final StringProperty workerProp = new StringProperty(WORKER_KEY, "");
-  private final LongProperty timeoutProp = new LongProperty(TIMEOUT_KEY, -1);
-  private final IntegerProperty maxJobsToActivateProp =
-      new IntegerProperty(MAX_JOBS_TO_ACTIVATE_KEY, -1);
-  private final ArrayProperty<LongValue> jobKeysProp =
-      new ArrayProperty<>(JOB_KEYS_KEY, LongValue::new);
-  private final ArrayProperty<JobRecord> jobsProp = new ArrayProperty<>(JOBS_KEY, JobRecord::new);
-  private final ArrayProperty<StringValue> tenantIdsProp =
-      new ArrayProperty<>(TENANT_IDS_KEY, StringValue::new);
-  private final ArrayProperty<StringValue> variablesProp =
-      new ArrayProperty<>(VARIABLES_KEY, StringValue::new);
-  private final BooleanProperty truncatedProp = new BooleanProperty(TRUNCATED_KEY, false);
-  private final BooleanProperty withLeaseProp = new BooleanProperty(WITH_LEASE_KEY, false);
-  private final EnumProperty<TenantFilter> tenantFilterProp =
-      new EnumProperty<>(TENANT_FILTER_KEY, TenantFilter.class, TenantFilter.PROVIDED);
-
-  public JobBatchRecord() {
-    super(11);
-    declareProperty(typeProp)
-        .declareProperty(workerProp)
-        .declareProperty(timeoutProp)
-        .declareProperty(maxJobsToActivateProp)
-        .declareProperty(jobKeysProp)
-        .declareProperty(jobsProp)
-        .declareProperty(variablesProp)
-        .declareProperty(truncatedProp)
-        .declareProperty(withLeaseProp)
-        .declareProperty(tenantIdsProp)
-        .declareProperty(tenantFilterProp);
-  }
+  @Nullable DirectBuffer type;
+  DirectBuffer worker = Decoding.EMPTY;
+  long timeout = -1;
+  int maxJobsToActivate = -1;
+  final List<LongValue> jobKeys = new ArrayList<>();
+  final List<JobRecord> jobs = new ArrayList<>();
+  final List<StringValue> variables = new ArrayList<>();
+  boolean truncated = false;
+  boolean withLease = false;
+  final List<StringValue> tenantIds = new ArrayList<>();
+  TenantFilter tenantFilter = TenantFilter.PROVIDED;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   public JobBatchRecord setType(final DirectBuffer buf, final int offset, final int length) {
-    typeProp.setValue(buf, offset, length);
+    type = copy(buf, offset, length);
     return this;
   }
 
   public JobBatchRecord setWorker(final DirectBuffer worker, final int offset, final int length) {
-    workerProp.setValue(worker, offset, length);
+    this.worker = copy(worker, offset, length);
     return this;
   }
 
   public ValueArray<LongValue> jobKeys() {
-    return jobKeysProp;
+    return new ListValueArray<>(jobKeys, LongValue::new);
   }
 
   public ValueArray<JobRecord> jobs() {
-    return jobsProp;
+    return new ListValueArray<>(jobs, JobRecord::new);
   }
 
   public ValueArray<StringValue> variables() {
-    return variablesProp;
+    return new ListValueArray<>(variables, StringValue::new);
   }
 
   public boolean getTruncated() {
-    return truncatedProp.getValue();
+    return truncated;
   }
 
   @Override
   public String getType() {
-    return BufferUtil.bufferAsString(typeProp.getValue());
+    return BufferUtil.bufferAsString(getTypeBuffer());
   }
 
   @Override
   public String getWorker() {
-    return BufferUtil.bufferAsString(workerProp.getValue());
+    return BufferUtil.bufferAsString(worker);
   }
 
   @Override
   public long getTimeout() {
-    return timeoutProp.getValue();
+    return timeout;
   }
 
   @Override
   public int getMaxJobsToActivate() {
-    return maxJobsToActivateProp.getValue();
+    return maxJobsToActivate;
   }
 
   @Override
   public List<Long> getJobKeys() {
-    return StreamSupport.stream(jobKeysProp.spliterator(), false)
-        .map(LongValue::getValue)
-        .collect(Collectors.toList());
+    return jobKeys.stream().map(LongValue::getValue).collect(Collectors.toList());
   }
 
   @Override
   public List<JobRecordValue> getJobs() {
-    return StreamSupport.stream(jobsProp.spliterator(), false)
+    return jobs.stream()
         .map(
             jobRecord -> {
-              final byte[] bytes = new byte[jobRecord.getLength()];
-              final UnsafeBuffer copyRecord = new UnsafeBuffer(bytes);
-              final JobRecord copiedRecord = new JobRecord();
-
-              jobRecord.write(copyRecord, 0);
-              copiedRecord.wrap(copyRecord);
-
-              return copiedRecord;
+              final var copiedRecord = new JobRecord();
+              copiedRecord.copyFrom(jobRecord);
+              return (JobRecordValue) copiedRecord;
             })
         .collect(Collectors.toList());
   }
 
   @Override
   public boolean isTruncated() {
-    return truncatedProp.getValue();
+    return truncated;
   }
 
   @Override
   public boolean isWithLease() {
-    return withLeaseProp.getValue();
+    return withLease;
   }
 
   @Override
   public List<String> getTenantIds() {
-    return StreamSupport.stream(tenantIdsProp.spliterator(), false)
+    return tenantIds.stream()
         .map(StringValue::getValue)
         .map(BufferUtil::bufferAsString)
         .collect(Collectors.toList());
@@ -165,71 +135,134 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
 
   @Override
   public TenantFilter getTenantFilter() {
-    return tenantFilterProp.getValue();
+    return tenantFilter;
   }
 
   public JobBatchRecord setTenantFilter(final TenantFilter tenantFilter) {
-    tenantFilterProp.setValue(tenantFilter);
+    this.tenantFilter = tenantFilter;
     return this;
   }
 
   public JobBatchRecord setTenantIds(final List<String> tenantIds) {
-    tenantIdsProp.reset();
-    tenantIds.forEach(tenantId -> tenantIdsProp.add().wrap(BufferUtil.wrapString(tenantId)));
+    this.tenantIds.clear();
+    tenantIds.forEach(tenantId -> this.tenantIds.add(new StringValue(tenantId)));
     return this;
   }
 
   public JobBatchRecord setTruncated(final boolean truncated) {
-    truncatedProp.setValue(truncated);
+    this.truncated = truncated;
     return this;
   }
 
   public JobBatchRecord setWithLease(final boolean withLease) {
-    withLeaseProp.setValue(withLease);
+    this.withLease = withLease;
     return this;
   }
 
   public JobBatchRecord setMaxJobsToActivate(final int maxJobsToActivate) {
-    maxJobsToActivateProp.setValue(maxJobsToActivate);
+    this.maxJobsToActivate = maxJobsToActivate;
     return this;
   }
 
   public JobBatchRecord setTimeout(final long val) {
-    timeoutProp.setValue(val);
+    timeout = val;
     return this;
   }
 
   public JobBatchRecord setWorker(final DirectBuffer worker) {
-    workerProp.setValue(worker);
-    return this;
+    return setWorker(worker, 0, worker.capacity());
   }
 
   public JobBatchRecord setWorker(final String worker) {
-    workerProp.setValue(worker);
+    this.worker = BufferUtil.wrapString(worker);
     return this;
   }
 
   public JobBatchRecord setType(final DirectBuffer buf) {
-    typeProp.setValue(buf);
-    return this;
+    return setType(buf, 0, buf.capacity());
   }
 
   public JobBatchRecord setType(final String type) {
-    typeProp.setValue(type);
+    this.type = BufferUtil.wrapString(type);
     return this;
   }
 
   public ValueArray<StringValue> tenantIds() {
-    return tenantIdsProp;
+    return new ListValueArray<>(tenantIds, StringValue::new);
   }
 
   @JsonIgnore
   public DirectBuffer getTypeBuffer() {
-    return typeProp.getValue();
+    return Decoding.required(type, "type");
   }
 
   @JsonIgnore
   public DirectBuffer getWorkerBuffer() {
-    return workerProp.getValue();
+    return worker;
+  }
+
+  // setters detach the value: callers hand in buffers they reuse afterwards
+  private static DirectBuffer copy(final DirectBuffer source, final int offset, final int length) {
+    final var bytes = new byte[length];
+    source.getBytes(offset, bytes);
+    return new UnsafeBuffer(bytes);
+  }
+
+  @Override
+  protected MsgpackCodec<JobBatchRecord> codec() {
+    return JobBatchRecordCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<JobBatchRecord> ops() {
+    return JobBatchRecordOps.INSTANCE;
+  }
+
+  private static final class ListValueArray<T> implements ValueArray<T> {
+
+    final List<T> elements;
+    final Supplier<T> factory;
+
+    private ListValueArray(final List<T> elements, final Supplier<T> factory) {
+      this.elements = elements;
+      this.factory = factory;
+    }
+
+    @Override
+    public T add() {
+      return add(elements.size());
+    }
+
+    @Override
+    public T add(final int index) {
+      final var element = factory.get();
+      elements.add(index, element);
+      return element;
+    }
+
+    @Override
+    public T get(final int index) {
+      return elements.get(index);
+    }
+
+    @Override
+    public T remove(final int index) {
+      return elements.remove(index);
+    }
+
+    @Override
+    public int size() {
+      return elements.size();
+    }
+
+    @Override
+    public Stream<T> stream() {
+      return elements.stream();
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+      return elements.iterator();
+    }
   }
 }

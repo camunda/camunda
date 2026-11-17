@@ -8,50 +8,56 @@
 package io.camunda.zeebe.protocol.impl.record.value.agentinstance;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.pojo.Decoding;
+import io.camunda.zeebe.msgpack.pojo.MsgpackBufferValue;
+import io.camunda.zeebe.msgpack.pojo.MsgpackCodec;
+import io.camunda.zeebe.msgpack.pojo.MsgpackOps;
+import io.camunda.zeebe.msgpack.pojo.MsgpackPojo;
+import io.camunda.zeebe.msgpack.pojo.MsgpackUnknownProperties;
+import io.camunda.zeebe.msgpack.pojo.UnknownProperties;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+import org.jspecify.annotations.NullMarked;
 
-@JsonIgnoreProperties({"encodedLength", "empty"})
-public final class AgentInstanceTool extends ObjectValue implements AgentInstanceToolValue {
+@MsgpackPojo
+@NullMarked
+@JsonIgnoreProperties({"encodedLength", "empty", "length"})
+public final class AgentInstanceTool extends MsgpackBufferValue<AgentInstanceTool>
+    implements AgentInstanceToolValue {
 
-  private final StringProperty nameProp = new StringProperty("name", "");
-  private final StringProperty descriptionProp = new StringProperty("description", "");
-  private final StringProperty elementIdProp = new StringProperty("elementId", "");
-
-  public AgentInstanceTool() {
-    super(3);
-    declareProperty(nameProp).declareProperty(descriptionProp).declareProperty(elementIdProp);
-  }
+  DirectBuffer name = Decoding.EMPTY;
+  DirectBuffer description = Decoding.EMPTY;
+  DirectBuffer elementId = Decoding.EMPTY;
+  @MsgpackUnknownProperties final UnknownProperties unknownProperties = new UnknownProperties();
 
   @Override
   public String getName() {
-    return BufferUtil.bufferAsString(nameProp.getValue());
+    return BufferUtil.bufferAsString(name);
   }
 
   public AgentInstanceTool setName(final String name) {
-    nameProp.setValue(name);
+    this.name = BufferUtil.wrapString(name);
     return this;
   }
 
   @Override
   public String getDescription() {
-    return BufferUtil.bufferAsString(descriptionProp.getValue());
+    return BufferUtil.bufferAsString(description);
   }
 
   public AgentInstanceTool setDescription(final String description) {
-    descriptionProp.setValue(description);
+    this.description = BufferUtil.wrapString(description);
     return this;
   }
 
   @Override
   public String getElementId() {
-    return BufferUtil.bufferAsString(elementIdProp.getValue());
+    return BufferUtil.bufferAsString(elementId);
   }
 
   public AgentInstanceTool setElementId(final String elementId) {
-    elementIdProp.setValue(elementId);
+    this.elementId = BufferUtil.wrapString(elementId);
     return this;
   }
 
@@ -59,5 +65,15 @@ public final class AgentInstanceTool extends ObjectValue implements AgentInstanc
     setName(other.getName());
     setDescription(other.getDescription());
     setElementId(other.getElementId());
+  }
+
+  @Override
+  protected MsgpackCodec<AgentInstanceTool> codec() {
+    return AgentInstanceToolCodec.INSTANCE;
+  }
+
+  @Override
+  protected MsgpackOps<AgentInstanceTool> ops() {
+    return AgentInstanceToolOps.INSTANCE;
   }
 }
