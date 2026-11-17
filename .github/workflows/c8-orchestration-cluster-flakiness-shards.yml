@@ -90,6 +90,30 @@ jobs:
           ref: ${{ inputs.test_ref }}
           persist-credentials: false
 
+      # The checkout above is the branch under test, which on 8.9 and 8.10
+      # carries no RDBMS compose override: the agent's own CI files stay on
+      # main rather than being backported. Take the override from the ref this
+      # workflow runs on, so validating a stable branch on RDBMS needs no
+      # changes to that branch.
+      - name: Fetch the RDBMS compose override from the workflow ref
+        if: startsWith(matrix.cell, 'rdbms-')
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: qa/c8-orchestration-cluster-e2e-test-suite/config
+          path: rdbms-overlay
+
+      - name: Install the RDBMS compose override
+        if: startsWith(matrix.cell, 'rdbms-')
+        run: |
+          set -euo pipefail
+          src="rdbms-overlay/${SUITE}/config"
+          mkdir -p "${SUITE}/config/envs"
+          cp "${src}/docker-compose.rdbms.yml" "${SUITE}/config/"
+          cp "${src}/envs/.env.database.rdbms-postgres" "${SUITE}/config/envs/"
+          rm -rf rdbms-overlay
+
       - name: Write shard metadata
         env:
           SHARD: ${{ matrix.shard }}
