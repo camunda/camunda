@@ -234,6 +234,10 @@ camunda-platform:
       -XX:HeapDumpPath=/usr/local/zeebe/data
       -XX:ErrorFile=/usr/local/zeebe/data/zeebe_error%p.log
       -XX:+ExitOnOutOfMemoryError
+    env:
+    # Serves the migrated Operate at /operate instead of the legacy one.
+    - name: CAMUNDA_WEBAPPS_OPERATE_UNIFIED_UI
+      value: "true"
     security:
       authentication:
         method: oidc

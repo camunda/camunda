@@ -14,6 +14,7 @@ import io.camunda.webapps.controllers.WebappsRequestForwardManager;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +22,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
 @ConditionalOnWebappUiEnabled("operate")
+@ConditionalOnProperty(
+    name = "camunda.webapps.operate.unified-ui",
+    havingValue = "false",
+    matchIfMissing = true)
 public class OperateIndexController {
 
   @Autowired private ServletContext context;

@@ -33,8 +33,7 @@ public class WebappIndexController {
   private static final Logger LOGGER = LoggerFactory.getLogger(WebappIndexController.class);
 
   private static final String LOGIN_RESOURCE = "/login";
-  private static final String NON_SPA_SEGMENTS =
-      "(?:assets|client-config\\.js|custom\\.css|favicon\\.ico)";
+  static final String NON_SPA_SEGMENTS = "(?:assets|client-config\\.js|custom\\.css|favicon\\.ico)";
 
   private final ServletContext context;
 
@@ -87,10 +86,14 @@ public class WebappIndexController {
         "/tasklist/{path:^(?!" + NON_SPA_SEGMENTS + "$).+}/**"
       })
   public String forwardToWebapp(final HttpServletRequest request) {
+    return forwardToShell(request, "/tasklist/");
+  }
+
+  String forwardToShell(final HttpServletRequest request, final String shellPath) {
     if (webappConfiguration.isLoginDelegated() && isNotLoggedIn()) {
       return saveRequestAndRedirectToLogin(request);
     } else {
-      return "forward:/tasklist/";
+      return "forward:" + shellPath;
     }
   }
 
