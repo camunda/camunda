@@ -12,21 +12,19 @@ import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
-import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
+import java.time.Instant;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.HealthIndicator;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.task.TaskRejectedException;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
 
 /**
@@ -46,26 +44,18 @@ public class ClusterConnection implements SmartLifecycle, HealthIndicator {
 
   private final CamundaClient client;
   private final ApplicationEventPublisher eventPublisher;
-  private final ScheduledExecutorService executor;
+  private final TaskScheduler scheduler;
   private final AtomicInteger connected = new AtomicInteger(0);
   private volatile boolean running;
 
-  @Autowired
   public ClusterConnection(
       final CamundaClient client,
       final MeterRegistry registry,
-      final ApplicationEventPublisher eventPublisher) {
-    this(client, registry, eventPublisher, Executors.newSingleThreadScheduledExecutor());
-  }
-
-  ClusterConnection(
-      final CamundaClient client,
-      final MeterRegistry registry,
       final ApplicationEventPublisher eventPublisher,
-      final ScheduledExecutorService executor) {
+      final TaskScheduler scheduler) {
     this.client = client;
     this.eventPublisher = eventPublisher;
-    this.executor = executor;
+    this.scheduler = scheduler;
     Gauge.builder(AppMetricsDoc.CONNECTED.getName(), connected, AtomicInteger::get)
         .description(AppMetricsDoc.CONNECTED.getDescription())
         .register(registry);
@@ -82,13 +72,12 @@ public class ClusterConnection implements SmartLifecycle, HealthIndicator {
    */
   @EventListener(ApplicationReadyEvent.class)
   void connect() {
-    executor.execute(() -> requestTopology(0));
+    requestTopology(0);
   }
 
   @Override
   public void stop() {
     running = false;
-    executor.shutdownNow();
   }
 
   @Override
@@ -145,9 +134,8 @@ public class ClusterConnection implements SmartLifecycle, HealthIndicator {
       return;
     }
     try {
-      executor.schedule(
-          () -> requestTopology(attempt), backoff(attempt).toMillis(), TimeUnit.MILLISECONDS);
-    } catch (final RejectedExecutionException e) {
+      scheduler.schedule(() -> requestTopology(attempt), Instant.now().plus(backoff(attempt)));
+    } catch (final TaskRejectedException e) {
       LOG.debug("Not retrying the topology request, the connection is stopping");
     }
   }

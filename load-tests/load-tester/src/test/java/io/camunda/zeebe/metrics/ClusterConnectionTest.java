@@ -8,8 +8,10 @@
 package io.camunda.zeebe.metrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
@@ -18,27 +20,31 @@ import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.response.Topology;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.health.contributor.Status;
+import org.springframework.scheduling.TaskScheduler;
 
 class ClusterConnectionTest {
 
   private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
   private final List<Object> events = new CopyOnWriteArrayList<>();
+  private final TaskScheduler scheduler = mock(TaskScheduler.class);
   private ClusterConnection connection;
 
-  @AfterEach
-  void tearDown() {
-    if (connection != null) {
-      connection.stop();
-    }
+  @BeforeEach
+  void runScheduledTasksImmediately() {
+    when(scheduler.schedule(any(Runnable.class), any(Instant.class)))
+        .thenAnswer(
+            invocation -> {
+              invocation.<Runnable>getArgument(0).run();
+              return null;
+            });
   }
 
   @Test
@@ -61,7 +67,7 @@ class ClusterConnectionTest {
     connection.connect();
 
     // then
-    await().atMost(Duration.ofSeconds(5)).until(() -> events.contains(new Connected()));
+    assertThat(events).containsExactly(new Connected());
     assertThat(registry.find(AppMetricsDoc.CONNECTED.getName()).gauge().value()).isEqualTo(1.0);
     assertThat(connection.health().getStatus()).isEqualTo(Status.UP);
   }
@@ -79,12 +85,12 @@ class ClusterConnectionTest {
     connection.connect();
 
     // then
-    await().atMost(Duration.ofSeconds(5)).until(connection::isConnected);
+    assertThat(connection.isConnected()).isTrue();
     assertThat(events).containsExactly(new Connected());
   }
 
   @Test
-  void shouldNotPublishConnectedAfterStop() throws Exception {
+  void shouldNotRetryAfterStop() {
     // given
     final var pending = new CompletableFuture<Topology>();
     connection = newConnection(clientAnswering(failing(pending)));
@@ -98,6 +104,7 @@ class ClusterConnectionTest {
     // then
     assertThat(connection.isRunning()).isFalse();
     assertThat(events).isEmpty();
+    verify(scheduler, never()).schedule(any(Runnable.class), any(Instant.class));
   }
 
   @Test
@@ -115,8 +122,7 @@ class ClusterConnectionTest {
   }
 
   private ClusterConnection newConnection(final CamundaClient client) {
-    return new ClusterConnection(
-        client, registry, events::add, Executors.newSingleThreadScheduledExecutor());
+    return new ClusterConnection(client, registry, events::add, scheduler);
   }
 
   private static CamundaFuture<Topology> topologyFuture() {
