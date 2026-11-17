@@ -95,7 +95,7 @@ public final class ProbeYieldProcessor implements TypedRecordProcessor<ProbeReco
     if (command.isInternalCommand()) {
       return true;
     }
-    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command.getAuthInfo());
+    final var authorizedTenants = tenantCheck.resolveAuthorizedTenants(command);
     return authorizedTenants.wildcard()
         || authorizedTenants.isAuthorizedForTenantId(probe.getTenantId());
   }
