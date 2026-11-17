@@ -29,13 +29,13 @@ blocks pull requests and merge groups. It runs on GCP. `gradle-compile-check` up
 `distTar` output and dependency report to run-scoped GCS. `gradle-distribution-parity-check`
 downloads them, plus the Maven distball (`camunda-zeebe-*.tar.gz`) that `build-distball` shares,
 and compares the two archives directly. Nothing is extracted or restored from SNAPSHOTs. Fork PRs
-without GCS credentials use the GitHub artifact fallback for both sides. The separate
-experimental isolated-project check in `gradle-ci.yml` remains non-blocking; failures on `main`
-send a Slack notification (see the ADR).
+without GCS credentials use the GitHub artifact fallback for both sides. The separate Gradle
+unit-test job in `gradle-ci.yml` remains non-blocking; failures on `main` send a Slack
+notification (see the ADR).
 
-This keeps the Gradle signal scoped: it validates compilation and packaged artifact names, but it
-is not a Gradle application-test suite. Maven remains the application-test path for pull requests,
-merge groups, protected-branch pushes, schedules, and manual runs.
+Unified CI's Gradle signal remains scoped to compilation and packaged artifact names. The separate
+`gradle-ci.yml` workflow runs unit tests as a non-blocking experiment. Maven remains the application-
+test landing-gate path for pull requests and merge groups.
 
 ## Fix Workflow
 
