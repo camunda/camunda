@@ -116,7 +116,8 @@ public interface ProcessDefinitionFilter extends SearchRequestFilter {
    *
    * @param state {@link ProcessDefinitionState#ACTIVE} to exclude deleted definitions, {@link
    *     ProcessDefinitionState#DELETED} to return only definitions that have been deleted from the
-   *     engine but are still retained in secondary storage
+   *     engine but are still retained in secondary storage, {@link
+   *     ProcessDefinitionState#SUSPENDED} to return only definitions that are suspended
    * @return the updated filter
    */
   ProcessDefinitionFilter state(final ProcessDefinitionState state);

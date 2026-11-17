@@ -19,5 +19,6 @@ public enum ProcessDefinitionState {
   ACTIVE,
   DRAINING,
   DELETED,
+  SUSPENDED,
   UNKNOWN_ENUM_VALUE;
 }
