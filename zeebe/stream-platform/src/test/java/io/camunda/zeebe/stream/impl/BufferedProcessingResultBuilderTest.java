@@ -19,6 +19,9 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.stream.api.records.RecordBatchSizePredicate;
 import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
@@ -75,6 +78,59 @@ class BufferedProcessingResultBuilderTest {
     final var response = result.getProcessingResponse().orElseThrow();
     final var responseEntry = response.responseValue();
     assertThat(responseEntry.recordMetadata().getBatchOperationReference()).isEqualTo(12345L);
+  }
+
+  @RegressionTest("https://github.com/camunda/camunda/issues/69323")
+  void shouldAppendOnlyActorClaimsToFollowUpEvents() {
+    // given
+    final var authInfo =
+        new AuthInfo()
+            .setFormat(AuthDataFormat.PRE_AUTHORIZED)
+            .setClaims(
+                Map.of(
+                    "authorized_anonymous_user",
+                    false,
+                    "authorized_username",
+                    "user",
+                    "authorized_client_id",
+                    "client",
+                    "authorized_tenants",
+                    List.of("tenant"),
+                    "user_groups_claims",
+                    List.of("group"),
+                    "user_token_claims",
+                    Map.of("sub", "user", "email", "user@example.com")));
+    final var builder = new BufferedProcessingResultBuilder(LARGE_BATCH_PREDICATE);
+    builder.appendAuthInfoToFollowUps(authInfo);
+
+    // when
+    for (final var recordType :
+        List.of(RecordType.COMMAND, RecordType.EVENT, RecordType.COMMAND_REJECTION)) {
+      builder.appendRecordReturnEither(
+          1L,
+          new ProcessInstanceCreationRecord(),
+          new RecordMetadata().recordType(recordType).intent(ProcessInstanceCreationIntent.CREATE));
+    }
+
+    // then
+    final var authorizations =
+        builder.build().getRecordBatch().entries().stream()
+            .map(entry -> ((RecordBatchEntry) entry).recordMetadata().getAuthorization())
+            .toList();
+    final var actorClaims =
+        Map.of(
+            "authorized_anonymous_user",
+            false,
+            "authorized_username",
+            "user",
+            "authorized_client_id",
+            "client");
+    assertThat(authorizations.get(0)).as("follow-up command").isEqualTo(authInfo);
+    assertThat(authorizations.get(1).getFormat())
+        .as("follow-up event")
+        .isEqualTo(AuthDataFormat.PRE_AUTHORIZED);
+    assertThat(authorizations.get(1).getClaims()).as("follow-up event").isEqualTo(actorClaims);
+    assertThat(authorizations.get(2)).as("rejection").isEqualTo(authInfo);
   }
 
   @Test

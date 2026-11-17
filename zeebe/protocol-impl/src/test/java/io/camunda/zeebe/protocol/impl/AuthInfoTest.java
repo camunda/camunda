@@ -11,6 +11,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
+import java.util.List;
 import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Nested;
@@ -35,6 +36,79 @@ final class AuthInfoTest {
         .isEqualTo(
             """
         {"format":"JWT","authData":"***","claims":"***"}""");
+  }
+
+  @Test
+  void shouldKeepOnlyActorClaimsAndFormat() {
+    // given
+    final var original =
+        new AuthInfo()
+            .setFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED)
+            .setClaims(
+                Map.of(
+                    "authorized_anonymous_user",
+                    false,
+                    "authorized_username",
+                    "user",
+                    "authorized_client_id",
+                    "client",
+                    "authorized_tenants",
+                    List.of("tenant"),
+                    "user_groups_claims",
+                    List.of("group"),
+                    "user_token_claims",
+                    Map.of("sub", "user")));
+    final var originalClaims = original.getClaims();
+
+    // when
+    final var actorOnly = original.withActorClaimsOnly();
+
+    // then
+    assertThat(actorOnly.getClaims())
+        .isEqualTo(
+            Map.of(
+                "authorized_anonymous_user",
+                false,
+                "authorized_username",
+                "user",
+                "authorized_client_id",
+                "client"));
+    assertThat(actorOnly.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
+    assertThat(original.getClaims()).isEqualTo(originalClaims);
+  }
+
+  @Test
+  void shouldKeepJwtAuthInfoUnchanged() {
+    // given
+    final var original =
+        new AuthInfo()
+            .setFormat(AuthInfo.AuthDataFormat.JWT)
+            .setAuthData("token")
+            .setClaims(Map.of("user_token_claims", Map.of("sub", "user")));
+
+    // when
+    final var actorOnly = original.withActorClaimsOnly();
+
+    // then
+    assertThat(actorOnly.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.JWT);
+    assertThat(actorOnly.getAuthData()).isEqualTo("token");
+    assertThat(actorOnly.getClaims()).isEqualTo(Map.of("user_token_claims", Map.of("sub", "user")));
+  }
+
+  @Test
+  void shouldKeepFormatWithEmptyClaimsWhenNoActorClaims() {
+    // given
+    final var original =
+        new AuthInfo()
+            .setFormat(AuthInfo.AuthDataFormat.PRE_AUTHORIZED)
+            .setClaims(Map.of("authorized_tenants", List.of("tenant")));
+
+    // when
+    final var actorOnly = original.withActorClaimsOnly();
+
+    // then
+    assertThat(actorOnly.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.PRE_AUTHORIZED);
+    assertThat(actorOnly.getClaims()).isEmpty();
   }
 
   @Nested
