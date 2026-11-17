@@ -146,7 +146,8 @@ public final class JobClient {
     final long jobKey = findJobKey();
     final int partitionId = Protocol.decodePartitionId(jobKey);
     final String[] tenantIds = authorizedTenantIds.toArray(new String[0]);
-    // route to the partition encoded in the job key; deployment-partition keys keep the default path
+    // route to the partition encoded in the job key; deployment-partition keys keep the default
+    // path
     final long position =
         partitionId <= Protocol.DEPLOYMENT_PARTITION
             ? writer.writeCommand(jobKey, JobIntent.COMPLETE, jobRecord, tenantIds)

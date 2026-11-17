@@ -8,8 +8,6 @@
 package io.camunda.zeebe.engine.processing.resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
@@ -23,11 +21,8 @@ import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.util.List;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 /**
  * A definition resting in {@code PENDING_DELETION} is a corruption artifact of the pre-8.9.18
@@ -43,9 +38,7 @@ public class PendingDeletionAsActiveTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  @Rule
-  public final EngineRule engine =
-      EngineRule.singlePartition();
+  @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   @Test
   public void shouldTreatPendingDeletionLatestAsDuplicateOnIdenticalRedeploy() {

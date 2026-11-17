@@ -345,7 +345,6 @@ public class ResourceDeletionMultiPartitionTest {
     // the caller is told to wait rather than getting a misleading not-found
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
 
-
     // and - the still-active instance on the other partition was not terminated
     assertThat(
             RecordingExporter.<Boolean>expectNoMatchingRecords(

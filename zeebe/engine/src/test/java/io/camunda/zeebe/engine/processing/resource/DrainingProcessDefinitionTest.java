@@ -9,8 +9,6 @@ package io.camunda.zeebe.engine.processing.resource;
 
 import static io.camunda.zeebe.protocol.record.RecordAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -40,13 +38,10 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.List;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 /**
  * Verifies that no new process instances can be created for a process definition that is in the
@@ -63,9 +58,7 @@ public class DrainingProcessDefinitionTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  @Rule
-  public final EngineRule engine =
-      EngineRule.singlePartition();
+  @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   @Test
   public void shouldRejectCreateInstanceByProcessIdWhenNoActiveVersionRemains() {
@@ -900,7 +893,6 @@ public class DrainingProcessDefinitionTest {
               "Expected to delete process definition with key `%d`, but it is already being deleted."
                   .formatted(processDefinitionKey));
     }
-
 
     // and - the still-running instance was not terminated by the repeated deletions
     Assertions.assertThat(
