@@ -61,6 +61,9 @@ public final class RaftPartition implements Partition, HealthMonitorable {
       new CopyOnWriteArraySet<>();
   private final PartitionMetadata partitionMetadata;
   private RaftPartitionServer server;
+  // A closed server stays referenced, e.g. for delete(); only a closed one may be replaced by a
+  // join
+  private volatile boolean serverClosed;
 
   public RaftPartition(
       final PartitionMetadata partitionMetadata,
@@ -148,6 +151,10 @@ public final class RaftPartition implements Partition, HealthMonitorable {
       final RaftMember.Type type,
       final PartitionManagementService managementService,
       final ReceivableSnapshotStore snapshotStore) {
+    final var running = rejectJoinWhileServerRuns();
+    if (running != null) {
+      return running;
+    }
     initServer(managementService, snapshotStore);
     return server.join(type).thenApply(v -> this);
   }
@@ -162,8 +169,27 @@ public final class RaftPartition implements Partition, HealthMonitorable {
       final PartitionManagementService managementService,
       final ReceivableSnapshotStore snapshotStore,
       final JoinOptions options) {
+    final var running = rejectJoinWhileServerRuns();
+    if (running != null) {
+      return running;
+    }
     initServer(managementService, snapshotStore);
     return server.join(type, options).thenApply(v -> this);
+  }
+
+  /**
+   * A join creates a new server on the same data directory. If a server was started before and is
+   * not closed, both would use the directory and the network at the same time. The caller must
+   * close the partition first, e.g. before it deletes the data of a fenced member and joins again.
+   */
+  private CompletableFuture<RaftPartition> rejectJoinWhileServerRuns() {
+    if (server != null && !serverClosed) {
+      return CompletableFuture.failedFuture(
+          new IllegalStateException(
+              "Cannot join partition %s, its server is still running; close it first"
+                  .formatted(partitionId)));
+    }
+    return null;
   }
 
   /** See {@link io.atomix.raft.RaftServer#setJoinAdmission(JoinAdmission)}. */
@@ -208,6 +234,7 @@ public final class RaftPartition implements Partition, HealthMonitorable {
       final PartitionManagementService managementService,
       final ReceivableSnapshotStore snapshotStore) {
     server = createServer(managementService, snapshotStore);
+    serverClosed = false;
 
     if (!deferredRoleChangeListeners.isEmpty()) {
       deferredRoleChangeListeners.forEach(server::addRoleChangeListener);
@@ -272,7 +299,7 @@ public final class RaftPartition implements Partition, HealthMonitorable {
 
   private CompletableFuture<Void> closeServer() {
     if (server != null) {
-      return server.stop();
+      return server.stop().whenComplete((ok, error) -> serverClosed = true);
     }
     return CompletableFuture.completedFuture(null);
   }
@@ -285,6 +312,7 @@ public final class RaftPartition implements Partition, HealthMonitorable {
   public CompletableFuture<Void> delete() {
     return server
         .stop()
+        .whenComplete((ok, error) -> serverClosed = true)
         .thenRun(
             () -> {
               if (server != null) {
