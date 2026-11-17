@@ -12,6 +12,8 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.backup.common.BackupMetadata.CheckpointEntry;
 import io.camunda.zeebe.dynamic.config.state.PartitionRestore;
+import io.camunda.zeebe.restore.RestoreFailure.InvalidState;
+import io.camunda.zeebe.restore.RestoreFailure.Reason;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -98,7 +100,8 @@ public class RestorePointResolver {
         }
       }
       if (backups.getLast().checkpointId() < commonCheckpoint) {
-        throw new IllegalStateException(
+        throw new InvalidState(
+            Reason.BACKUPS_INCONSISTENT,
             String.format(
                 "Last restorable backup %d for partition %d does not cover the common checkpoint %d",
                 backups.getLast().checkpointId(), partitionId, commonCheckpoint));
@@ -182,7 +185,8 @@ public class RestorePointResolver {
     }
     backups.subList(0, firstRetained).clear();
     if (exportedPosition != null && backups.getFirst().checkpointPosition() > exportedPosition) {
-      throw new IllegalStateException(
+      throw new InvalidState(
+          Reason.RESTORE_POINT_UNAVAILABLE,
           String.format(
               "After discarding backups before %s, the exporter position %d is not covered by the first remaining backup %s",
               from, exportedPosition, backups.getFirst()));
@@ -221,7 +225,8 @@ public class RestorePointResolver {
             ? lastBackupPosition
             : backups.get(backups.size() - 2).checkpointPosition() + 1;
     if (position < lowestPosition || position > lastBackupPosition) {
-      throw new IllegalStateException(
+      throw new InvalidState(
+          Reason.RESTORE_POINT_UNAVAILABLE,
           String.format(
               "Cannot restore partition %d up to checkpoint %d at position %d: it must be in [%d, %d], where a log restored from backups %s can end",
               partitionId,
@@ -248,7 +253,8 @@ public class RestorePointResolver {
     final var previousBackup = previousBackups.getLast();
     final var previousBackupPosition = previousBackup.checkpointPosition();
     if (firstLogPosition > previousBackupPosition + 1) {
-      throw new IllegalStateException(
+      throw new InvalidState(
+          Reason.BACKUPS_INCONSISTENT,
           String.format(
               "Unexpected data gaps between backup %s with first log position %d and backup %s with checkpoint position %d",
               checkpoint.checkpointId(),
@@ -337,7 +343,8 @@ public class RestorePointResolver {
         return new CommonCheckpoint(candidate.checkpointId(), entriesByPartition);
       }
     }
-    throw new IllegalStateException(
+    throw new InvalidState(
+        Reason.RESTORE_POINT_UNAVAILABLE,
         "Could not find common checkpoint across partitions. Restorable checkpoint count per partition: %s"
             .formatted(
                 allRestorableCheckpoints.stream()
@@ -408,7 +415,8 @@ public class RestorePointResolver {
               final var startInfo = findCheckpointInfo(metadata.checkpoints(), range.start());
               final var endInfo = findCheckpointInfo(metadata.checkpoints(), range.end());
               if (startInfo == null || endInfo == null) {
-                throw new IllegalStateException(
+                throw new InvalidState(
+                    Reason.BACKUPS_INCONSISTENT,
                     "Could not find checkpoint info for range %s in partition %d. Number of available checkpoints: %d"
                         .formatted(range, metadata.partitionId(), metadata.checkpoints().size()));
               }
@@ -466,7 +474,8 @@ public class RestorePointResolver {
         .findAny()
         .orElseThrow(
             () ->
-                new IllegalStateException(
+                new InvalidState(
+                    Reason.RESTORE_POINT_UNAVAILABLE,
                     "No usable range found for partition %d with from=%s, exportedPosition=%s. Available ranges: %s"
                         .formatted(
                             metadata.partitionId(),

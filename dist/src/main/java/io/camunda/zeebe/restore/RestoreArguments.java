@@ -9,6 +9,7 @@ package io.camunda.zeebe.restore;
 
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.restore.ClusterRestore.TargetDataPolicy;
+import io.camunda.zeebe.restore.RestoreFailure.InvalidArgument;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -99,7 +100,7 @@ public class RestoreArguments {
    */
   private Set<String> targetedPhysicalTenants(final Set<String> configuredPhysicalTenantIds) {
     if (allTenantsRequested() && tenantId != null) {
-      throw new IllegalArgumentException(
+      throw new InvalidArgument(
           "Expected either --allTenants or --tenantId, but got both (--tenantId=%s)"
               .formatted(tenantId));
     }
@@ -108,7 +109,7 @@ public class RestoreArguments {
     }
     if (tenantId != null) {
       if (!configuredPhysicalTenantIds.contains(tenantId)) {
-        throw new IllegalArgumentException(
+        throw new InvalidArgument(
             "Cannot restore physical tenant '%s': not configured in this cluster, which has %s"
                 .formatted(tenantId, new TreeSet<>(configuredPhysicalTenantIds)));
       }
