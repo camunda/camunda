@@ -45,6 +45,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
@@ -89,7 +90,7 @@ final class IncidentResolveProcessorTest {
     when(cslCheck.check(any(), any(), any(), any(Rejection.class)))
         .thenAnswer(invocation -> Either.right(invocation.getArgument(2)));
     final var tenantCheck = mock(CslTenantCheck.class);
-    when(tenantCheck.resolveAuthorizedTenants(any()))
+    when(tenantCheck.resolveAuthorizedTenants(any(TypedRecord.class)))
         .thenReturn(TenantAccess.allowed(List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)));
 
     processor =
