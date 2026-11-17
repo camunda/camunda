@@ -878,15 +878,7 @@ class SegmentedJournalTest {
     // given
     final Queue<Runnable> deletions = new ConcurrentLinkedQueue<>();
     closeables.add(() -> deletions.forEach(Runnable::run));
-    final AtomicBoolean diskFull = new AtomicBoolean();
-    final SegmentAllocator allocator =
-        (channel, fd, segmentSize) -> {
-          if (diskFull.get()) {
-            throw new OutOfDiskSpace("Disk is full");
-          }
-          SegmentAllocator.posix(SegmentAllocator.noop()).allocate(channel, fd, segmentSize);
-        };
-    journalFactory = new TestJournalFactory("test", 2, allocator);
+    journalFactory = new TestJournalFactory("test", 2, createFailingSegmentAllocator(4));
     journal = journalFactory.journal(journalFactory.segmentsManager(directory, deletions::add));
     closeables.add(journal);
     for (int i = 0; i < 4; i++) {
@@ -897,7 +889,6 @@ class SegmentedJournalTest {
         directory.resolve("journal-1.log.moved"));
     journal.deleteUntil(3);
     deletions.poll().run();
-    diskFull.set(true);
     for (int i = 0; i < 2; i++) {
       journal.append(journalFactory.entry());
     }
