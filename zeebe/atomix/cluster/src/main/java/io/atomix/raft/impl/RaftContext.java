@@ -207,7 +207,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     this.name = checkNotNull(name, "name cannot be null");
     this.membershipService = checkNotNull(membershipService, "membershipService cannot be null");
     this.protocol = checkNotNull(protocol, "protocol cannot be null");
-    outboundProtocol = OutboundRaftProtocol.wrap(protocol, this);
+    outboundProtocol = new OutboundRaftProtocol(protocol, this);
     this.storage = checkNotNull(storage, "storage cannot be null");
     random = randomFactory.get();
     this.partitionId = partitionId;
@@ -561,6 +561,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
                     error -> {
                       final R response =
                           responseBuilder.get().withStatus(Status.ERROR).withError(error).build();
+                      if (response instanceof final AbstractRaftResponse r) {
+                        r.setSenderIncarnation(cluster.getLocalMember().getIncarnation());
+                      }
                       LOGGER.trace("Sending {}", response);
                       future.complete(response);
                     }));

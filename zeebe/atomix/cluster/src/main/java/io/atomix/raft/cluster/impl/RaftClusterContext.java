@@ -62,7 +62,8 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   private final Set<RaftMemberContext> replicationTargets = new HashSet<>();
   private final Set<RaftMemberContext> remoteActiveMembers = new HashSet<>();
   private boolean hasRemoteActiveMembers = false;
-  private Configuration configuration;
+  // Volatile: the outbound protocol reads the fence list off the Raft thread, see isFenced
+  private volatile Configuration configuration;
 
   public RaftClusterContext(final MemberId localMemberId, final RaftContext raft) {
     final Instant time = Instant.now();
@@ -723,7 +724,17 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    *     fence list of the current configuration
    */
   public boolean isFenced(final RaftMember member) {
-    return configuration != null && configuration.isFenced(member);
+    final var current = configuration;
+    return current != null && current.isFenced(member);
+  }
+
+  /**
+   * @return true if the given member id and incarnation are on the fence list of the current
+   *     configuration. Safe to call off the Raft thread.
+   */
+  public boolean isFenced(final MemberId member, final long incarnation) {
+    final var current = configuration;
+    return current != null && current.isFenced(member, incarnation);
   }
 
   private void pruneMembersNotInConfiguration() {
