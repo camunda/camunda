@@ -24,7 +24,6 @@ public class AgentDefinitionDto implements OptimizeDto {
   private String flowNodeId;
   private String name;
   private String agentType;
-  private List<String> agentDefinitionIds = new ArrayList<>();
   private List<String> processDefinitionVersions = new ArrayList<>();
 
   public AgentDefinitionDto() {}
@@ -77,14 +76,6 @@ public class AgentDefinitionDto implements OptimizeDto {
     this.agentType = agentType;
   }
 
-  public List<String> getAgentDefinitionIds() {
-    return agentDefinitionIds;
-  }
-
-  public void setAgentDefinitionIds(final List<String> agentDefinitionIds) {
-    this.agentDefinitionIds = agentDefinitionIds;
-  }
-
   public List<String> getProcessDefinitionVersions() {
     return processDefinitionVersions;
   }
@@ -105,7 +96,6 @@ public class AgentDefinitionDto implements OptimizeDto {
         && Objects.equals(flowNodeId, that.flowNodeId)
         && Objects.equals(name, that.name)
         && Objects.equals(agentType, that.agentType)
-        && Objects.equals(agentDefinitionIds, that.agentDefinitionIds)
         && Objects.equals(processDefinitionVersions, that.processDefinitionVersions);
   }
 
@@ -118,7 +108,6 @@ public class AgentDefinitionDto implements OptimizeDto {
         flowNodeId,
         name,
         agentType,
-        agentDefinitionIds,
         processDefinitionVersions);
   }
 
@@ -137,8 +126,6 @@ public class AgentDefinitionDto implements OptimizeDto {
         + name
         + ", agentType="
         + agentType
-        + ", agentDefinitionIds="
-        + agentDefinitionIds
         + ", processDefinitionVersions="
         + processDefinitionVersions
         + ")";
@@ -153,7 +140,6 @@ public class AgentDefinitionDto implements OptimizeDto {
     public static final String flowNodeId = "flowNodeId";
     public static final String name = "name";
     public static final String agentType = "agentType";
-    public static final String agentDefinitionIds = "agentDefinitionIds";
     public static final String processDefinitionVersions = "processDefinitionVersions";
   }
 }

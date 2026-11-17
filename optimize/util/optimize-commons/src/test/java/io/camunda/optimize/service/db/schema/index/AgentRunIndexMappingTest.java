@@ -72,7 +72,6 @@ class AgentRunIndexMappingTest {
                 entry("limitHit", Property.Kind.Keyword),
                 entry("hasIncident", Property.Kind.Boolean),
                 entry("toolIncidentCount", Property.Kind.Long),
-                entry("failed", Property.Kind.Boolean),
                 entry("failureReasons", Property.Kind.Nested),
                 entry("activeDurationMs", Property.Kind.Long),
                 entry("toolFlowNodeIds", Property.Kind.Keyword),

@@ -67,7 +67,6 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
   public static final String ENRICHED = AgentRunDto.Fields.enriched;
   public static final String ACTIVE_DURATION_MS = AgentRunDto.Fields.activeDurationMs;
   public static final String TOOL_INCIDENT_COUNT = AgentRunDto.Fields.toolIncidentCount;
-  public static final String FAILED = AgentRunDto.Fields.failed;
   public static final String TOOL_INCIDENTS_BY_TOOL = AgentRunDto.Fields.toolIncidentsByTool;
   public static final String FAILURE_REASONS = AgentRunDto.Fields.failureReasons;
   public static final String FAILURE_REASON_KIND = AgentRunDto.FailureReasonDto.Fields.kind;
@@ -143,7 +142,6 @@ public abstract class AgentRunIndex<TBuilder> extends DefaultIndexMappingCreator
         .properties(ENRICHED, p -> p.boolean_(k -> k))
         .properties(ACTIVE_DURATION_MS, p -> p.long_(k -> k))
         .properties(TOOL_INCIDENT_COUNT, p -> p.long_(k -> k))
-        .properties(FAILED, p -> p.boolean_(k -> k))
         .properties(
             TOOL_INCIDENTS_BY_TOOL,
             p ->

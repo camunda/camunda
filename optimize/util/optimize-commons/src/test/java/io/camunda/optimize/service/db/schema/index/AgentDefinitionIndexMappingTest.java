@@ -39,7 +39,6 @@ class AgentDefinitionIndexMappingTest {
                 "flowNodeId", Property.Kind.Keyword,
                 "name", Property.Kind.Keyword,
                 "agentType", Property.Kind.Keyword,
-                "agentDefinitionIds", Property.Kind.Keyword,
                 "processDefinitionVersions", Property.Kind.Keyword));
   }
 

@@ -24,7 +24,6 @@ public abstract class AgentDefinitionIndex<TBuilder> extends DefaultIndexMapping
   public static final String FLOW_NODE_ID = AgentDefinitionDto.Fields.flowNodeId;
   public static final String NAME = AgentDefinitionDto.Fields.name;
   public static final String AGENT_TYPE = AgentDefinitionDto.Fields.agentType;
-  public static final String AGENT_DEFINITION_IDS = AgentDefinitionDto.Fields.agentDefinitionIds;
   public static final String PROCESS_DEFINITION_VERSIONS =
       AgentDefinitionDto.Fields.processDefinitionVersions;
 
@@ -47,7 +46,6 @@ public abstract class AgentDefinitionIndex<TBuilder> extends DefaultIndexMapping
         .properties(FLOW_NODE_ID, p -> p.keyword(k -> k))
         .properties(NAME, p -> p.keyword(k -> k))
         .properties(AGENT_TYPE, p -> p.keyword(k -> k))
-        .properties(AGENT_DEFINITION_IDS, p -> p.keyword(k -> k))
         .properties(PROCESS_DEFINITION_VERSIONS, p -> p.keyword(k -> k));
   }
 }

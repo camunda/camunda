@@ -65,7 +65,6 @@ public class AgentRunDto implements OptimizeDto {
   private Boolean enriched;
   private Long activeDurationMs;
   private Long toolIncidentCount;
-  private Boolean failed;
   private List<ToolCallsDto> toolIncidentsByTool = new ArrayList<>();
   private List<FailureReasonDto> failureReasons = new ArrayList<>();
   private String rootProcessDefinitionKey;
@@ -392,14 +391,6 @@ public class AgentRunDto implements OptimizeDto {
     this.toolIncidentCount = toolIncidentCount;
   }
 
-  public Boolean getFailed() {
-    return failed;
-  }
-
-  public void setFailed(final Boolean failed) {
-    this.failed = failed;
-  }
-
   public List<ToolCallsDto> getToolIncidentsByTool() {
     return toolIncidentsByTool;
   }
@@ -470,7 +461,6 @@ public class AgentRunDto implements OptimizeDto {
         && Objects.equals(enriched, that.enriched)
         && Objects.equals(activeDurationMs, that.activeDurationMs)
         && Objects.equals(toolIncidentCount, that.toolIncidentCount)
-        && Objects.equals(failed, that.failed)
         && Objects.equals(toolIncidentsByTool, that.toolIncidentsByTool)
         && Objects.equals(failureReasons, that.failureReasons)
         && Objects.equals(rootProcessDefinitionKey, that.rootProcessDefinitionKey);
@@ -519,7 +509,6 @@ public class AgentRunDto implements OptimizeDto {
         enriched,
         activeDurationMs,
         toolIncidentCount,
-        failed,
         toolIncidentsByTool,
         failureReasons,
         rootProcessDefinitionKey);
@@ -608,8 +597,6 @@ public class AgentRunDto implements OptimizeDto {
         + activeDurationMs
         + ", toolIncidentCount="
         + toolIncidentCount
-        + ", failed="
-        + failed
         + ", toolIncidentsByTool="
         + toolIncidentsByTool
         + ", failureReasons="
@@ -662,7 +649,6 @@ public class AgentRunDto implements OptimizeDto {
     public static final String enriched = "enriched";
     public static final String activeDurationMs = "activeDurationMs";
     public static final String toolIncidentCount = "toolIncidentCount";
-    public static final String failed = "failed";
     public static final String toolIncidentsByTool = "toolIncidentsByTool";
     public static final String failureReasons = "failureReasons";
     public static final String rootProcessDefinitionKey = "rootProcessDefinitionKey";
